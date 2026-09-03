@@ -1,0 +1,29 @@
+--- 2026-09-03 07:19 ---
+I want you to look at the plan that was created in last session. I want you to create a step by step, "To-Do" list to accomplish this plan. For every step of the plan, I want you to give a prompt that I can use to build that step or to accomplish that point on the list. I want the To-Do list to be comprehensive, and as a final product of the to-do list prompts, I want a finished web app that I can trial with a vercel deployment as the super admin. 
+
+Do not run the prompts, I will give those tasks to other agents. Only build a comprehensive to-do and subsequent prompt list, based on the objective of the plan
+
+I'll tell you when to merge to main
+
+--- 2026-09-03 07:23 ---
+To answer the open items from last session
+
+13. Remaining open questions for the founder (defaults ship as stated; recorded in HANDOFF.md)
+
+1. Should a family also be able to hide from its own congregation? Yes
+2. Fellowship viewers see phones/emails too, or names + address only? Default
+3. Men's/Women's include youth 13+ by default (`adult_groups_include_youth = true`); adults 18+ for fellowship visibility. OK? Let the church set what age is considered youth age for their congregation
+4. Accept the permission mapping in §4, or add toggles later?
+5. Share links: stream only (no download); min password 8; available to `sermons.upload` holders as well as `sermons.link`. OK? Allow downloads if the church organization decides to allow it. 
+6. Push on every bulletin upload (per-church toggle, default on)? Yes
+7. Billing: flat monthly price? trial length (default 30 days)? Does `past_due` restrict anything? (Default: only `suspended` blocks writes.) $50 per month, per church. I'll create a billing plan for usage eventually
+8. One phone per household: may a household adult answer per-person surveys for a spouse without an account? (Phase 3.) Father of the house, or "head of house" designation in special situations where this is no father
+9. App display name, Android package id  `com.Anacast.app`
+10. Supabase region/plan free and Vercel Pro at launch.
+
+--- 2026-09-03 07:23 ---
+pause
+
+--- 2026-09-03 07:24 ---
+STOP
+
