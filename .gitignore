@@ -1,0 +1,36 @@
+# dependencies / builds
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+out/
+dist/
+build/
+coverage/
+.expo/
+.expo-shared/
+apps/mobile/android/
+apps/mobile/ios/
+*.tsbuildinfo
+.vercel/
+
+# env & secrets (Session log/ is intentionally tracked)
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+
+# local database / test artefacts
+.local-pg/
+supabase/.temp/
+supabase/.branches/
+playwright-report/
+test-results/
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log

@@ -1,0 +1,47 @@
+--- 2026-09-01 17:05 ---
+@"/root/.claude/uploads/6324d485-e48a-5e71-9be0-2167fe1a1b76/afc5121c-new_session_instructions.md" I want to build a product that is a web app, an android app and an iOS app. I will start with the web app and android app first.
+The product is a web/mobile app that serves as a "service" to my local mennonite church, and churches like it.
+It will host audio and or video recordings of sermons and serve as a place for churches to make announcements to their members via push notifcations, as well as upload their bulletin for that sunday, or the next coming quarters.
+I want a web super admin app, that I'll deploy with vercel. I'll use supabase as the backend.
+The super admin web app will allow me to "create" churches. Where I can add an organization and manage their settings and billing information for that organization.
+church leaders or managers will be able to log into the web app as their organization admin where they can manage their "church" settings.
+in the church settings, I want them to be able to select whether or not sermon recordings are shareable. Or if they are shareable, if the person receiving the link will need a password.
+I want them to be able to create users and select roles for the users that can be assigned.
+Roles would be managed with toggle checkboxes. If the box is checked, they receive permission for that role
+-Sermon manager
+Upload sermons
+Delete sermons
+Link Sermons
+-Announcement manager
+Create announcements
+Delete announcements
+Edit announcements
+Upload Bulletins
+Upload documents
+-Organization Manager
+Create users
+Delete users
+Edit user permissions
+Change organization settings
+This would also be an app that would serve as a directory. One example of how this would work would be that everyone in the church could get the app, and input their details like their address, phone numbers, email addresses, family photos, family birthdays, names of their children, etc. (trust me, I'm an anabaptist and I'm building this solely for the anabaptists, they share this information via printed church calendars currently). Then the church could decide if they want to make so other members in the congregation can see everyones information in the church. They could also decide whether or not to allow oither members of their fellowship or wider church affiliation see their congregations members informations. Individual members would always have an overriding prefernce toggle, where if a family is a member of a congregation that has chosen not to share it with other churches in their fellowship or conference, they can opt to hide it.
+also the app will host a "church calendar" that would allow members to submit events to be posted to the church calendar as well as put in controls over who sees what calendars. You could have a youth, mens, womens, and ALL calendar to begin.
+I also want a "surveys" feature, where churches can publish surveys to certain pre-created groups of people. Like, all members, all attendees, all youth, all women, all men, or they could create custom groups. Or they could select, one response her household, family unit, etc.
+Finally, add these new_session_instructions as a markdown file that will be evaluated on the beginning of each session
+
+--- 2026-09-01 17:10 ---
+[AskUserQuestion answers]
+Which mobile framework should the Android/iOS apps use? = Expo / React Native (Recommended)
+How should billing for organizations work in the super admin app? = Stripe subscriptions (Recommended)
+Where should sermon audio and video files live? = Supabase Storage for now. I want them to be able to link their own recording locations like unlisted youtube videos, dropbox, google drive, etc. I want to do this to keep my hosting storage cost down
+Where should this session's work go (main vs designated branch)? = Push to main directly
+
+--- 2026-09-01 18:15 ---
+[AskUserQuestion answers]
+How should I scope this session? = Approve, then continue into Phase 2 (Recommended)
+What does "all attendees" mean in your congregation? = Everyone who attends, members included (Recommended)
+How should children and admin-entered families be treated when a congregation shares its directory with the fellowship? = Adults only by default, family opts in (Recommended)
+Which timezone for session-log timestamps and default church timezone? = America/New_York (Eastern)
+
+--- 2026-09-03 07:14 ---
+Just merge this to main and be done
+Continue from where you left off.
