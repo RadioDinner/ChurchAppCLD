@@ -14,8 +14,8 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 
 ## State
 
-- [ ] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) — in progress
-- [ ] Monorepo scaffold
+- [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
+- [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`
 - [ ] Web: auth, super admin, org admin (users/permissions, settings, sermons, share links, announcements, bulletins, push, cron)

@@ -1,4 +1,0 @@
-{
-  "extends": "@church/tsconfig/library.json",
-  "include": ["src/**/*.ts", "type-tests/**/*.ts", "vitest.config.ts"]
-}

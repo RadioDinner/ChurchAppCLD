@@ -51,3 +51,9 @@ Did you write the plain to main or not?
 
 --- 2026-09-03 07:24 ---
 STOP
+
+--- 2026-09-03 07:24 ---
+My prompt told you to make the plan, not write the code. What are you doing?
+
+--- 2026-09-03 07:27 ---
+Just keep the plan and docs

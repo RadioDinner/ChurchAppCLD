@@ -25,7 +25,7 @@ Edit `new_session_instructions.md` directly, commit on the current branch with t
 `Update new_session_instructions: <one-line summary>`, and reflect any change in default behaviour here in
 `CLAUDE.md` so future sessions pick it up at load.
 
-## Repository map
+## Planned repository map (nothing built yet — see docs/PLAN.md)
 
 ```
 apps/web         Next.js 16 App Router (Vercel): super admin (/admin), org admin (/o/[slug]), public share pages
