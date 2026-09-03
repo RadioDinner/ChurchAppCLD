@@ -389,3 +389,18 @@ directory PDF export, German strings.
 8. One phone per household: may a household adult answer per-person surveys for a spouse without an account? (Phase 3.)
 9. App display name, Android package id (placeholder `com.churchappcld.app`), brand colours, production domain.
 10. Supabase region/plan (US East, Pro) and Vercel Pro at launch.
+
+### Founder answers (2026-09-03, session 002)
+
+1. **Yes** — families may also hide from their own congregation; `hide_from_congregation` gets a UI toggle.
+2. **Default** — fellowship viewers see everything the congregation sees minus birth year, anniversary year and notes.
+3. **Each church sets its own youth age** — `youth_min_age` / `youth_max_age` / `adult_min_age` and the related toggles are editable in org settings (defaults 13 / 25 / 18).
+4. _(no answer)_ — the mapping ships as the default; toggles may be added later by migration.
+5. **Downloads allowed when the church allows it** — new `organization_settings.sermon_share_allow_download` (default false) in `9999_init.sql`; the rest as planned.
+6. **Yes** — push on bulletin upload, per-church toggle default on.
+7. **$50 per month per church, flat**; usage-based billing later. Trial 30 days; only `suspended` blocks writes.
+8. **Head of house** (`household_role = 'head'`, or a designated adult when there is no father) answers per-person surveys for household members without accounts (Phase 3).
+9. **`com.Anacast.app`**, display name **Anacast** (lowercase `com.anacast.app` recommended; brand colours and domain still open).
+10. **Supabase Free** (US East), **Vercel Pro** at launch — sermon uploads capped at 50 MB until Pro.
+
+The build order that implements this plan, with a ready-to-paste prompt per step, is `docs/TODO.md`.
