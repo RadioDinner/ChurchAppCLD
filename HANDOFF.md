@@ -15,6 +15,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 ## State
 
 - [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
+- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch `claude/plan-todo-prompts-ia7gkd`: skeleton (all steps 0.1–6.4, dependencies, prompt rules) and assembler are done, prompts written for steps 0.1 and 1.1 only. Kit lives in `Session log/002_2026-09-03/todo-drafts/`; see that session's `session_log.md` for how to resume.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`

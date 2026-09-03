@@ -19,3 +19,6 @@ To answer the open items from last session
 8. One phone per household: may a household adult answer per-person surveys for a spouse without an account? (Phase 3.) Father of the house, or "head of house" designation in special situations where this is no father
 9. App display name, Android package id `com.Anacast.app`
 10. Supabase region/plan free and Vercel Pro at launch.
+
+--- 2026-09-03 08:00 ---
+I'll need you to commit what you have and then stop for now. It's taking too much usage. I'll resume this next week
