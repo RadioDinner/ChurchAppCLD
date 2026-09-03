@@ -1,0 +1,32 @@
+packages:
+  - apps/*
+  - packages/*
+  - tooling/*
+
+# Single node_modules tree: required for Metro (React Native) and simplest for Next.js in one workspace.
+nodeLinker: hoisted
+
+# pnpm 10 refuses to run dependency build scripts unless allow-listed.
+onlyBuiltDependencies:
+  - esbuild
+  - '@swc/core'
+  - sharp
+  - unrs-resolver
+  - '@tailwindcss/oxide'
+  - protobufjs
+  - core-js
+  - '@sentry/cli'
+
+# Only runtime deps shared by web AND mobile live here. React is pinned to Expo SDK 57's exact version.
+# Every expo-*/react-native-* version is a literal in apps/mobile/package.json produced by `npx expo install`.
+catalog:
+  react: 19.2.3
+  react-dom: 19.2.3
+  '@types/react': ~19.2.18
+  '@types/react-dom': ~19.2.7
+  typescript: ~5.9.3
+  zod: 4.5.4
+  '@supabase/supabase-js': 2.114.0
+  '@tanstack/react-query': 5.102.8
+  date-fns: 4.4.0
+  '@date-fns/tz': 1.5.0

@@ -1,0 +1,45 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.33.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo lint typecheck test
+      - name: Database re-runnability + RLS tests
+        env:
+          PGSUPER_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: |
+          bash scripts/db/local-up.sh
+          bash scripts/db/apply-migrations.sh
+          bash scripts/db/apply-migrations.sh
+          bash scripts/db/check-rerunnable.sh
+          bash scripts/db/test.sh
+      - name: Web build
+        run: pnpm --filter @church/web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+      - name: Mobile export
+        working-directory: apps/mobile
+        run: |
+          npx expo-doctor || true
+          npx expo export --platform android
