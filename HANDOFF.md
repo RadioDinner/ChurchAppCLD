@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-03, session 001._
+_Last updated: 2026-09-03, session 002._
 
 ## What this is
 
@@ -15,6 +15,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 ## State
 
 - [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
+- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch `claude/plan-todo-prompts-ia7gkd`: skeleton (all steps 0.1–6.4, dependencies, prompt rules) and assembler are done, prompts written for steps 0.1 and 1.1 only. Kit lives in `Session log/002_2026-09-03/todo-drafts/`; see that session's `session_log.md` for how to resume.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`
@@ -24,7 +25,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 
 ## Environment status (founder to-dos, in bootstrap order)
 
-1. Create the Supabase project (Pro recommended; US East). Paste `supabase/migrations/9999_init.sql` in the SQL
+1. Create the Supabase project (**Free plan** per the founder; US East; upgrade to Pro when sermon uploads must exceed 50 MB). Paste `supabase/migrations/9999_init.sql` in the SQL
    Editor; record it in the ledger below.
 2. Auth → Email Templates → Magic Link: include `{{ .Token }}` so mobile OTP sends a 6-digit code. Set OTP expiry,
    enable secure email change, configure custom SMTP (or Resend).
@@ -68,6 +69,13 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - Timezone America/New_York for logs and as the default church timezone.
 - No Supabase Edge Functions / pg_cron: Next.js Route Handlers + DB triggers + one Vercel Cron.
 - Permissions are exactly the founder's 12 toggles; other capabilities map onto them (see `docs/RLS.md`).
+- Families may hide from their own congregation as well as from the fellowship (both toggles in the UI).
+- Each church sets its own youth/adult ages in settings.
+- Share links may allow downloads of uploaded media when the church turns `sermon_share_allow_download` on.
+- Billing: $50 / month / church flat via one Stripe Price; 30-day trial; only `suspended` blocks writes.
+- Surveys (Phase 3): the head of house answers per-person surveys for household members without accounts.
+- App name Anacast, Android package id `com.Anacast.app` as given (lowercase recommended, see below).
+- Supabase Free plan to start (50 MB upload cap), Vercel Pro at launch.
 
 ## Added by plan (founder may veto)
 
@@ -75,18 +83,28 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 `hide_from_congregation` household flag (column only, no UI), `org-assets` logo bucket, audit log,
 account-deletion request flow (Play Store requirement), GitHub Actions CI workflow.
 
-## Open questions for the founder
+## Founder answers to the plan's open questions (2026-09-03, session 002)
 
-1. Should a family also be able to hide from its own congregation?
-2. Fellowship viewers: phones/emails too, or names + address only? (Default: everything minus birth/anniversary years and notes.)
-3. Men's/Women's include youth 13+ by default; adults are 18+ for fellowship visibility — OK?
-4. Accept the permission mapping in `docs/RLS.md`, or add toggles later?
-5. Share links: stream only, min password 8, also for `Upload sermons` holders — OK?
-6. Push on every bulletin upload (per-church toggle, default on)?
-7. Billing: monthly price, trial length (default 30 days), does `past_due` restrict anything?
-8. May a household adult answer per-person surveys for a spouse without an account?
-9. App display name, Android package id (placeholder `com.churchappcld.app`), brand colours, production domain.
-10. Supabase region/plan and Vercel Pro at launch.
+The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults stand where no answer was given.
+
+| # | Question | Answer | Consequence for the build |
+|---|---|---|---|
+| 1 | Family can hide from its **own congregation**? | **Yes** | `households.hide_from_congregation` gets a real UI toggle (household adults any direction; org admins only toward privacy). |
+| 2 | Fellowship viewers see phones/emails? | **Default** | Fellowship level sees everything the congregation sees minus birth year, anniversary year and leader notes. |
+| 3 | Youth 13+ in men's/women's; adults 18+? | **Each church sets its own youth age** | `youth_min_age` / `youth_max_age` / `adult_min_age` / `youth_excludes_married` / `adult_groups_include_youth` are editable per church in `/o/[slug]/settings` (defaults 13 / 25 / 18 / on / on). No schema change. |
+| 4 | Accept the permission mapping? | _(not answered)_ | Ship the mapping in `docs/RLS.md` as the default; extra toggles can be added later by a `9998_*` migration. |
+| 5 | Share links: stream only, min password 8, `sermons.upload` too? | **Downloads allowed when the church allows it** | New `organization_settings.sermon_share_allow_download` (default **false**) goes into `9999_init.sql` (not yet pasted anywhere). Share page shows a Download button for **uploaded** media only when the setting is on; external links keep "open at provider". Min password 8 and `sermons.link`/`sermons.upload` holders unchanged. |
+| 6 | Push on every bulletin upload? | **Yes** | `push_on_bulletin` default true, per-church toggle in settings. |
+| 7 | Billing | **$50 per month per church, flat**; usage-based plan later | One Stripe recurring Price (`STRIPE_PRICE_ID`); trial 30 days (`trial_ends_at`); only `suspended` blocks writes; `past_due` shows a banner only. |
+| 8 | Who answers per-person surveys for household members without accounts? | **Head of house** (`household_role = 'head'`), or an adult designated head when there is no father | Phase 3: the head of house may submit `per_person` responses on behalf of household members without accounts; head-of-house designation editable by directory admins and by the household. |
+| 9 | App display name / Android package id | **`com.Anacast.app`** → display name **Anacast** | Recorded as given. Recommendation: use lowercase `com.anacast.app` (package ids are conventionally lowercase and cannot change after the first Play upload) — founder to confirm. Brand colours and production domain still open. |
+| 10 | Supabase plan / Vercel plan | **Supabase Free** (US East), **Vercel Pro** at launch | Free plan: 50 MB per upload, 1 GB storage, 500 MB database, 5 GB egress, project pauses after 7 idle days. Sermon uploads are capped at 50 MB (`NEXT_PUBLIC_MAX_UPLOAD_MB=50`); "link your own recording" is the lever. Upgrade to Pro raises the cap. |
+
+## Still open for the founder
+
+1. Confirm lowercase `com.anacast.app` (see answer 9).
+2. Brand colours and the production domain (affects deep links, invite emails, share URLs).
+3. Explicit yes/no on the permission mapping (answer 4 ships the default).
 
 ## Version pins worth remembering
 

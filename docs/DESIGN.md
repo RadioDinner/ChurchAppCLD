@@ -765,3 +765,5 @@ Open questions for the founder (defaults in parentheses are what Phase 1 ships):
 14. Supabase region (US East) and plan (Pro from day one); Vercel Pro at launch.
 15. `prompt_history.txt` timestamps in America/New_York — correct timezone?
 16. Directory tables are shipped without join codes in the UI (Phase 2); is invitation + direct account creation enough for the first congregation?
+
+**Founder answers (2026-09-03)** to the plan-level questions are recorded in `HANDOFF.md` ("Founder answers to the plan's open questions") and `docs/PLAN.md` §13. Design deltas: `organization_settings.sermon_share_allow_download boolean default false` (share page offers Download for uploaded media when on); `hide_from_congregation` gets a UI toggle; youth/adult ages are church-configurable in settings (already modelled); billing is a flat $50 / month / church; head of house (`household_role = 'head'`) answers per-person surveys for household members without accounts (Phase 3); app name Anacast, package id `com.Anacast.app` (lowercase recommended); Supabase Free plan (50 MB upload cap) and Vercel Pro.
