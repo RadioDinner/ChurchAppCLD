@@ -97,7 +97,7 @@ ChurchAppCLD/
 ```
 
 Tooling: pnpm workspaces + Turborepo 2.10; `catalog:` holds only web-shared deps that `expo install` does not manage
-(`react`/`react-dom` **19.2.3** exact = Expo 57 pin, `@types/react ~19.1`, `typescript ~5.9.3`, `zod`, `@supabase/supabase-js`,
+(`react`/`react-dom` **19.2.3** exact = Expo 57 pin, `@types/react ~19.2`, `typescript ~5.9.3`, `zod`, `@supabase/supabase-js`,
 `@tanstack/react-query`, `date-fns`); all `expo-*`/`react-native-*` versions are literals produced by `npx expo install`.
 Packages exported as TS source (`"exports": {".": "./src/index.ts"}`, Next `transpilePackages`, Metro resolves exports natively).
 ESLint 9 flat config (not 10: `eslint-config-expo` unvalidated). Next 16 uses `proxy.ts` (not `middleware.ts`).
