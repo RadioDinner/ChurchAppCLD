@@ -69,7 +69,7 @@ actor_label = {'agent': 'Agent', 'founder': 'Founder', 'founder+agent': 'Founder
 out = []
 w = out.append
 w('# ChurchAppCLD build to-do list with a prompt for every step\n')
-w('_Generated from `docs/PLAN.md` and `docs/DESIGN.md` in session 002 (2026-09-03). Source of truth for build order; tick the boxes as steps land._\n')
+w('_Generated from `docs/PLAN.md` and `docs/DESIGN.md`; skeleton and step 0.1/1.1 written in session 002 (2026-09-03), the remaining steps drafted, critiqued and revised in session 003 (2026-09-04). Source of truth for build order; tick the boxes as steps land._\n')
 w('## How to use this list\n')
 w('1. Work top to bottom. Every step lists what it depends on; do not start a step before its dependencies are ticked.')
 w('2. **Agent steps**: open a fresh Claude Code session in this repository and paste the whole text inside the step\'s prompt box. Add one line at the top if the session must work on a branch other than `main`. The agent ticks its own checkbox in this file, updates `HANDOFF.md`, commits and pushes.')
@@ -77,6 +77,23 @@ w('3. **Founder steps** are manual (Supabase dashboard, Vercel, Stripe, Expo). F
 w('4. After a step fails or an agent reports a deviation, use the reusable fix prompt (step 3.10) with the observations pasted in. Do not skip verification steps.')
 w('5. Checkpoints: **A** (step 2.5) you are signed in on Vercel as super admin; **B** (step 3.9) the finished web app is trialled on Vercel; **C** (step 4.5) the Android preview build works. Everything after C completes Phases 2 and 3 of the plan.\n')
 w('Sizes are one agent session each: S under an hour, M a few hours, L most of a session, XL a full long session (may need a follow-up session to finish verification).\n')
+w('## Decisions these prompts assume\n')
+w('Founder answers of 2026-09-03 (recorded in `HANDOFF.md`) and drafting decisions of 2026-09-04 (`Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md`). Change one of these and the affected prompts must change too.\n')
+for line in [
+    'App display name **Anacast**; Android package id `com.anacast.app` (founder wrote `com.Anacast.app`; lowercase recommended and immutable after the first Play upload; confirm in step 0.1); deep-link scheme `anacast`; brand colours and production domain deferred (neutral theme, `NEXT_PUBLIC_APP_URL`).',
+    'Supabase **Free** plan (US East): 50 MB per upload (`NEXT_PUBLIC_MAX_UPLOAD_MB=50`, `sermon-media` bucket limit 50 MiB until Pro), project pauses after 7 idle days. Vercel **Pro** at launch (cron `*/5 * * * *`).',
+    'Billing: flat **US$50 per church per month** via one Stripe Price (`STRIPE_PRICE_ID`); 30-day trial; only `suspended` blocks writes, `past_due` shows a banner.',
+    'Families may hide from their own congregation (`hide_from_congregation` UI toggle) and from the fellowship; leaders may only make a family more private; fellowship viewers see everything the congregation sees minus birth year, anniversary year and leader notes.',
+    'Each church sets its own youth/adult ages in settings (defaults 13 / 25 / 18; married excluded from youth; men\'s/women\'s include youth).',
+    'Share links: password min 8, stream by default, **downloads allowed for uploaded media when `sermon_share_allow_download` is on**, available to `sermons.link` and `sermons.upload` holders.',
+    'Push on every bulletin upload (per-church toggle, default on). Announcements & bulletins UI (3.5) ships before the push dispatcher (3.6): publishing queues notifications, 3.6 delivers them.',
+    'Head of house: at most one `household_role = head` per household (partial unique index in `9999_init.sql`); in Phase 3 the head answers per-person surveys for household members without accounts.',
+    'The 12-toggle permission mapping in `docs/RLS.md` ships as the default (not explicitly confirmed by the founder).',
+    'Monorepo: Vercel Root Directory `apps/web`, `apps/web/vercel.json`, package names `web` / `mobile` / `@church/*`; `@types/react` follows the 19.2 line.',
+    '`9999_init.sql` may still be edited until the founder pastes it into the hosted project (step 2.4); after that every change is a new `9998_*` file.',
+]:
+    w('- ' + line)
+w('')
 
 # master checklist
 w('## Master checklist\n')
