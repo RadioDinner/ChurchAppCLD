@@ -1,0 +1,54 @@
+{
+  "group": "G6",
+  "lens": "fidelity",
+  "findings": [
+    {
+      "step": "2.4",
+      "severity": "major",
+      "category": "verification-query-wrong",
+      "quote": "select count(*) as tables from information_schema.tables where table_schema = 'public';                   -- 38",
+      "problem": "information_schema.tables also lists views. DESIGN §4.4 section (6) creates three views in public (directory_households, directory_persons, org_directory_info), so the query returns 41, not 38, and the founder will conclude the paste is incomplete. The same expectation is repeated in the step's Done-when and done_when[1].",
+      "fix": "Replace the query with `select count(*) as tables from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE';  -- 38` and add a second line `select count(*) as views from information_schema.views where table_schema = 'public';  -- 3 (directory_households, directory_persons, org_directory_info)`. Keep '38 tables' in Done-when but add 'and 3 views'."
+    },
+    {
+      "step": "2.3",
+      "severity": "minor",
+      "category": "contradicts-design",
+      "quote": "Do not pin `apiVersion`; the SDK's bundled version is the one its types describe.",
+      "problem": "DESIGN §3 (Billing row) says `stripe` 22.6.1 with `apiVersion` pinned to the SDK's bundled version in `stripe/client.ts`. The prompt instructs the opposite.",
+      "fix": "Replace with: \"Pin `apiVersion` explicitly to the API version bundled with stripe 22.6.1 (the literal named by the SDK's `Stripe.LatestApiVersion` type — read it from `node_modules/stripe/types/lib.d.ts` after install) so runtime and types agree (DESIGN §3); record the literal in HANDOFF.md under version pins.\""
+    },
+    {
+      "step": "2.3",
+      "severity": "minor",
+      "category": "stale-hedge-on-fixed-schema",
+      "quote": "`billing_customers` (at least `org_id` and `stripe_customer_id`; use whatever 1.2 created)",
+      "problem": "G2's 1.2 has fixed these columns: `billing_customers (org_id pk fk cascade, stripe_customer_id text not null unique, email citext, created_at, updated_at)` and `stripe_events` exactly as DESIGN §4.2 (no `org_id`). The hedges in Inputs and Build 9 (\"If `stripe_events` has no `org_id` column (1.2 decides)\") leave the agent to guess; `ensureCustomer` also never fills the `email` column that exists.",
+      "fix": "In Inputs write the fixed column list: `billing_customers (org_id uuid primary key references organizations on delete cascade, stripe_customer_id text not null unique, email citext, created_at, updated_at)`; `stripe_events` has NO `org_id`. In Build 3 `ensureCustomer` insert `{ org_id, stripe_customer_id, email: contact_email }`. Rewrite Build 9 unconditionally: show the global last 10 `stripe_events` on `/admin` (super admins only) and, on the per-org Billing tab, the events whose `raw`/type mention this org's `stripe_customer_id` only if cheap — otherwise skip the per-org list. Remove the 'note which in HANDOFF' clause."
+    },
+    {
+      "step": "2.5",
+      "severity": "minor",
+      "category": "invented-form-field",
+      "quote": "`/admin/churches/new` → name `<Church name>`, slug (lowercase, hyphens), contact email `<FOUNDER_EMAIL>`, timezone `America/New_York` → Create.",
+      "problem": "Per DESIGN §4.2 `timezone` lives on `organization_settings` (created by `app.on_org_created` with default `America/New_York`) and G5's 2.2 `ChurchForm` fields are Name, Slug, Contact email, Billing mode, Trial ends — there is no timezone field on the create page; it is edited on the Settings tab.",
+      "fix": "Replace with: \"`/admin/churches/new` → name `<Church name>`, slug (auto-derived, lowercase, hyphens), contact email `<FOUNDER_EMAIL>`, billing mode `manual` (default), trial end (default today + 30 days) → Create.\" and in 11.2 add \"confirm the timezone shows `America/New_York` (trigger default) and change it and back\"."
+    },
+    {
+      "step": "2.4",
+      "severity": "minor",
+      "category": "freeze-rule-inconsistency",
+      "quote": "proves that a future re-paste (for example to raise the `sermon-media` limit on Pro) is safe.",
+      "problem": "Step 8 of the same checklist (and CLAUDE.md / DESIGN §13 risk 1) freezes `9999_init.sql` after this paste: every later change is a new `9998_*` file. Re-pasting an edited 9999 to raise the bucket limit contradicts the freeze; orchestrator decision 4 only says the bucket rows are upserted so a later paste (of any file) can raise them.",
+      "fix": "Replace the parenthetical with: \"(for example a future `9998_*` file that repeats the `storage.buckets` upsert with the Pro limit — 9999 itself is frozen after step 8)\"."
+    },
+    {
+      "step": "2.6",
+      "severity": "minor",
+      "category": "wrong-cause-in-symptom-table",
+      "quote": "| Share page `/s/<token>` 404 for a valid link | `SHARE_LINK_COOKIE_SECRET` changed (cookies invalid) or org disabled sharing | rotate → users unlock again; check `organization_settings.sermons_shareable` |",
+      "problem": "Per DESIGN §4.4 `srv_resolve_share_link` and the 3.4 step, a share page 404s when the link is revoked/expired/over `max_views`, the org's `sermons_shareable` is off, or the sermon is unpublished. A rotated `SHARE_LINK_COOKIE_SECRET` only invalidates unlock cookies (visitors see the password form again), it never yields 404.",
+      "fix": "Replace the row with: \"| Share page `/s/<token>` 404 for a link that used to work | link revoked/expired/`max_views` reached, `organization_settings.sermons_shareable` off, or sermon unpublished (`srv_resolve_share_link`, DESIGN §4.4) | check the link row and the org setting; not a code fault |\" and add a separate row \"| Share visitors asked for the password again | `SHARE_LINK_COOKIE_SECRET` rotated (unlock cookies invalid) | expected; document in DEPLOY.md Rotating secrets |\"."
+    }
+  ]
+}
