@@ -106,6 +106,8 @@ Write ${Q(KIT + '/groups/' + G.g + '.json')} following the JSON shape in the ske
 
 Be exhaustive: every item in the skeleton bullet for each step must appear in the prompt, and every table/RPC/route/env var/file that the plan assigns to that step must be named. Quote the founder decisions that apply. Do not leave anything for "the agent to figure out" that the docs already settle.
 
+RESUME RULE: if ${Q(KIT + '/groups/' + G.g + '.json')} already exists from an interrupted run, read it first, keep every step that is complete and validator-clean, and write only the missing or incomplete steps — do not start over.
+
 PACING RULES (usage limits are tight): (a) read only the PLAN/DESIGN sections listed above and those the skeleton bullets cite — use grep -n '^## ' and sed -n line ranges, never cat DESIGN.md end to end; (b) SAVE AS YOU GO: write the group file to disk as soon as the first step's JSON is complete and rewrite it after every further step (always valid JSON with the steps finished so far), so an interruption loses at most one step; (c) keep tool calls few — compose each prompt in one Write, not many small edits.
 
 Then run the validator on your file and fix every error (warnings are fine but reduce them). Return the structured summary only.`,

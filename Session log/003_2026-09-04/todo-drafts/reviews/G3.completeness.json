@@ -1,0 +1,102 @@
+{
+  "group": "G3",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "1.4b",
+      "severity": "major",
+      "category": "missing-coverage (server RPCs / notification lifecycle)",
+      "quote": "6. **`07_storage_billing_audit.sql`** — (a) Storage helpers called directly as roles",
+      "problem": "Five of the seven `srv_*` RPCs and the notification outbox lifecycle have no behavioural test anywhere in 01–09: `srv_attach_user` (the direct-account path, a 'Never cut' item), `srv_enqueue_due_notifications` (a scheduled announcement with future `publish_at` must be enqueued only when due), `srv_claim_notifications` (due `queued` rows only, `claimed` + `attempts+1`, second call empty, skip-locked), `srv_housekeeping` (trial → `past_due` after `trial_ends_at`, invitation expiry, draft-upload purge > 7 days, `cancelled` org purge enqueueing the `org_id/` prefix into `storage_deletions`), `srv_process_account_deletions` (with `app.cascade = 'on'` the last-manager guard is skipped and an `org_without_manager` audit row is written), and founder decision 6 (`push_on_bulletin` toggle: a bulletin publish enqueues a `kind = 'bulletin'` notification only when the setting is on). DESIGN §4.4 'RPC semantics' and §4.2 (`notifications`, `audit_log`) specify all of these; 1.3b's done_when only smoke-checks them by hand, and steps 3.6 / 6.3 build the cron on top of them with no regression test.",
+      "fix": "Add to item 5 (06) a 'Notifications' block: `creator` inserts an announcement with `publish_at = now() + interval '1 day'` → no `notifications` row until `login_service()` + `select public.srv_enqueue_due_notifications()` after `update announcements set publish_at = now() - interval '1 minute'` → exactly one `queued` row with `kind = 'announcement'`; a bulletin insert with `push_on_bulletin = true` → one `kind = 'bulletin'` row, with `set_setting(E, 'push_on_bulletin', 'false')` → none; `srv_claim_notifications(10)` → returns the queued rows, sets `status = 'claimed'`, `attempts = 1`, `claimed_at`, a second call returns 0 rows; `login(creator)` → `srv_claim_notifications(10)` → 42501. Add to item 6 (07) a section (e) 'Server RPCs': `srv_attach_user(<new uid>, O, null, 'Name', '{sermons.upload}')` → active membership, one-person household (`created_via = 'admin'`), person linked, 1 permission row; calling it again for the same user is idempotent or raises the 1.3b key (assert what is implemented); `srv_housekeeping()` with `trial_ends_at = now() - interval '1 day'` → `status = 'past_due'`, an invitation past `expires_at` is no longer acceptable (`invitation_invalid`), an upload-kind draft sermon older than 7 days without a `storage.objects` row is deleted, and an org set to `cancelled` 31 days ago is gone with a `storage_deletions` row `is_prefix = true` per bucket; `request_account_deletion()` as a member → row in `account_deletion_requests`; `srv_process_account_deletions()` as service → `auth.users` row gone, `processed_at` set, and when that user was the last `users.edit_permissions` holder an `audit_log` row with `action = 'org_without_manager'` exists (guard skipped by `app.cascade`). Extend done_when accordingly."
+    },
+    {
+      "step": "1.4b",
+      "severity": "major",
+      "category": "missing-coverage (client RPCs and select policies)",
+      "quote": "Positive and negative case for each of the 12, in this form:",
+      "problem": "Four of the 17 client RPCs and several DESIGN §6 select policies have no behavioural test: `save_household` (create/update by a household adult vs a non-adult vs directory admin; address fields), `delete_person` (adult may delete a child of own household, not a person of another household; last `head` rule), `revoke_invitation` (holder ok, `nobody` → `permission_denied`, accept after revoke → `invitation_invalid`), `request_account_deletion` (see previous finding), `my_context()` return shape (`is_super_admin`, `orgs[].permissions[]` of 12 for `manager`, `person_id`/`household_id` for a linked user — 1.7's typed wrappers and 2.1's guards depend on it), `accept_invitation` for an existing member (merges permissions and links `person_id` instead of failing — DESIGN §4.4) and after `expires_at`, `remove_membership` side effects (`persons.user_id` nulled, that user's `push_devices`/`notification_preferences` for the org deleted), `save_person` refusing `household_role` beyond `child|other` for non-admins. Policies never exercised: `profiles` (own row or `users.*` holder of a shared org — 3.2's users grid reads it), `org_memberships`/`org_membership_permissions` select (own or `users.*`; `nobody` must not see other rows), `invitations` select (`users.create` sees, `nobody` 0 rows), `audience_group_members` select (managers only — a plain member gets 0 rows), `calendars` view group (a female member does not see a calendar whose `view_audience_group_id` = `men`), `fellowships`/`fellowship_memberships` select (member of a linked org, not an outsider).",
+      "fix": "Append to item 1 (02): a `my_context()` block (manager → 12 permissions, `is_super_admin = false`; `nobody` linked to a person → `person_id`/`household_id` present; user with no membership → `orgs = []`); `revoke_invitation` positive/negative + accept-after-revoke → `invitation_invalid`; accept after `update invitations set expires_at = now() - interval '1 day'` → `invitation_invalid` (or the 1.3b key); `accept_invitation` by an existing active member with `person_id` → membership unchanged, permissions merged, `persons.user_id` linked; `remove_membership` → `persons.user_id is null`, `push_devices`/`notification_preferences` rows for that org gone; `profiles`: `nobody` sees only own row, `u_users_create` sees every A member's profile and none of B's; `org_memberships`: `nobody` sees 1 row, `u_users_delete` sees all A rows, B's manager 0 A rows; `invitations`: `u_users_create` ≥ 1 row, `nobody` 0. Append to item 2 (03): `save_household` by `b_head` (update address → ok) and by `b_member` → `not_household_editor`; `b_admin` creating a household via `save_household` (no `id`) → row with `created_via = 'admin'`; `delete_person` by `b_head` on H1's child → gone, on an H2 person → `not_household_editor`/42501, on the household's only `head` → assert the 1.3b behaviour and note it; `save_person` by `b_head` setting `household_role = 'spouse'` on the child → `field_not_editable`. Append to item 5 (06): a calendar with `view_audience_group_id` = `men` is invisible to a female member and its events with it; `audience_group_members` select → 0 rows for `member`, ≥ 1 for `creator`; `fellowships`: a member of a linked org sees F, `outsider` (org not in F) 0 rows."
+    },
+    {
+      "step": "1.5",
+      "severity": "major",
+      "category": "handoff (feature table not updated)",
+      "quote": "7. **`HANDOFF.md`**: rewrite \"Environment status\" item 1 to the Free plan",
+      "problem": "The skeleton's Finish rule (\"update HANDOFF.md (State checklist, feature table, ledger …)\") and orchestrator decision 12 require the feature table to be updated, but no G3 step touches HANDOFF's \"Founder's feature checklist\": every row's `Schema` column still reads `planned` after the migration is complete and tested (1.4b) and documented (1.5). The founder reads that table to see what exists.",
+      "fix": "Add to 1.5 Build item 7: \"In 'Founder's feature checklist' set the `Schema` column of every row except `iOS build` to `done (9999_init.sql, tested 01–09)`; leave Web UI / Mobile UI columns unchanged.\" Add a matching done_when bullet. (Optionally also add the same sentence to 1.4b's Finish so the table is right even if 1.5 is delayed.)"
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "incomplete assertion list (suspended org)",
+      "quote": "now every mutating client RPC raises `organization_suspended` (42501): `set_membership_permissions`, `set_membership_status`, `remove_membership`, `create_invitation`, `revoke_invitation`, `save_household`, `save_person`, `delete_person`, `set_household_privacy`, `save_leader_notes`, `set_congregation_status`, `create_share_link`, `revoke_share_link`, `submit_survey_response`",
+      "problem": "DESIGN §5/§11 say every mutating RPC calls `require_writable`; the list omits `accept_invitation` (org derived from the invitation) and says nothing about `request_account_deletion`, which is user-scoped and must keep working for a member of a suspended org (Play Store requirement).",
+      "fix": "Add `accept_invitation(<token of a pending invitation in P>)` → `organization_suspended` to the list, and add: \"`request_account_deletion()` is user-scoped, not org-scoped — it must still succeed for a member of the suspended org (assert a row in `account_deletion_requests`).\""
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "missing fixture case (timezone edge)",
+      "quote": "Cover at least: adult male member; adult female attendee; youth 13 male",
+      "problem": "DESIGN §4.3 says the shared fixture \"includes … timezone edge\" and PLAN §4 says \"Age computed in the org timezone\" (DESIGN §13 risk 12: a wrong value shifts birthdays by a day). The fixture list has the turns-13-tomorrow / turns-18-today edges but nothing that would fail if `app.person_age` used `current_date` (UTC) instead of the org timezone.",
+      "fix": "Add to item 4 a deterministic timezone assertion after the fixture loop: `set_setting(org, 'timezone', 'Pacific/Kiritimati')` (UTC+14) and insert a person whose birthdate = `(now() at time zone 'Pacific/Kiritimati')::date - interval '18 years'` → `app.is_adult(...)` true and `person_in_kind(id, 'men')` true; then `set_setting(org, 'timezone', 'Pacific/Pago_Pago')` (UTC−11; its calendar date is always one day behind Kiritimati) → the same person is 17 → `is_adult` false. Record in the fixture `settings` comment that Vitest (1.6) must receive an explicit `today` in the org timezone."
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "missing-coverage (directory settings and org_directory_info)",
+      "quote": "Assertions (use `directory_persons` / `directory_households` unless stated):",
+      "problem": "Two directory pieces the plan names are untested: `organization_settings.fellowship_directory_adults_only` (the view's adults-only rule is `not s.fellowship_directory_adults_only or h.show_children_in_fellowship`; 3.1 exposes the flag) and the `org_directory_info` view (the mobile Fellowship tab groups by it and `can_read_object` for `org-assets` depends on it — PLAN §11, DESIGN §6).",
+      "fix": "Add to item 2: `set_setting(B, 'fellowship_directory_adults_only', 'false')` → `a_member` now sees H1's child; restore to true. And: `a_member` sees in `org_directory_info` exactly A and B (name, slug, logo_path) — not C (no fellowship sharing) nor D (not in F); after B is suspended, only A."
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "missing-coverage (events_require_approval)",
+      "quote": "`set_setting(E, 'members_can_submit_events', 'false')` → `member` insert → 42501 while `creator` still can",
+      "problem": "`organization_settings.events_require_approval` (default true, DESIGN §4.2; editable in 3.1 'events flags') is never exercised, so its semantics in `force_event_pending` stay unpinned for 5.3 (approval queue).",
+      "fix": "Add: `set_setting(E, 'events_require_approval', 'false')` → a member insert is stored as `approved` with `push = false` (or whatever 1.3a implemented — assert it, and record the behaviour in HANDOFF so 5.3's queue UI matches); restore to true."
+    },
+    {
+      "step": "1.4a",
+      "severity": "minor",
+      "category": "helper API gap",
+      "quote": "`app_test.make_member(org uuid, uid uuid, perms public.permission_key[] default '{}') returns uuid` (active membership + permission rows)",
+      "problem": "1.4b's `05_audiences` needs a `disabled` membership and `07` a suspended-org member; 1.5's seed wants `pending` and `disabled` memberships. The builder only creates active memberships, forcing each test to `update org_memberships` by hand (and the `guard_last_org_manager` trigger may fire on that update).",
+      "fix": "Change the signature to `app_test.make_member(org uuid, uid uuid, perms public.permission_key[] default '{}', status public.membership_status default 'active') returns uuid` and mention it in done_when and in the 1.4b Inputs list."
+    },
+    {
+      "step": "1.4a",
+      "severity": "minor",
+      "category": "executability (trigger guards vs fixture builders)",
+      "quote": "Fixture builders, `security definer set search_path = ''` (they bypass RLS whatever role the test currently runs as)",
+      "problem": "Builders bypass RLS but not the 1.3a triggers: `make_person(... congregation_status = 'member', youth_override, user_id …)` and `make_household(... hide_from_fellowship …)` hit `guard_persons_columns` / `guard_household_privacy_columns`, which decide by `auth.uid()`'s permissions. Before any `login()` the claims are empty; whether the guards treat a null `auth.uid()` as privileged is not stated, so the whole harness may fail on the first fixture.",
+      "fix": "Add to item 7: \"Builders must work regardless of the current session claims. Read 1.3a's guards first: if they treat `auth.uid() is null` as an owner/service context, nothing to do; otherwise each builder saves `current_setting('request.jwt.claims', true)`, sets the claims to a per-test super admin created by `app_test.make_super()` (new builder: `make_user` + `super_admins` row), and restores them in a `finally`-style block. Record which case applied in HANDOFF.\""
+    },
+    {
+      "step": "1.5",
+      "severity": "minor",
+      "category": "seed incomplete (one of each content type)",
+      "quote": "a `join_codes` row (Phase 2 schema); an `account_deletion_requests` row for the `disabled` user",
+      "problem": "The skeleton and DESIGN §2 ask for \"one of each content type\"; the seed has no `invitations` row (the `/invitations` list page in 3.2 and the invite/[token] page in 2.1 have nothing to render), no `join_requests` row (5.6 approval page), and no revoked/expired share link (3.4's revoke states).",
+      "fix": "Add to item 1's `seed-grace` content: one pending invitation created through `public.create_invitation` with claims set to `grace-admin` (email `invited@example.test`, perms `'{sermons.link}'`; print the raw token in the notice), one revoked invitation; one `join_requests` row in `pending` referencing the join code; a second share link on the youtube sermon that is revoked (`revoke_share_link`). Add these to the seed-accounts/notice output."
+    },
+    {
+      "step": "1.5",
+      "severity": "minor",
+      "category": "runbook edge cases (hosted test run)",
+      "quote": "(5) \"Running the RLS tests against the hosted project\" (SQL Editor: paste `tests/helpers.sql`, then each `tests/rls/*.sql` — they run inside `begin … rollback` and leave nothing; `08_rerunnable.sql` contains a psql `\\i` line to skip)",
+      "problem": "Two omissions: `helpers.sql` is applied outside any transaction, so the `app_test` schema (fixture builders that bypass RLS, executable by `anon`) stays in production after the run; and `05_audiences.sql` also uses psql meta-commands (`\\set fixture \\`cat …\\``), so it is not runnable verbatim either.",
+      "fix": "Add: \"After the run execute `drop schema app_test cascade;` — the helpers must never remain on a production project.\" and \"`05_audiences.sql` reads the fixture with a psql `\\set … \\`cat …\\`` line; in the SQL editor replace it by pasting the JSON literal, or skip that file (it tests derivation, not policies).\""
+    },
+    {
+      "step": "1.5",
+      "severity": "minor",
+      "category": "docs incomplete (storage rules in RLS.md)",
+      "quote": "include the two `storage.objects` policies and the \"no update/delete for authenticated\" rule",
+      "problem": "docs/RLS.md is the only place later UI steps (3.3 uploads, 3.5 bulletins, 5.1 photos, 3.1 logo) are told how storage access works, but the prompt does not ask for the per-bucket path / limit / MIME table (DESIGN §7) nor the `can_read_object` / `can_write_object` rule per bucket (DESIGN §6: exact-path match + which permission or `can_edit_household`; org-assets via `org_directory_info`).",
+      "fix": "Add a section (h) **Storage** to item 6: the DESIGN §7 bucket table (bucket, path pattern, limit — `sermon-media` 50 MiB while on Free, MIME list) followed by one line per bucket stating the read rule and the write rule as implemented in `app.can_read_object` / `app.can_write_object`, the exact-path insert flow (insert row with the planned path first), and that deletes go only through `storage_deletions`."
+    }
+  ]
+}
