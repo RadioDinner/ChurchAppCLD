@@ -9,3 +9,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - Outcome: (pending)
 - 13:00 ET: drafter done — 3.3 split into 3.3a (list/link/edit/player/delete, 2722 words) + 3.3b (tus resumable upload,
   50 MB cap, 2485 words); 3.4 share links. Critics running.
+- Outcome: stopped by usage limit — "You've hit your limit · resets 6:30pm (UTC)". Completed: draft:G8 (3.3a 2722 words,
+  3.3b 2485, 3.4 3043; validator 0 errors, 0 warnings; 11 open_issues; proposed 3.11). Failed on the limit (4):
+  crit:G8:fidelity, crit:G8:executability, crit:G8:completeness, revise:G8. No review files written.
+- Usage: agent_count 5, agents_done 1, agents_error 4, **subagent_tokens 314,081**, tool_uses 43, duration 943,226 ms (~16 min).
+- The draft was committed by the 10-minute autosave (1f0bcec). The session was suspended and woke at 18:32 UTC, after the
+  18:30 UTC reset (founder confirmed "it has reset now"), so no send_later was scheduled: resumed immediately with
+  resumeFromRunId wf_01c992d6-508 and identical args {"groups": ["G8"]} (identical args so the cached drafter result
+  replays — session 005 lesson).
