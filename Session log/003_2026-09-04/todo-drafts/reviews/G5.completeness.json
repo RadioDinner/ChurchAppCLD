@@ -1,0 +1,70 @@
+{
+  "group": "G5",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "rpc-query-wiring",
+      "quote": "via `@church/db/queries/orgs.ts` (`listOrganizationsForAdmin(client)`) … queries in `packages/db/src/queries/fellowships.ts` … `queries/orgs.ts` (add small helpers there when missing — never inline table access in the app)",
+      "problem": "G4's 1.7 does not ship `queries/orgs.ts` or `queries/fellowships.ts`. It ships `packages/db/src/queries/organizations.ts` with `listOrganizations` (already joins `organization_settings` + latest `billing_subscriptions`), `getOrganization(id)`, `getOrganizationBySlug`, `insertOrganization({slug, name, contact_email, billing_mode, trial_ends_at})`, `updateOrganization`, `listFellowships`, `getFellowship`, `insertFellowship`, `updateFellowship`, `listFellowshipMemberships(fellowshipId)`, `addOrgToFellowship`, `removeOrgFromFellowship`, and `queries/settings.ts` with `getSettings(orgId)` / `updateSettings(orgId, patch)`. The 2.2a prompt tells the agent to create parallel modules and helpers, so the plan's 'all CRUD through `@church/db/queries/*`' wiring is duplicated instead of used, and `insertOrganization` does not take `created_by` although the prompt requires `created_by = auth user id`.",
+      "fix": "In Inputs and Build 1, 2, 4, 6, 7 replace `queries/orgs.ts` / `queries/fellowships.ts` with `packages/db/src/queries/organizations.ts` and `queries/settings.ts`, and name the helpers to reuse: `listOrganizations`, `getOrganization`, `insertOrganization`, `updateOrganization`, `listFellowships`, `getFellowship`, `insertFellowship`, `updateFellowship`, `listFellowshipMemberships`, `addOrgToFellowship`, `removeOrgFromFellowship`, `getSettings`, `updateSettings`. Add: 'Extend `insertOrganization` to accept `created_by` (and `status` for the `free` case) rather than writing a new helper; add `organizationCounts(client, orgId)` and `deleteFellowship(id)` to `organizations.ts` if missing, and record every added export in HANDOFF.' Update the 2.2a `reads` entry `packages/db/src/queries/orgs.ts` accordingly."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "rpc-query-wiring",
+      "quote": "`queries/memberships.ts` in `@church/db`: `listMembershipsWithPermissions(client, orgId)` joining `org_memberships` → `profiles` … → `org_membership_permissions`",
+      "problem": "G4's `memberships.ts` already exports `listMemberships(orgId)` (embeds `org_membership_permissions(permission)` and merges `profiles` in a second query because there is no FK from `org_memberships.user_id` to `profiles` — PostgREST cannot embed it), `listInvitations(orgId, { pending })` and `listSuperAdmins()` (super_admins rows plus a profiles lookup, written for `/admin/super-admins`). 2.2b invents a new name and describes a join that PostgREST cannot perform, and Build 4 (`/admin/super-admins`) and the pending-invitations list do not name the existing helpers.",
+      "fix": "Build 1: replace `listMembershipsWithPermissions(client, orgId)` with 'reuse `listMemberships(orgId)` from `packages/db/src/queries/memberships.ts` (1.7) — it already merges `profiles` in TypeScript; do not attempt a PostgREST embed of `profiles`'. Pending invitations: 'use `listInvitations(orgId, { pending: true })`'. Build 4: 'use `listSuperAdmins()` from `memberships.ts`'. Add the three names to the 2.2b `reads` list."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "directory-read-rule",
+      "quote": "counts (active memberships, persons, sermons, announcements — `queries/orgs.ts` `organizationCounts(client, orgId)`)",
+      "problem": "PLAN §5 / DESIGN §13 risk 14: `persons` and `households` have column-level `select` grants (`birthdate`, `anniversary` revoked), so any client read of the base table that is not a strict column list fails with 42501 and 'all directory reads must use the views (enforced by the query layer)'. The prompt asks for a persons count without saying it must go through `directory_persons`; a `select('*', { count: 'exact', head: true })` on `persons` breaks the Details tab for every church.",
+      "fix": "Change to: 'persons count via the `directory_persons` view (never the `persons` base table — column-level grants make `select *` fail; PLAN §5); memberships via `org_memberships` filtered `status = \\'active\\'`; use `select(\\'id\\', { count: \\'exact\\', head: true })`.' Add a done_when line: '`git grep -n \"from(\\'persons\\')\" apps/web packages/db/src/queries/organizations.ts` returns nothing.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "on failure redirect to `/login?error=auth` … Show `?error=` messages (`auth`, `expired`, `email_mismatch`).",
+      "problem": "The login page renders an `expired` message but nothing in the step emits it: Supabase redirects expired or already-used links to the callback with `error`, `error_code` (e.g. `otp_expired`, `access_denied`) and `error_description` query parameters (also in the URL hash for implicit flows), and the callback as specified only handles the success parameters `code` / `token_hash`.",
+      "fix": "In Build 10 (`auth/callback/route.ts`) add: 'If the request carries `error` / `error_code`, redirect to `/login?error=expired` when `error_code` is `otp_expired`, else `/login?error=auth`; the `email_mismatch` key is emitted by the invite page after `accept_invitation` raises `invitation_email_mismatch`.' Add a unit test for the error-code mapping in `src/features/auth/` (pure function `callbackErrorToKey`)."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "founder-handoff",
+      "quote": "Update `docs/ENV.md` rows if a \"set in step\" column now says 2.1.",
+      "problem": "Steps 2.4/2.5 (founder) must enter the Supabase Auth Site URL and Redirect URLs, and the exact paths depend on what 2.1 builds (`<APP_URL>/auth/callback`, used by OTP, signup confirmation, password reset and invites). The prompt never asks 2.1 to record the redirect-URL requirement, so the founder checklist has to guess it.",
+      "fix": "Add to Finish: 'In `docs/ENV.md` (or a short \"Auth configuration\" section in `apps/web/README.md`) list the Supabase Auth URL configuration the app needs: Site URL = `NEXT_PUBLIC_APP_URL`; Redirect URLs `http://localhost:3000/**` and `https://<VERCEL_URL>/**` (the app uses `<APP_URL>/auth/callback` for OTP, signup confirmation, password reset and invitations), and note that the Magic Link template must contain `{{ .Token }}` for the 6-digit code path; add the same line under HANDOFF founder to-dos for 2.4/2.5.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "handoff-table",
+      "quote": "in the feature table set Web UI \"auth shell\" to done.",
+      "problem": "HANDOFF.md's feature table has no 'auth shell' row (rows are the founder's features: super admin, org settings, users, sermons, …), so the instruction cannot be followed as written.",
+      "fix": "Replace with: 'add a feature-table row `Web auth (login password + OTP, signup, reset, invite acceptance)` with Schema `—`, Web UI `done`, Mobile UI `4.1`, or, if the founder prefers the table untouched, record it only in the State checklist.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "env-docs",
+      "quote": "`apps/web/.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, …",
+      "problem": "PLAN §7 / DESIGN §8 require the code to accept both the new `sb_publishable_` / `sb_secret_` keys and the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` names; `env.ts` does, but the example file and the mismatch test do not surface the legacy names, so a founder pasting legacy keys from an older dashboard has no hint.",
+      "fix": "Add to Build 15: 'one commented line per legacy alias: `# NEXT_PUBLIC_SUPABASE_ANON_KEY= (legacy name, accepted as fallback)` and `# SUPABASE_SERVICE_ROLE_KEY= (legacy name, accepted as fallback)`', and extend `src/lib/env.test.ts` to assert the `SUPABASE_SERVICE_ROLE_KEY` fallback for `serverEnv()` as well as the publishable-key fallback."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "When `STRIPE_SECRET_KEY` is absent at render time show the banner \"Stripe keys are not configured (`docs/ENV.md`)\" — 2.3 reuses this banner component (`src/features/orgs/StripeBanner.tsx`).",
+      "problem": "2.1's `serverEnv()` throws when any required variable (`SUPABASE_SECRET_KEY`, `SHARE_LINK_COOKIE_SECRET`, `CRON_SECRET`) is missing. If `StripeBanner` reads Stripe presence through `serverEnv()`, the Billing tab crashes in the mock-env dev server used for verification and on a Vercel deployment where a non-Stripe variable is still unset, instead of showing the banner. G6's 2.3 also treats Stripe as configured only when all three of `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` are set.",
+      "fix": "Specify: 'read Stripe presence through a dedicated `stripeConfigured()` helper in `src/lib/env.ts` that returns true only when `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` and `STRIPE_PRICE_ID` are all set and never throws for other missing variables; the banner names the missing ones. 2.3 reuses `stripeConfigured()`.' Add a Vitest case for it."
+    }
+  ]
+}
