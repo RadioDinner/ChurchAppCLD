@@ -1,0 +1,31 @@
+--- 2026-09-04 23:28 ---
+You are working in the ChurchAppCLD repository. Follow the session-start checklist in CLAUDE.md
+(new-session.sh, prompt_history.txt). Check out and stay on the branch
+claude/project-status-todo-plan-leghlm:
+  git fetch origin && git checkout claude/project-status-todo-plan-leghlm && git pull --rebase origin claude/project-status-todo-plan-leghlm
+Other sessions are drafting other groups on this same branch. Pull with rebase before EVERY push.
+
+Task: draft, critique and revise groups G5 and G6 of docs/TODO.md (steps 2.1, 2.2, 2.3, 2.4, 2.5, 2.6).
+1. Read "Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md" so you know the rules.
+2. Run the Workflow tool with scriptPath "Session log/003_2026-09-04/todo-drafts/workflow-groups.js"
+   (use the absolute path) and args {"groups": ["G5", "G6"]}. If a group file
+   "Session log/003_2026-09-04/todo-drafts/groups/G5.json" or G6.json already exists and
+   python3 "Session log/003_2026-09-04/todo-drafts/validate.py" <file> prints "0 errors", list that group
+   in args.skipDraft so it goes straight to critique.
+3. Every 10 minutes while the workflow runs, or when it ends, commit any new or changed files under
+   "Session log/003_2026-09-04/todo-drafts/groups/" and "Session log/003_2026-09-04/todo-drafts/reviews/"
+   plus your own Session log folder, then git pull --rebase and push. Commit message:
+   chore(session): TODO.md group drafts G5/G6 (autosave)
+4. AUTOMATIC RESUME: if the workflow result reports failures containing "session limit" or
+   "resets <time>", do not retry immediately. Read the reset time from the error, commit and push what
+   exists (step 3), then call the send_later tool with a message to yourself scheduled 5 minutes after
+   that reset time, in this form:
+     "Resume the G5/G6 workflow: git pull --rebase, then Workflow with scriptPath
+      <same path>, resumeFromRunId <the run id from the last result>, args {"groups":["G5","G6"],
+      "skipDraft":[<groups whose file validates with 0 errors>]}. Then follow steps 3 to 5 again."
+   When that message arrives, do exactly that. Repeat until both groups finish with 0 validator errors.
+   If send_later is not available, say so and stop; do not poll with sleep.
+5. When both groups validate: commit and push as in step 3, write your session_log.md, and report the
+   sub-agent token count from every workflow result you received.
+
+Do not edit HANDOFF.md, docs/TODO.md, other group files or the kit files. Do not run workflow-global.js.
