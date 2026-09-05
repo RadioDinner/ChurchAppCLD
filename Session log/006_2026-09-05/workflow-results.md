@@ -17,3 +17,8 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   18:30 UTC reset (founder confirmed "it has reset now"), so no send_later was scheduled: resumed immediately with
   resumeFromRunId wf_01c992d6-508 and identical args {"groups": ["G8"]} (identical args so the cached drafter result
   replays — session 005 lesson).
+
+## Run 2 — G8 resume of wf_01c992d6-508 (task w9f342act), launched 2026-09-05 14:33 America/New_York (18:33 UTC)
+- args: {"groups": ["G8"]} (identical to run 1; resumeFromRunId wf_01c992d6-508 — the drafter replays from cache, the three
+  critics and the reviser run).
+- Outcome: (pending)
