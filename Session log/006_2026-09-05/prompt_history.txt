@@ -1,0 +1,43 @@
+(Timestamp of the first entry is estimated from file mtimes: the first context of this session was cut off by the
+account usage limit before it created this log folder; the prompt is reproduced verbatim from the harness.)
+--- 2026-09-04 23:53 ---
+You are working in the ChurchAppCLD repository. Follow the session-start checklist in CLAUDE.md
+(new-session.sh, prompt_history.txt). Check out and stay on the branch
+claude/project-status-todo-plan-leghlm:
+  git fetch origin && git checkout claude/project-status-todo-plan-leghlm && git pull --rebase origin claude/project-status-todo-plan-leghlm
+Other sessions are working on this same branch. Pull with rebase before EVERY push.
+
+Task: draft, critique and revise groups G8, G9, G10, G11, G12, G13 and G14 of docs/TODO.md, in that order,
+ONE GROUP AT A TIME. Read "Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md" first.
+
+For each group G in G8, G9, G10, G11, G12, G13, G14:
+1. Let FILE = "Session log/003_2026-09-04/todo-drafts/groups/<G>.json". If FILE exists and
+   python3 "Session log/003_2026-09-04/todo-drafts/validate.py" FILE prints "0 errors" AND every step id
+   listed for that group in "Session log/003_2026-09-04/todo-drafts/skeleton.md" is present in the file,
+   the group is drafted: use args {"groups": ["<G>"], "skipDraft": ["<G>"]}. Otherwise use
+   args {"groups": ["<G>"]}. If reviews/<G>.fidelity.json, .executability.json and .completeness.json all
+   exist already, use args {"groups": ["<G>"], "skipDraft": ["<G>"], "stage": "revise"}.
+2. Run the Workflow tool with scriptPath "Session log/003_2026-09-04/todo-drafts/workflow-groups.js"
+   (absolute path) and those args.
+3. When it ends, run the validator on FILE. If 0 errors: commit FILE, everything new under
+   "Session log/003_2026-09-04/todo-drafts/reviews/", and your own Session log folder; git pull --rebase;
+   push. Commit message: chore(session): TODO.md group <G> drafted, critiqued and revised
+   Then continue with the next group.
+4. AUTOMATIC RESUME: if the workflow result reports failures containing "session limit" or
+   "resets <time>", do not retry. Commit and push whatever exists (as in step 3, even if the validator
+   is not clean), then call the send_later tool with a message to yourself scheduled 5 minutes after the
+   reset time named in the error, in this form:
+     "Resume group <G>: git pull --rebase, then Workflow with scriptPath <same path>,
+      resumeFromRunId <the run id from the last result>, and the same args. Then continue from step 3
+      of the group loop, and on to the remaining groups."
+   When that message arrives, do exactly that. Repeat as often as needed until G14 is done.
+   If send_later is not available, say so and stop; do not poll with sleep.
+5. After G14 validates: write your session_log.md, commit and push, and report the sub-agent token
+   count from every workflow result you received, group by group.
+
+Do not edit HANDOFF.md, docs/TODO.md, group files G1 to G7, or the kit files. Do not run
+workflow-global.js; the global review runs in the original session once every group exists.
+Continue from where you left off.
+Continue from where you left off.
+--- 2026-09-05 12:25 ---
+I hit my usage limit while you were working, but it has reset now. Please continue from where you left off.
