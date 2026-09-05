@@ -5,66 +5,90 @@
     {
       "step": "2.1",
       "severity": "major",
-      "category": "cross-group-name-consistency",
-      "quote": "`require-org.ts`: `requireOrgMember(slug)` → … (a super admin with `membership_status = null` passes — step 3.1 may narrow this; keep the rule in one function)",
-      "problem": "Contradicts the rest of G5 and G7: 2.2b's Finish adds a founder to-do 'create or invite yourself as first admin so `/o/<slug>` opens for you (super admins are not org members)', proposed step 3.11 exists precisely because `requireOrgMember` 404s for super admins, and G7's 3.1 prompt states 'Super admins who are not members also get 404 here'. DESIGN §5/§9 define `requireOrgMember` on `org_memberships` only. As written, 2.1 builds the opposite behaviour and the founder to-do / 3.11 become wrong.",
-      "fix": "Replace the parenthesis with: '(a super admin without an `active` membership also gets `notFound()` — super admins are `super_admins` rows, not org members (DESIGN §5); leave a code comment pointing at proposed step 3.11, which lifts this)'. Update the 2.1 done_when/notes accordingly; keep 2.2b's founder to-do and 3.11 as they are."
+      "category": "design-contradiction / cross-group",
+      "quote": "a super admin with `membership_status = null` passes — step 3.1 may narrow this; keep the rule in one function",
+      "problem": "DESIGN §5/§9 define `requireOrgMember` on `org_memberships` (super admins are `super_admins` rows, not members). G7's 3.1 prompt states 'Super admins who are not members also get 404 here', 2.2b's own Finish adds the founder to-do 'create or invite yourself as first admin … (super admins are not org members)', and proposed step 3.11 exists to lift exactly this restriction. 2.1 as written builds the opposite behaviour, so 2.2b's to-do and 3.11 become contradictory.",
+      "fix": "Replace the parenthesis with: '(a super admin without an `active` membership also gets `notFound()` — super admins are `super_admins` rows, not org members (DESIGN §5); add a code comment pointing at proposed step 3.11, which lifts this)'. Adjust the 2.1 notes sentence about `requireOrgMember` accordingly; leave 2.2b's founder to-do and 3.11 unchanged."
     },
     {
       "step": "2.1",
       "severity": "major",
       "category": "cross-group-name-consistency",
-      "quote": "Add `src/lib/supabase/errors.ts`: `toActionError(err)` that maps a PostgREST/RPC error to `{key, message}` using `@church/domain` `errors.ts` (match `message` against the catalogue keys; fall back to a generic message…)",
-      "problem": "G4 (1.6b/1.7b) already ships this layer: `@church/domain` exports `DomainError` and `toDomainError` (SQLSTATE + snake_case message-key convention, `23514` → `invalid_payload`), and `@church/db` wraps every query/RPC in `unwrap`/`unwrapVoid`/`unwrapStorage` so 'callers never see raw Supabase errors'. 2.1 re-implements the matching in the app under a new name, and 2.2a/2.2b then call `toActionError` five times — two parallel error mappers with different rules.",
-      "fix": "Rewrite the bullet: '`src/lib/supabase/errors.ts`: `toActionError(err: unknown): ActionError` is a thin adapter — if `err instanceof DomainError` (from `@church/domain`) return `{key: err.key, message: err.message}`, else call `toDomainError(err)` first; never match strings in the app. All DB access goes through the `@church/db` wrappers, which already return `DomainError`.' Update Inputs bullet 3 to name `toDomainError`/`DomainError`/`ERROR_MESSAGES` (G4's names) instead of 'error key → message map'."
+      "quote": "Add `src/lib/supabase/errors.ts`: `toActionError(err)` that maps a PostgREST/RPC error to `{key, message}` using `@church/domain` `errors.ts` (match `message` against the catalogue keys; fall back to a generic message",
+      "problem": "G4's 1.6b already ships the mapper: `@church/domain` exports `class DomainError`, `toDomainError(err)` (message-key match, then SQLSTATE: `42501` → `permission_denied`, `23505` → `duplicate`, `23514` → `invalid_payload`) and `DOMAIN_ERROR_MESSAGES`; G4's 1.7a wraps every query/RPC in `unwrap`/`unwrapVoid` so callers only ever see `DomainError`. 2.1 re-implements string matching in the app under a new name and 2.2a/2.2b call it five times — two parallel mappers with different rules.",
+      "fix": "Rewrite the bullet: '`src/lib/supabase/errors.ts`: `toActionError(err: unknown): ActionError` is a thin adapter — `err instanceof DomainError` → `{key: err.key, message: DOMAIN_ERROR_MESSAGES[err.key]}`, otherwise `toDomainError(err)` first; never match strings in the app. All table/RPC access goes through the `@church/db` wrappers, which already return `DomainError`.' In Inputs bullet 3 replace 'errors.ts (error key → message map)' with '`errors.ts` (`DomainError`, `toDomainError`, `DOMAIN_ERROR_MESSAGES`)'."
     },
     {
       "step": "2.1",
       "severity": "minor",
       "category": "cross-group-name-consistency",
       "quote": "Always render an **\"Open in app\"** button linking to `anacast://invite/<token>`",
-      "problem": "G4's 1.6b exports `inviteDeepLink(token)` in `@church/domain` `urls.ts` (unit-tested to return `anacast://invite/abc`) and `shareLinkUrl`. Hand-building the scheme URL in the page duplicates the single source of the `anacast` scheme (orchestrator decision 5).",
-      "fix": "Change to: 'linking to `inviteDeepLink(token)` from `@church/domain` (`urls.ts`, step 1.6b) — do not hard-code the scheme; `APP_SCHEME` in `src/lib/brand.ts` must equal the value `urls.ts` uses'."
+      "problem": "G4's 1.6b exports `inviteDeepLink(token)` (→ `anacast://invite/<token>`, unit-tested) and `inviteUrl(appUrl, token)` in `@church/domain` `urls.ts`, explicitly 'for the Open in app button in steps 2.1 + 4.1'. Hand-building the URL (and a second `APP_SCHEME` constant in `src/lib/brand.ts`) duplicates the single source of the scheme (orchestrator decision 5).",
+      "fix": "Change to: 'linking to `inviteDeepLink(token)` from `@church/domain` (`urls.ts`, step 1.6b) — do not hard-code the scheme; `APP_SCHEME` in `src/lib/brand.ts` re-exports the value `urls.ts` uses'. Also build the `https://<APP_URL>/invite/<token>` links in 2.2b with `inviteUrl(appUrl, token)`."
     },
     {
       "step": "2.1",
       "severity": "minor",
       "category": "design-contradiction",
-      "quote": "…`frame-ancestors 'none'`. Add `X-Frame-Options: DENY` on a second `headers()` entry whose `source` matches everything EXCEPT `/s/:path*` and `/embed/:path*` … for `/embed/*` also omit `frame-ancestors 'none'`",
-      "problem": "The CSP (including `frame-ancestors 'none'`) is attached to the `/(.*)` entry, so it also lands on `/s/*` and `/embed/*`; a second `headers()` entry cannot 'omit' a directive from the first, and browsers honour CSP `frame-ancestors` over `X-Frame-Options`. DESIGN §9 wants `/s/*` and `/embed/*` frame-able (the `/embed/yt/[id]` page is the mobile WebView host and must not be locked to `'none'`).",
-      "fix": "Use the same negative-lookahead source for the CSP entry as for `X-Frame-Options` (both on `/((?!s/|embed/).*)`), and give `buildCsp({ frameable: boolean })` in `src/lib/security/csp.ts` the option to emit `frame-ancestors *` (or omit it) so step 3.4 sets the exempt routes' CSP itself. Adjust the csp.test.ts bullet to assert `frame-ancestors 'none'` only for the default variant."
+      "quote": "`frame-ancestors 'none'`. Add `X-Frame-Options: DENY` on a second `headers()` entry whose `source` matches everything EXCEPT `/s/:path*` and `/embed/:path*` … for `/embed/*` also omit `frame-ancestors 'none'`",
+      "problem": "The CSP with `frame-ancestors 'none'` is attached to the `/(.*)` entry, so it also lands on `/s/*` and `/embed/*`; a second `headers()` entry cannot omit a directive set by the first, and browsers give CSP `frame-ancestors` precedence over `X-Frame-Options`. DESIGN §9 exempts `/s/*` and `/embed/*` from framing restrictions.",
+      "fix": "Use the same negative-lookahead `source` (`/((?!s/|embed/).*)`) for the CSP entry as for `X-Frame-Options`, and give `buildCsp({ frameable })` in `src/lib/security/csp.ts` a variant that omits `frame-ancestors` (or emits `frame-ancestors *`) so step 3.4 attaches the exempt routes' CSP itself. Adjust the csp.test.ts bullet to assert `frame-ancestors 'none'` only for the default variant."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "error-catalogue",
+      "quote": "maps `invitation_invalid` / `invitation_email_mismatch` / `organization_suspended` via `toActionError`",
+      "problem": "G2's 1.3b `accept_invitation` also raises `invitation_expired` (past `expires_at`); the invite page would show the generic fallback for the most common failure.",
+      "fix": "Add `invitation_expired` to the list (and to the Inputs error-key list): 'maps `invitation_invalid` / `invitation_expired` / `invitation_email_mismatch` / `organization_suspended`'."
     },
     {
       "step": "2.1",
       "severity": "minor",
       "category": "dependency-ids",
-      "quote": "\"depends_on\": [\"1.7\"]  …  Step 1.6 produced `@church/domain` … Step 1.7 produced `@church/db`",
-      "problem": "G4 split the steps into 1.6a/1.6b and 1.7a/1.7b (and G2/G3 into 1.3a/1.3b, 1.4a/1.4b/1.4c); the prompt already says '1.3b/1.4' in one place but '1.7' elsewhere, and `depends_on` names a step id that will not exist in the assembled TODO.",
-      "fix": "Set `depends_on` to [\"1.7b\"]; in Inputs write 'Steps 1.6a/1.6b produced `@church/domain` …' and 'Steps 1.7a/1.7b produced `@church/db` and `@church/supabase-client`'. Same in 2.2a Inputs ('1.2–1.4' → '1.2–1.4c'), unless the assembler normalises ids."
+      "quote": "\"depends_on\": [\"1.7\"] … Step 1.6 produced `@church/domain` … Step 1.7 produced `@church/db`",
+      "problem": "G4 split the steps into 1.6a/1.6b and 1.7a/1.7b (G2/G3 into 1.3a/1.3b, 1.4a/1.4b/1.4c). The prompt already says '1.3b/1.4' in one place; `depends_on` names an id that will not exist in the assembled TODO.",
+      "fix": "Set `depends_on` to [\"1.7b\"]; write 'Steps 1.6a/1.6b produced `@church/domain`' and 'Steps 1.7a/1.7b produced `@church/db` and `@church/supabase-client`'. In 2.2a/2.2b Inputs write '1.2–1.4c' instead of '1.2–1.4' (unless the assembler normalises ids)."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "prior-state-assumption",
+      "quote": "`@types/react`/`@types/react-dom` `catalog:` (19.2 line — orchestrator decision 3)",
+      "problem": "G1's 1.1 catalog holds `@types/react` only; `@types/react-dom` is not listed, so `catalog:` for it fails `pnpm install` unless 1.1 added it.",
+      "fix": "Write: '`@types/react` `catalog:`; `@types/react-dom` on the 19.2 line — add it to the root catalog if 1.1 did not (record in HANDOFF version pins)'."
     },
     {
       "step": "2.2a",
       "severity": "major",
       "category": "cross-group-name-consistency",
-      "quote": "if there is no schema for creating a church or for the full settings row, add `organizationCreateSchema`, `organizationUpdateSchema` and `organizationSettingsSchema` to `packages/domain/src/schemas/org.ts` / `schemas/settings.ts`",
-      "problem": "G4's 1.6b already defines these under different names: `createOrganizationSchema` (defaults `trial_ends_at` to now + 30 days per founder decision 7), `updateOrganizationSchema` (partial + `status`), `fellowshipSchema` (`slug`, `name`, `description`), `orgBillingFormSchema`, `organizationSettingsSchema`, `updateSettingsSchema` + `validateSettingsUpdate(current, patch)`, `timezoneSchema`, `DEFAULT_SETTINGS`. The 2.2a agent following this text would add duplicates `organizationCreateSchema`/`organizationUpdateSchema`, and `src/features/orgs/trial.ts` re-implements the 30-day default the schema already has.",
-      "fix": "Replace with: 'Use `createOrganizationSchema`, `updateOrganizationSchema`, `organizationSettingsSchema`, `updateSettingsSchema`/`validateSettingsUpdate`, `fellowshipSchema`, `timezoneSchema` and `DEFAULT_SETTINGS` from `@church/domain` (step 1.6b); if a name differs, adopt the exported one and record it in HANDOFF — do not add parallel schemas.' Rename every later mention (`organizationCreateSchema` in Build 2, `organizationUpdateSchema` in Build 4). Make `src/features/orgs/trial.ts` a re-export/wrapper of the schema default, and have `fields.test.ts` compare against `DEFAULT_SETTINGS` keys."
+      "quote": "add `organizationCreateSchema`, `organizationUpdateSchema` and `organizationSettingsSchema` to `packages/domain/src/schemas/org.ts` / `schemas/settings.ts`",
+      "problem": "G4's 1.6b already exports these under other names: `createOrganizationSchema` (`slug` via `slugSchema` 3–48, `name` 2–120, `contact_email`, `billing_mode` default `manual`, `trial_ends_at`), `updateOrganizationSchema`, `fellowshipSchema` (`slug`, `name`, `description`), `orgBillingFormSchema`, `organizationSettingsSchema`, `updateSettingsSchema` + `validateSettingsUpdate(current, patch)`, `timezoneSchema`, `DEFAULT_SETTINGS`. Following 2.2a literally adds duplicate schemas, and the prompt's own field rules (Name 2–80, slug 3–50) contradict the shared ones.",
+      "fix": "Replace with: 'Use `createOrganizationSchema`, `updateOrganizationSchema`, `organizationSettingsSchema`, `updateSettingsSchema`/`validateSettingsUpdate`, `fellowshipSchema`, `slugSchema`, `timezoneSchema` and `DEFAULT_SETTINGS` from `@church/domain` (step 1.6b); if a name differs, adopt the exported one and record it in HANDOFF — never add parallel schemas.' Rename every later mention (`organizationCreateSchema` in Build 2, `organizationUpdateSchema` in Build 4); in Build 2 say 'Name and Slug validated by `createOrganizationSchema` (slug rule = `slugSchema`); add only the reserved-word refinement in the app'; make `src/features/orgs/trial.ts` a wrapper over the schema's default and have `fields.test.ts` compare against `DEFAULT_SETTINGS` keys."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "cross-group-name-consistency",
+      "quote": "via `@church/db/queries/orgs.ts` (`listOrganizationsForAdmin(client)`) … `queries/orgs.ts` `organizationCounts(client, orgId)` … queries in `packages/db/src/queries/fellowships.ts`",
+      "problem": "G4's 1.7a names the module `packages/db/src/queries/organizations.ts` (deviation from DESIGN's `orgs.ts`, recorded in HANDOFF) and already exports `listOrganizations` (joins settings + latest `billing_subscriptions`), `getOrganization(id)`, `getOrganizationBySlug`, `insertOrganization({slug, name, contact_email, billing_mode, trial_ends_at})`, `updateOrganization`, `listFellowships`, `getFellowship`, `insertFellowship`, … in that same module. 2.2a invents `orgs.ts`, `listOrganizationsForAdmin` and a separate `fellowships.ts`, so the agent creates a second module beside the existing one.",
+      "fix": "Replace every `queries/orgs.ts` with `packages/db/src/queries/organizations.ts` and use its exports: `listOrganizations(db)` for the churches list, `insertOrganization(db, …)` in `createChurch`, `updateOrganization` in `updateChurch`, `listFellowships`/`getFellowship`/`insertFellowship`/… for Build 6–7 (drop `packages/db/src/queries/fellowships.ts`). Add only what is missing (`organizationCounts(db, orgId)`, fellowship membership helpers) to `organizations.ts` and record them in HANDOFF. Update the 2.2a Inputs bullet, `reads` and 2.2b's Inputs ('packages/db/src/queries/orgs.ts') the same way."
     },
     {
       "step": "2.2a",
       "severity": "major",
       "category": "invented-or-missing-column",
       "quote": "\"New fellowship\" dialog with Name → Server Action `createFellowship`), `app/(super)/admin/fellowships/[id]/page.tsx` (rename form → `renameFellowship`",
-      "problem": "DESIGN §4.2: `fellowships` = `id, slug citext unique, name, description`. A Name-only dialog cannot satisfy the unique slug column, and the rename form ignores `slug`/`description`. G4's `fellowshipSchema` already has `slug`, `name`, `description`.",
-      "fix": "Build 7: 'New fellowship dialog: Name, Slug (auto-derived with `slugify`, editable, unique — map `23505` to a slug field error), Description (optional); validate with `fellowshipSchema`. The `[id]` page edits Name, Slug (with the same URL-change warning as churches) and Description via `updateFellowship`.' Add `slug` to the Inputs description of `fellowships`."
+      "problem": "DESIGN §4.2: `fellowships` = `id, slug citext unique, name, description`. A Name-only dialog cannot satisfy the unique `slug` column (insert fails or every fellowship needs a client-invented slug), and rename ignores `slug`/`description`. G4's `fellowshipSchema` already carries `slug`, `name`, `description`.",
+      "fix": "Build 7: 'New fellowship dialog: Name, Slug (auto-derived with `slugify`, editable, unique — map `23505`/`duplicate` to a slug field error), Description (optional); validate with `fellowshipSchema`. The `[id]` page edits Name, Slug and Description via `updateFellowship`.' In Inputs replace 'read the file for their exact columns' with '`fellowships (id, slug citext unique, name, description)`, `fellowship_memberships (fellowship_id, org_id, joined_at)`'."
     },
     {
       "step": "2.2a",
       "severity": "major",
       "category": "founder-decision-consequence",
       "quote": "Server Action `saveOrgSettings(orgId, values)`: `requireSuperAdmin()`, Zod parse, `update organization_settings … where org_id = orgId` with the user client",
-      "problem": "DESIGN §5 'Suspended orgs': `app.org_writable` is required by every write policy; G3's `organization_settings` update policy is `org.settings` ∧ writable. For a `suspended` or `cancelled` church the super admin's update matches zero rows and PostgREST returns success — the form would toast 'saved' while nothing changed. Founder decision 7 makes suspension the one state that blocks writes, so the UI must reflect it.",
-      "fix": "Add to Build 5: 'When `organizations.status` is `suspended` or `cancelled`, render the Settings form read-only with the note \"This church is suspended — writes are blocked by the database (founder decision 7). Unsuspend it on the Billing tab (2.2b) first.\" In `saveOrgSettings` request the updated row back (`.select().single()`) and treat zero rows as `organization_suspended`.' Apply the same guard to the Details tab's `updateChurch` only if 1.4a's `ca_organizations_update_super` includes `org_writable` (read the policy)."
+      "problem": "G3's 1.4a policy `ca_organization_settings_update_org_settings` = `org.settings` ∧ `app.org_writable(org_id)` (DESIGN §5: `org_writable` is required by every write policy). For a `suspended`/`cancelled` church the super admin's update matches zero rows and PostgREST reports success, so the form toasts 'saved' while nothing changed. Founder decision 7 makes suspension the one state that blocks writes; the UI must show it rather than fake success.",
+      "fix": "Add to Build 5: 'When `organizations.status` is `suspended` or `cancelled`, render the Settings form read-only with the note \"This church is suspended — the database blocks writes (founder decision 7). Unsuspend it on the Billing tab (2.2b) first.\" In `saveOrgSettings` request the row back (`.select().single()`) and treat zero rows as `organization_suspended`.' `updateChurch` on `organizations` is unaffected (`ca_organizations_update_super` is `app.is_super_admin()` only) — say so."
     },
     {
       "step": "2.2a",
@@ -78,17 +102,41 @@
       "step": "2.2b",
       "severity": "major",
       "category": "cross-group-name-consistency",
-      "quote": "RHF + `zodResolver(inviteAdminSchema)` … USER client → `create_invitation(orgId, email, null, perms)` … `set_membership_permissions(membershipId, PERMISSION_KEYS)` … `revoke_invitation(id)`",
-      "problem": "`inviteAdminSchema` is invented; G4's 1.6b exports `createInvitationSchema` (parses to `{org, email (lower-cased), person_id: null, perms: []}`) and `createUserDirectSchema` (the latter G5 uses correctly). G4's 1.7b `rpc.ts` wrappers take the client plus an object whose keys are EXACTLY the SQL parameter names (`createInvitation(db, {org, email, person_id, perms})`, `setMembershipPermissions(db, {membership_id, perms})`, `setMembershipStatus(db, {id, status})`, `revokeInvitation(db, {id})`) and parse jsonb results with domain schemas (`attachUserResultSchema` for `srv_attach_user` → `{membership_id, person_id, household_id}`). Positional calls and a second invitation schema diverge from the shared layer.",
-      "fix": "Replace `inviteAdminSchema` with `createInvitationSchema` (drop the 'add if missing' clause for it). Rewrite every RPC mention as the `@church/db` wrapper with named arguments, e.g. '`createInvitation(db, { org: orgId, email, person_id: null, perms })` (wrapper for `create_invitation`)', '`setMembershipPermissions(db, { membership_id, perms: PERMISSION_KEYS })`', '`revokeInvitation(db, { id })`', '`srvAttachUser(serviceDb, { user_id, org, person_id, display_name, perms })` whose result is `attachUserResultSchema`'. Update done_when bullet 2 to the named-argument form."
+      "quote": "RHF + `zodResolver(inviteAdminSchema)` … USER client → `create_invitation(orgId, email, null, perms)` … `set_membership_status` … `revoke_invitation(id)` … `set_membership_status(id, status)`",
+      "problem": "`inviteAdminSchema` is invented — G4's 1.6b exports `createInvitationSchema` (parses to `{org, email lower-cased, person_id: null, perms: []}`). G4's 1.7a wrappers take the client plus an object whose keys are EXACTLY the SQL parameter names: `createInvitation(db, {org, email, person_id, perms})` → raw token, `setMembershipPermissions(db, {membership_id, perms})`, `setMembershipStatus(db, {membership_id, status})`, `revokeInvitation(db, {invitation_id})`, `srvAttachUser(svc, {user_id, org, person_id, display_name, perms})` → `attachUserResultSchema`. G2's 1.3b signatures are `set_membership_status(membership_id uuid, …)` and `revoke_invitation(invitation_id uuid)` — the prompt's `id` parameter names do not exist.",
+      "fix": "Replace `inviteAdminSchema` with `createInvitationSchema` (drop the 'add if missing' clause for it). Rewrite every RPC mention as the `@church/db` wrapper with named arguments: '`createInvitation(db, { org: orgId, email, person_id: null, perms })`', '`setMembershipPermissions(db, { membership_id, perms: PERMISSION_KEYS })`', '`setMembershipStatus(db, { membership_id, status })`', '`revokeInvitation(db, { invitation_id })`', '`srvAttachUser(serviceDb, { user_id, org, person_id, display_name, perms })` (result parsed by `attachUserResultSchema` → `{membership_id, person_id, household_id}`)'. Fix the Inputs signatures (`set_membership_status(membership_id, status)`, `revoke_invitation(invitation_id)`) and done_when bullets 1–2."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "cross-group-name-consistency",
+      "quote": "`createUserDirect(input: {orgId, email, tempPassword, displayName, personId: string | null, permissions: PermissionKey[]}, deps?)` … Validate with `createUserDirectSchema` (email, password ≥ 12, display name 1–80, permissions ⊆ `PERMISSION_KEYS`)",
+      "problem": "G4's 1.6b defines `createUserDirectSchema` with snake_case keys matching `srv_attach_user`: `org`, `email`, `temp_password` (≥ 12), `display_name`, exactly one of `person_id` | `new_household: {household_name, first_name, last_name}`, `perms` default `[]`. 2.2b describes a different camelCase payload and a `personId: null` path, so the Zod parse in step 2 cannot accept the input the function declares, and 3.2 (which reuses the function) sees a third shape.",
+      "fix": "Declare `createUserDirect(input: z.input<typeof createUserDirectSchema>, deps?)` and use the schema's keys throughout (`org`, `temp_password`, `display_name`, `person_id` | `new_household`, `perms`); the dialog maps its fields onto that shape. State: 'In 2.2b the dialog always sends `new_household: {household_name: <display name>, first_name, last_name}` or `person_id`; `srv_attach_user` receives `display_name` and `person_id` (null → one-person household); if `new_household` names cannot be passed to the RPC, record the gap in HANDOFF for 3.2'. Update done_when bullet 3."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "cross-group-name-consistency",
+      "quote": "`queries/memberships.ts` in `@church/db`: `listMembershipsWithPermissions(client, orgId)` joining `org_memberships` → `profiles` (display name, email; show \"(profile not visible)\" if the row is filtered by RLS) → `org_membership_permissions`",
+      "problem": "G4's 1.7a already provides `listMemberships(orgId)` in `queries/memberships.ts` and states that `org_memberships.user_id` has no FK to `profiles`, so PostgREST cannot embed it; the module fetches `profiles` by `user_id in (...)` in a second query and its test asserts the code never embeds `profiles(`. A 'join' as described either fails at runtime or breaks G4's test.",
+      "fix": "Replace with: 'use `listMemberships(db, orgId)` from `@church/db` `queries/memberships.ts` (step 1.7a: `org_memberships` with embedded `org_membership_permissions(permission)`, plus a second `profiles` query merged in TypeScript — no FK to `profiles`, so never embed it); rows whose profile is missing render \"(profile not visible)\"'. Same for the pending-invitations list: use/extend the 1.7a `invitations` query helper rather than inline table access."
     },
     {
       "step": "2.2b",
       "severity": "minor",
       "category": "cross-group-name-consistency",
-      "quote": "maps `invitation_invalid`/`permission_denied` via `toActionError`",
-      "problem": "Same as the 2.1 finding: `toActionError` must be the thin adapter over `@church/domain` `DomainError`/`toDomainError`, not a second string-matching mapper. 2.2b also maps the Supabase Auth error `email_exists` — that is an Auth (GoTrue) error code, not a DB catalogue key, so it must be handled before/outside the DB mapper.",
-      "fix": "State in Build 2 step 3: 'Auth errors come from `auth.admin.createUser` (`error.code === \"email_exists\"` or status 422) and are mapped in `create-direct.ts` itself; DB/RPC errors are `DomainError`s from the `@church/db` wrappers and pass through `toActionError`.'"
+      "quote": "maps `invitation_invalid`/`permission_denied` via `toActionError` … Map the \"already registered\" error (`email_exists` / status 422)",
+      "problem": "`toActionError` must be the thin adapter over `@church/domain` `DomainError`/`toDomainError` (see the 2.1 finding), and `email_exists` is a Supabase Auth (GoTrue) error code, not a DB catalogue key — it cannot flow through the DB mapper.",
+      "fix": "State in Build 2 step 3: 'Auth errors come from `auth.admin.createUser` (`error.code === \"email_exists\"` or status 422) and are mapped inside `create-direct.ts`; DB/RPC errors are `DomainError`s from the `@church/db` wrappers and pass through `toActionError`.'"
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "misquoted-source",
+      "quote": "followed by the exact statements from `9999_init.sql` section (11) … and the matching `delete … where user_id = (select id from auth.users where email = '<FOUNDER_EMAIL>');`",
+      "problem": "DESIGN §4.4 section (11) contains only the commented bootstrap INSERT; there is no DELETE statement in the migration. Telling the agent to copy a statement that does not exist invites it to edit `9999_init.sql` (which 2.2b forbids).",
+      "fix": "Write: 'show the section (11) INSERT verbatim (with `<FOUNDER_EMAIL>`), plus a DELETE statement composed on the page (`delete from public.super_admins where user_id = (select id from auth.users where email = '<FOUNDER_EMAIL>');`) — not taken from the migration'."
     }
   ]
 }
