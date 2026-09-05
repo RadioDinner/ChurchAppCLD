@@ -34,3 +34,10 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - args: {"groups": ["G9"]} (no group file existed → full draft; steps 3.5, 3.6).
 - Outcome: (pending)
 - 15:22 ET: drafter done (see step table in the outcome line); critics running.
+- Outcome: completed, 0 failures. G9: 44 findings (2 blockers — `useFcmV1` is not an expo-server-sdk 7.2.0 option; bulletin
+  Push column vs the `notifications` select policy), 38 applied, 2 partially rejected with reasons; validator 0 errors,
+  0 warnings. Drafter split 3.5 into 3.5a (announcements) + 3.5b (bulletins, reuses the 3.3b uploader); reviser split 3.6
+  into 3.6a (dispatcher) + 3.6b (cron tick + docs). 9 open_issues (assembler repointing 3.6 → 3.6b, M3 migration
+  numbering vs reserved 9998/9997), proposed step 3.12. Full result in `todo-drafts/reviews/G9.result.json`.
+- Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,097,561**, tool_uses 150, duration 2,508,092 ms (~42 min).
+- **G9 total sub-agent tokens: 1,097,561.**
