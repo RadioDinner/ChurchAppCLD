@@ -64,3 +64,15 @@
    before merging to main.
 5. Cheaper alternative if usage is a concern: draft G3–G14 directly in the main session using `skeleton.md`,
    `orchestrator-decisions.md` and `G2.json` as the exemplar, validate each, then run only `workflow-global.js` once.
+
+## Paced progress (one agent per run)
+| run | agents | sub-agent tokens | wall-clock | result |
+|---|---|---|---|---|
+| G3 full (draft, 3 critics, reviser) | 5 | 1,090,543 | 43 min | `groups/G3.json` steps 1.4a, 1.4b, 1.4c, 1.5 — 45 findings, 1 blocker, all applied |
+| G7 draft, step 3.1 only | 1 | 179,768 | 6.6 min | `groups/G7.json` step 3.1 (3141 words); 8 open issues in `reviews/G7.draft-3.1.result.json` |
+
+`workflow-groups.js` now takes `args.stage` (`draft` | `critique` | `revise` | `all`), `args.steps` (drafter writes only
+these ids) and `args.lenses` (subset of `fidelity`, `executability`, `completeness`). Remaining single-agent runs for G7:
+`{"groups":["G7"],"stage":"draft","steps":["3.2"]}` → `{"groups":["G7"],"stage":"critique","lenses":["fidelity"]}` →
+same with `executability` → same with `completeness` → `{"groups":["G7"],"stage":"revise"}` (the reviser reads the
+saved `reviews/G7.<lens>.json` files). Expect ~180–250k tokens per run. The other account's sessions hold G4, G5, G6.
