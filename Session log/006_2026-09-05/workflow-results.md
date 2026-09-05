@@ -33,3 +33,4 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 3 — G9 — wf_d7df784f-664 (task wkz1ehl0a), launched 2026-09-05 15:16 America/New_York (19:16 UTC)
 - args: {"groups": ["G9"]} (no group file existed → full draft; steps 3.5, 3.6).
 - Outcome: (pending)
+- 15:22 ET: drafter done (see step table in the outcome line); critics running.
