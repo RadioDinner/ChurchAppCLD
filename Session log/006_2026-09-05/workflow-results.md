@@ -22,3 +22,10 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - args: {"groups": ["G8"]} (identical to run 1; resumeFromRunId wf_01c992d6-508 — the drafter replays from cache, the three
   critics and the reviser run).
 - Outcome: (pending)
+- Outcome: completed, 0 failures. G8: 54 findings (2 blockers — both the CSP `media-src` conflict with G5's 2.1a), 52 applied,
+  5 rejected with reasons; validator 0 errors, 0 warnings. Reviser split 3.4 into 3.4a (crypto, panel, actions) + 3.4b
+  (public /s/[token], unlock route, headers, /embed/yt/[id]). Final steps: 3.3a (3373 words, depends_on 3.1, 1.6b, 1.7a),
+  3.3b (3136), 3.4a (2379), 3.4b (3400). 10 open_issues, proposed step 3.11 (STUB; G5 also proposes a 3.11 → renumber).
+  Full result saved in `todo-drafts/reviews/G8.result.json`.
+- Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 910,814**, tool_uses 127, duration 2,005,756 ms (~33 min).
+- **G8 total sub-agent tokens: 314,081 + 910,814 = 1,224,895.**
