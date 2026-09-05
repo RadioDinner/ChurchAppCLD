@@ -1,0 +1,182 @@
+{
+  "group": "G5",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "dependencies / prior state",
+      "quote": "dep=['1.7'] … Step 1.6 produced `@church/domain` … Step 1.7 produced `@church/db` … and `@church/supabase-client`",
+      "problem": "G4 split the skeleton steps into 1.6a, 1.6b, 1.7a, 1.7b; there is no step '1.7' any more, so the depends_on chain breaks at assembly and the Inputs section tells the agent to look for steps that do not exist in docs/TODO.md.",
+      "fix": "Set depends_on to [\"1.7b\"] (1.7b depends on 1.7a which depends on 1.6b). In Inputs write: 'Steps 1.6a/1.6b produced `@church/domain` (1.6a: permissions, audiences, media-links, limits, dates, fixture; 1.6b: errors.ts, urls.ts, schemas/*). Step 1.7a produced `@church/db` (`database.types.ts`, `DbClient`/`ServiceDbClient`, `unwrap*`, `rpc.ts` wrappers incl. `myContext(db)`, `queries/*`, `keys.ts`); step 1.7b produced `@church/supabase-client`.' Apply the same id fix to 2.2a/2.2b Inputs where they say '1.6' / '1.7'."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "exact names / import paths",
+      "quote": "`client.ts` — `createBrowserSupabase()` wrapping `createWebBrowserClient` from `@church/supabase-client` … Read `packages/db/src/rpc.ts` and `packages/supabase-client/src/index.ts` for the exact exported names",
+      "problem": "Per G4 1.7b, `createWebBrowserClient({ url, key })` is exported from the subpath `@church/supabase-client/web` (`src/web.ts`), not from the package root; `src/index.ts` exports only `resolvePublicSupabaseEnv`, `resolveServiceSupabaseEnv`, `createLargeSecureStore` and adapter interfaces. The agent following the prompt literally will not find the function where it is told to look.",
+      "fix": "Replace with: 'import `createWebBrowserClient({ url, key })` from `@church/supabase-client/web` (read `packages/supabase-client/src/web.ts`); use `resolvePublicSupabaseEnv` / `resolveServiceSupabaseEnv` from `@church/supabase-client` inside `src/lib/env.ts` so the new-key/legacy-alias logic is not duplicated; read `packages/db/src/rpc.ts` for `myContext(db)` and `packages/db/src/errors.ts` for `unwrap`/`toDomainError`.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "duplication of shared constants",
+      "quote": "`src/lib/brand.ts` exporting `APP_NAME = 'Anacast'` and `APP_SCHEME = 'anacast'` … `NEXT_PUBLIC_MAX_UPLOAD_MB` (default 50 …) … Always render an \"Open in app\" button linking to `anacast://invite/<token>` … `toActionError(err)` that maps a PostgREST/RPC error to `{key, message}` … (match `message` against the catalogue keys",
+      "problem": "G4 1.6a/1.6b already export `APP_SCHEME`, `inviteDeepLink(token)`, the https invite-URL builder in `urls.ts`, `readMaxUploadMb`/`MAX_UPLOAD_MB_DEFAULT` in `limits.ts`, and 1.7a exports `toDomainError(error)`/`unwrap` in `@church/db`. Re-implementing them in the web app (string-building `anacast://invite/`, a second default-50 constant, a second message→key matcher) creates two sources of truth that later steps will diverge on.",
+      "fix": "In Build 6 make `brand.ts` re-export `APP_SCHEME` from `@church/domain` (only `APP_NAME` is new). In Build 2 compute `maxUploadMb` with `readMaxUploadMb(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB)`. In Build 10 build the deep link with `inviteDeepLink(token)` and the https link with the `urls.ts` builder. In Build 3 define `toActionError(err)` as a thin wrapper over `@church/db` `toDomainError(err)` that returns `{ key, message }` using the `@church/domain` error map; do not re-implement message matching."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "build-time correctness",
+      "quote": "`publicEnv()` returns `{supabaseUrl, supabasePublishableKey, appUrl, maxUploadMb}` from `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? NEXT_PUBLIC_SUPABASE_ANON_KEY` … `serverEnv()` … Missing required values throw an error naming the variable",
+      "problem": "Two hazards for a fresh agent: (a) Next only inlines `NEXT_PUBLIC_*` values into client bundles when they are referenced as literal `process.env.NEXT_PUBLIC_X` expressions — a table-driven `process.env[name]` lookup returns undefined in the browser; (b) if `serverEnv()` throws whenever ANY required server var is missing, then 2.2b's Billing tab (which only needs to know whether `STRIPE_SECRET_KEY` is set) will crash on a deployment that has not yet set `SHARE_LINK_COOKIE_SECRET`/`CRON_SECRET`.",
+      "fix": "Add to Build 2: 'Reference every `NEXT_PUBLIC_*` variable as a literal `process.env.NEXT_PUBLIC_…` expression (Next inlines only literals). `serverEnv()` must not throw eagerly: expose per-variable accessors (e.g. `requireServerEnv(\"SUPABASE_SECRET_KEY\")` throws with the var name and `docs/ENV.md`; `optionalServerEnv(\"STRIPE_SECRET_KEY\")` returns `string | undefined`), so a page that only checks the Stripe key does not fail on an unrelated missing variable.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "non-interactive commands",
+      "quote": "run `pnpm dlx shadcn@4.19.1 init` in `apps/web` (Tailwind 4 preset, base colour neutral, CSS variables on, components path `src/components/ui`, utils `src/lib/utils.ts` exporting `cn`), then add `button input …`",
+      "problem": "`shadcn init` and `shadcn add` are interactive (framework/base-colour/alias prompts, overwrite confirmations) and will hang or pick defaults in a non-TTY agent session; the component path is driven by `components.json` aliases, which the prompt does not mention. The `sonner` component also adds a `next-themes` dependency the Constraints section does not anticipate.",
+      "fix": "Replace with: 'From `apps/web` run `pnpm dlx shadcn@4.19.1 init -y -d -b neutral --css-variables` (creates `components.json`; set its aliases to `@/components`, `@/components/ui`, `@/lib/utils`, `@/lib`, `@/hooks` so files land under `src/`), then `pnpm dlx shadcn@4.19.1 add -y -o button input label card form dialog alert badge tabs table select checkbox switch tooltip dropdown-menu separator sheet skeleton textarea sonner`. If a prompt still appears, answer it non-interactively via flags rather than by editing generated files by hand. `sonner` pulls in `next-themes` — that dependency is allowed.' Add `next-themes` to the allowed dependency list in Constraints."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "concreteness / compatible results",
+      "quote": "Add `X-Frame-Options: DENY` on a second `headers()` entry whose `source` matches everything EXCEPT `/s/:path*` and `/embed/:path*` (use a negative-lookahead regex source; … for `/embed/*` also omit `frame-ancestors 'none'`)",
+      "problem": "The first `headers()` entry for `/(.*)` already carries the CSP with `frame-ancestors 'none'`, which also applies to `/embed/*`; the instruction to 'omit' it for `/embed/*` conflicts with the `/(.*)` source unless the CSP entry is also split, and the exact `source` pattern is left to the agent — two agents will produce different header tables and 3.4 must build on it.",
+      "fix": "State the header table explicitly: entry A `source: '/((?!s/|embed/).*)'` → CSP from `buildCsp({ frameAncestors: \"'none'\" })` + `X-Frame-Options: DENY` + HSTS + nosniff + Referrer-Policy + Permissions-Policy; entry B `source: '/s/:path*'` → the same CSP (share pages are never framed) without `X-Frame-Options`; entry C `source: '/embed/:path*'` → CSP built with `frameAncestors: '*'` and no `X-Frame-Options`, plus `X-Robots-Tag: noindex`. Export `buildCsp(options)` from `src/lib/security/csp.ts` so 3.4 extends the options instead of the strings. Add a test that the regex of entry A does not match `/s/abc` or `/embed/yt/x` but does match `/sermons` and `/login`."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "edge case in guards",
+      "quote": "redirect unauthenticated requests whose path starts with `/admin` or `/o` to `/login?next=…` … `isProtectedPath(pathname)`",
+      "problem": "'starts with `/o`' also matches `/other`, `/onboarding` or any future public route beginning with the letter o; the paths test does not pin the boundary, so two agents can implement different predicates.",
+      "fix": "Define `isProtectedPath(p)` as `p === '/admin' || p.startsWith('/admin/') || p === '/o' || p.startsWith('/o/')` and add test cases: `/o` and `/o/x/dashboard` protected; `/other`, `/onboarding`, `/administrator` not protected."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "sizing",
+      "quote": "About 30 files, most tiny (shadcn output excluded) — kept as one L session.",
+      "problem": "The step creates the Next.js package and tooling, the env module, three clients, proxy, CSP, layout/theme, ~20 shadcn components, seven guard modules, three public pages, five auth pages/routes with client forms and Server Actions, two shells, and five test files — above the ~25-new-file guideline of orchestrator decision 13, with several distinct areas an agent must get exactly right (Next 16 async APIs, @supabase/ssr cookies, auth-interrupt fallback, CSP).",
+      "fix": "Either keep it as one step and say so in notes with the justification (the exemplar 1.1 kept ~40 tiny files), or split into 2.1a 'Web scaffold, clients, proxy, security headers, guards, placeholders' (Build 1–8, 11–13, tests for paths/env/csp/landing) and 2.1b 'Auth flow pages' (Build 9–10, auth schemas test, invite page) with 2.1b depending on 2.1a and 2.2a depending on 2.1b. Record the choice in notes."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "exact names from prior steps",
+      "quote": "if there is no schema for creating a church or for the full settings row, add `organizationCreateSchema`, `organizationUpdateSchema` and `organizationSettingsSchema` … Zod parse with `organizationCreateSchema` … Server Action `updateChurch` (`organizationUpdateSchema`",
+      "problem": "G4 1.6b already fixes the names as `createOrganizationSchema` (`slug`, `name` 2–120, `contact_email`, `billing_mode` default manual, `trial_ends_at`), `updateOrganizationSchema` (partial + `status`), `fellowshipSchema` (`slug`, `name`, `description`), `orgBillingFormSchema`, `organizationSettingsSchema`, `updateSettingsSchema`, `validateSettingsUpdate`, `DEFAULT_SETTINGS`, and `slugSchema` (3–48 chars). The Build steps and done_when hard-code different names and different bounds (name 2–80, slug 3–50), so an agent following the Build text will add duplicate schemas or diverge from 1.6b.",
+      "fix": "Replace every `organizationCreateSchema` → `createOrganizationSchema`, `organizationUpdateSchema` → `updateOrganizationSchema`; in Build 2 say 'Slug validated by `slugSchema` from `@church/domain` (3–48 chars) plus the reserved-word list; Name bounds come from `createOrganizationSchema` (2–120)'; in Build 5 say 'RHF + `zodResolver(organizationSettingsSchema)`, save through `validateSettingsUpdate(current, patch)`/`updateSettingsSchema`; defaults from `DEFAULT_SETTINGS`'; in Build 7 use `fellowshipSchema`. Keep the 'add it if missing and record the name' clause only as a fallback."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "schema mismatch / built result wrong",
+      "quote": "\"New fellowship\" dialog with Name → Server Action `createFellowship`), `app/(super)/admin/fellowships/[id]/page.tsx` (rename form → `renameFellowship`",
+      "problem": "`fellowships` has `slug citext unique` (DESIGN §4.2; G2 1.2 fixes `id, slug citext unique, name, description, created_at, updated_at`; 1.6b's `fellowshipSchema` is `slug, name, description`). A create dialog with only Name will fail the not-null/unique slug on insert, and 'rename' ignores slug/description — the built fellowship feature would not work.",
+      "fix": "Build 7: 'New fellowship dialog fields: Name (required), Slug (auto-derived with `slugify`, editable, validated by `slugSchema`; `23505` → field error \"slug already taken\"), Description (optional). `[id]` page: edit form for name/slug/description → `updateFellowship` (validated by `fellowshipSchema.partial()`).' Rename `renameFellowship` → `updateFellowship` in Build 7 and done_when."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "parallel modules / exact file names",
+      "quote": "via `@church/db/queries/orgs.ts` (`listOrganizationsForAdmin(client)`) … `queries/orgs.ts` `organizationCounts(client, orgId)` … queries in `packages/db/src/queries/fellowships.ts`",
+      "problem": "G4 1.7a already ships `packages/db/src/queries/` modules named `organizations.ts`, `settings.ts` (`getSettings`, `updateSettings(orgId, patch)`), `memberships.ts`, and fellowship helpers (`createFellowship`, `listFellowshipMemberships`, `addOrgToFellowship`, `removeOrgFromFellowship`). Telling the agent to create `orgs.ts`/`fellowships.ts` produces a second, parallel set of helpers with different names (G6 2.3 repeats `queries/orgs.ts`), and `saveOrgSettings` bypasses the whitelisted `updateSettings`.",
+      "fix": "Replace with: 'Read `packages/db/src/queries/` first and EXTEND the existing modules (1.7a names them `organizations.ts`, `settings.ts`, `memberships.ts`, … — use whatever exists; never create a parallel `orgs.ts`). Add `listOrganizationsForAdmin(db)` (organizations + latest `billing_subscriptions` row + `organization_settings(timezone)`) and `organizationCounts(db, orgId)` to the organizations module; call `updateSettings(orgId, patch)` from `settings.ts` in `saveOrgSettings`; reuse the fellowship helpers already present and add only what is missing.' Also tell the assembler to align G6 2.3's `queries/orgs.ts` wording."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "test correctness",
+      "quote": "every `organization_settings` column except `org_id`, `logo_path`, `updated_at` has an entry — compare against the keys of `organizationSettingsSchema`",
+      "problem": "Every table has `created_at`/`updated_at` (DESIGN §4 conventions); 1.6b says its schema excludes `org_id`/timestamps but includes `logo_path`. If the agent compares against the DB row type instead of the schema keys, `created_at` breaks the test; the list should match exactly what `organizationSettingsSchema` exports.",
+      "fix": "Write: 'assert that `Object.keys(organizationSettingsSchema.shape)` minus `logo_path` equals the keys of `SETTINGS_FIELDS`' and, in the done_when, phrase it as 'every key of `organizationSettingsSchema` except `logo_path`'."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "verify commands",
+      "quote": "Anonymous `curl -sI http://localhost:3000/admin/churches/new` (mock-env server) → redirect",
+      "problem": "Unlike 2.1, the Verify block never says how to start the mock-env server, so the command is not runnable as written.",
+      "fix": "Prepend: 'With the mock env exported, run `pnpm --filter web build && pnpm --filter web start` in one terminal (stop it afterwards), then:'."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "file names from docs",
+      "quote": "`src/features/orgs/OrgFellowshipsPanel.tsx`",
+      "problem": "DESIGN §11 step 6 names the super-admin components `src/features/orgs/{ChurchForm,SettingsForm,FellowshipLinks,FirstAdminDialog,BillingPanel}.tsx`; orchestrator decision 10 says file paths come from the docs when they exist. `FellowshipLinks` is renamed without recording a deviation.",
+      "fix": "Either use `src/features/orgs/FellowshipLinks.tsx` or add to Finish: 'record in HANDOFF Deviations that DESIGN §11's `FellowshipLinks.tsx` is named `OrgFellowshipsPanel.tsx`'."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "runtime failure only visible after deploy",
+      "quote": "`queries/memberships.ts` in `@church/db`: `listMembershipsWithPermissions(client, orgId)` joining `org_memberships` → `profiles` (display name, email; show \"(profile not visible)\" if the row is filtered by RLS) → `org_membership_permissions`",
+      "problem": "`org_memberships.user_id` references `auth.users`, not `profiles`, so a PostgREST embed `profiles(...)` fails with 'could not find a relationship' — an error the agent cannot see until 2.5 because there is no hosted project. G4 1.7a already ships `listMemberships(orgId)` that embeds `org_membership_permissions(permission)` (FK exists) and fetches `profiles` by `user_id in (...)` in a second query, with a test asserting no `profiles(` embed.",
+      "fix": "Replace with: 'Reuse `listMemberships(db, orgId)` from `@church/db` `queries/memberships.ts` (1.7a: embeds `org_membership_permissions`, merges `profiles` from a second query because there is no FK from `org_memberships` to `profiles`); extend it only if a field is missing. Never embed `profiles(` from `org_memberships`.' Drop the new `listMembershipsWithPermissions` name."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "exact names from prior steps",
+      "quote": "`createUserDirect(input: {orgId, email, tempPassword, displayName, personId: string | null, permissions: PermissionKey[]}, deps?)` … Validate with `createUserDirectSchema` (email, password ≥ 12, display name 1–80, permissions ⊆ `PERMISSION_KEYS`) … add `inviteAdminSchema`, `createUserDirectSchema` there if missing",
+      "problem": "G4 1.6b fixes `createUserDirectSchema` with snake_case SQL-parameter keys: `org`, `email`, `temp_password` (≥ 12), `display_name`, `person_id` XOR `new_household { household_name, first_name, last_name }`, `perms`; it also fixes `createInvitationSchema` (`org`, `email`, `person_id`, `perms`) and the 1.7a wrappers `createInvitation(db, {org, email, person_id, perms})`, `revokeInvitation(db, {invitation_id})`, `setMembershipPermissions(db, {membership_id, perms})`, `setMembershipStatus(db, {membership_id, status})`, `srvAttachUser(svc, {user_id, org, person_id, display_name, perms})` parsed by `attachUserResultSchema`. The prompt invents camelCase input keys, a different schema shape, and calls RPCs by SQL name, so 3.2 (which reuses `createUserDirect`) and this step will disagree.",
+      "fix": "Rewrite Build 2's signature as `createUserDirect(input: CreateUserDirectInput /* z.infer<typeof createUserDirectSchema> from @church/domain: org, email, temp_password, display_name, person_id | new_household, perms */, deps?)`; the Create-account dialog collects Email, Display name, First name, Last name (for `new_household`; `household_name` defaults to the last name) and Temporary password. Replace SQL names in Build 1–2 with the `@church/db` wrappers (`createInvitation`, `revokeInvitation`, `setMembershipPermissions`, `setMembershipStatus`, `srvAttachUser` + `unwrap`). Name the invite form schema `inviteAdminSchema` only as a UI wrapper that produces `createInvitationSchema` input. Add `orgBillingFormSchema` (1.6b) as the Billing tab schema."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "wrong API in client code",
+      "quote": "Temporary password (auto-generated 16 chars from `crypto.randomBytes`, regenerate button, min 12 if edited)",
+      "problem": "`CreateAdminDialog.tsx` is a client component; `crypto.randomBytes` is Node-only and does not exist in the browser bundle.",
+      "fix": "Write: 'generate with Web Crypto `crypto.getRandomValues(new Uint8Array(16))` mapped onto an unambiguous alphabet (no 0/O/1/l), in a small `src/lib/users/temp-password.ts` with a unit test for length ≥ 16 and alphabet'."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "error handling",
+      "quote": "Service client → `srv_attach_user(user.id, orgId, personId, displayName, permissions)`; on failure delete the just-created auth user",
+      "problem": "G2 1.3b's `srv_attach_user` calls `require_writable`, so on a suspended church it raises `organization_suspended`; the prompt does not say to map that key, and the 'delete the auth user' rollback would then remove a legitimate account for a transient status reason — fine, but the message must tell the admin why.",
+      "fix": "Add to step 4: 'map `organization_suspended` (suspended church) and `permission_denied` from `srv_attach_user` via `toActionError`; the rollback still runs so no orphan auth user is left behind.' Add a test case (f) `srv_attach_user` raises `organization_suspended` → `deleteUser` called, error key surfaced."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "concreteness",
+      "quote": "\"Reactivate\" (from `cancelled` within 30 days → `active`)",
+      "problem": "`organizations` has no `cancelled_at` column (DESIGN §4.2), so 'within 30 days' is undefined; `srv_housekeeping` decides the purge from a column the agent must match or the UI will offer Reactivate on rows the next cron run deletes.",
+      "fix": "Write: 'Determine the cancellation moment the same way `srv_housekeeping()` does — read its body in `9999_init.sql` section (5c) (it compares `updated_at` of rows in `cancelled`); `allowedTransitions(status, mode, trialEndsAt, updatedAt, now)` offers Reactivate only while that window is open and shows the purge date.'"
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "concreteness",
+      "quote": "Read the SQL from the migration text at build time or copy it verbatim; never hard-code a real email.",
+      "problem": "Two allowed implementations (fs read of `../../supabase/migrations/9999_init.sql` from a Server Component vs a copied constant) yield different files and one has a tracing/runtime dependency on the repo layout.",
+      "fix": "Say only: 'Copy the two statements verbatim from section (11) into `src/features/super-admins/bootstrap-sql.ts` with `<FOUNDER_EMAIL>` as the placeholder; add a unit test that the constant contains `insert into public.super_admins` and no `@` character other than in the placeholder.'"
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "founder to-do correctness",
+      "quote": "under founder to-dos for step 2.5 add \"after creating the first church, create or invite yourself as its first admin from the Admins tab so `/o/<slug>` opens for you\"",
+      "problem": "Direct creation with the founder's own email fails with `email_exists` (the account already exists from the sign-up); only the Invite path works for an existing user (`accept_invitation` merges).",
+      "fix": "Change to: 'after creating the first church, use the Admins tab → Invite with your own email and all 12 permissions, copy the link and open it in the same signed-in browser to accept (Create account will refuse your email with \"use Invite instead\"); then `/o/<slug>/dashboard` opens for you from step 3.1 on.' Mirror this wording in the open_issues note for G6 2.5."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "file names from docs",
+      "quote": "`src/features/orgs/InviteAdminDialog.tsx` … `src/features/orgs/CreateAdminDialog.tsx`",
+      "problem": "DESIGN §11 step 6 names one component `src/features/orgs/FirstAdminDialog.tsx`; splitting into two dialogs is reasonable but is an undeclared deviation under orchestrator decision 10.",
+      "fix": "Either wrap both in `src/features/orgs/FirstAdminDialog.tsx` (Invite | Create account tabs) or add to Finish: 'record in HANDOFF Deviations that DESIGN §11's `FirstAdminDialog.tsx` became `InviteAdminDialog.tsx` + `CreateAdminDialog.tsx`'."
+    }
+  ]
+}
