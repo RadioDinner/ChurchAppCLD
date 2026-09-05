@@ -106,6 +106,8 @@ Write ${Q(KIT + '/groups/' + G.g + '.json')} following the JSON shape in the ske
 
 Be exhaustive: every item in the skeleton bullet for each step must appear in the prompt, and every table/RPC/route/env var/file that the plan assigns to that step must be named. Quote the founder decisions that apply. Do not leave anything for "the agent to figure out" that the docs already settle.
 
+PACING RULES (usage limits are tight): (a) read only the PLAN/DESIGN sections listed above and those the skeleton bullets cite — use grep -n '^## ' and sed -n line ranges, never cat DESIGN.md end to end; (b) SAVE AS YOU GO: write the group file to disk as soon as the first step's JSON is complete and rewrite it after every further step (always valid JSON with the steps finished so far), so an interruption loses at most one step; (c) keep tool calls few — compose each prompt in one Write, not many small edits.
+
 Then run the validator on your file and fix every error (warnings are fine but reduce them). Return the structured summary only.`,
       { label: `draft:${G.g}`, phase: 'Draft', schema: DRAFT_SUMMARY, effort: 'high' })
   },
@@ -117,8 +119,8 @@ Then run the validator on your file and fix every error (warnings are fine but r
 
 ${l.prompt}
 
-Read the group file in full, then the docs it should match. Produce concrete findings only — each with the step id, severity (blocker = would make the built result wrong or the step unexecutable; major = significant gap or inconsistency; minor = polish), a short verbatim quote of the offending text (or MISSING), the problem, and a fix the reviser can apply directly (replacement text or precise instruction). Do not rewrite the file yourself. Do not pad: if something is right, do not mention it. Aim for the complete list of real problems, not a sample.`,
-        { label: `crit:${G.g}:${l.key}`, phase: 'Critique', schema: FINDINGS, effort: 'high' })
+Read the group file in full, then only the doc sections you need (grep + sed -n line ranges; never cat DESIGN.md end to end). Before returning, save your findings as JSON to ${Q(KIT + '/reviews/' + G.g + '.' + l.key + '.json')} so they survive an interruption. Produce concrete findings only — each with the step id, severity (blocker = would make the built result wrong or the step unexecutable; major = significant gap or inconsistency; minor = polish), a short verbatim quote of the offending text (or MISSING), the problem, and a fix the reviser can apply directly (replacement text or precise instruction). Do not rewrite the file yourself. Do not pad: if something is right, do not mention it. Aim for the complete list of real problems, not a sample.`,
+        { label: `crit:${G.g}:${l.key}`, phase: 'Critique', schema: FINDINGS, effort: 'medium' })
     ))
     const findings = crit.filter(Boolean).flatMap((c, i) => c.findings.map(f => ({ lens: LENSES[i].key, ...f })))
     log(`${G.g}: ${findings.length} findings (${findings.filter(f => f.severity === 'blocker').length} blockers)`)
@@ -132,7 +134,7 @@ Read the group file in full, then the docs it should match. Produce concrete fin
 Three critics reviewed the file. Their findings (JSON):
 ${JSON.stringify(x.findings, null, 1)}
 
-Apply every blocker and major finding, and every minor finding that is cheap, by editing the JSON file in place (use a Python script or careful Edit calls; keep valid JSON; do not shorten prompts — add or correct). Where two findings conflict or a finding contradicts docs/PLAN.md, the founder decisions or the orchestrator decisions, reject it and say why. Keep ids, titles and dependencies fixed unless a finding shows a dependency is wrong. If a critic asks for an a/b split, do it with full prompts for both halves. Update notes/open_issues to reflect what changed. Run the validator until it prints 0 errors. Return the structured summary only.`,
+Apply every blocker and major finding, and every minor finding that is cheap, by editing the JSON file in place (use a Python script or careful Edit calls; keep valid JSON; do not shorten prompts — add or correct). Where two findings conflict or a finding contradicts docs/PLAN.md, the founder decisions or the orchestrator decisions, reject it and say why. Keep ids, titles and dependencies fixed unless a finding shows a dependency is wrong. If a critic asks for an a/b split, do it with full prompts for both halves. Update notes/open_issues to reflect what changed. Write the file back after each step you finish revising (valid JSON each time) so an interruption loses at most one step. Run the validator until it prints 0 errors. Return the structured summary only.`,
       { label: `revise:${G.g}`, phase: 'Revise', schema: REVISE_SUMMARY, effort: 'high' })
     return { group: G.g, drafted: x.draft.steps, findings: x.findings.length, blockers: x.findings.filter(f => f.severity === 'blocker').length, applied: rev && rev.applied, rejected: rev && rev.rejected, validator_errors: rev && rev.validator_errors, open_issues: rev && rev.open_issues }
   }
