@@ -72,6 +72,7 @@
 | G7 draft, step 3.1 only | 1 | 179,768 | 6.6 min | `groups/G7.json` step 3.1 (3141 words); 8 open issues in `reviews/G7.draft-3.1.result.json` |
 | G7 draft, step 3.2 only | 1 | 140,688 | 6.7 min | `groups/G7.json` step 3.2 (3286 words); open issues in `reviews/G7.draft-3.2.result.json` |
 | G7 critique, fidelity lens | 1 | 169,096 | 5.5 min | `reviews/G7.fidelity.json` — 8 findings, 0 blockers |
+| G7 critique, executability lens | 1 | 175,364 | 8.3 min | `reviews/G7.executability.json` — 17 findings, 1 blocker (super-admin access to /o/* conflicts with G5's 2.1) |
 
 `workflow-groups.js` now takes `args.stage` (`draft` | `critique` | `revise` | `all`), `args.steps` (drafter writes only
 these ids) and `args.lenses` (subset of `fidelity`, `executability`, `completeness`). Remaining single-agent runs for G7:

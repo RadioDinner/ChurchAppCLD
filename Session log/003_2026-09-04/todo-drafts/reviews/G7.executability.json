@@ -1,0 +1,142 @@
+{
+  "group": "G7",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "3.1",
+      "severity": "blocker",
+      "category": "cross-group conflict / primary objective",
+      "quote": "Super admins who are not members also get 404 here — they use `/admin`; document this in a code comment (proposed change is listed in HANDOFF, not built).",
+      "problem": "G5's 2.1 (the step this one extends) already decided the opposite: `my_context()` (G2 1.3b) returns EVERY org for super admins with `membership_status = null`, `requireOrgMember` accepts `isSuperAdmin` with `membershipStatus = null`, and the org shell shows a 'Viewing as super admin' banner, precisely so the founder can trial the whole web app as super admin (the stated primary objective). 3.1 as written instructs the agent to revert that: `find orgs entry with … membership_status = 'active' … Not found → notFound()` gives super admins a 404, the HANDOFF Finish item records 'super admins are not org members (404 on /o/<slug> unless invited)', done_when #2 and #9, notes and open_issues #1 repeat it. Two agents following 2.1 and 3.1 produce incompatible guards, and the founder cannot open `/o/<slug>/*` after 2.5.",
+      "fix": "In Build 1 replace the quoted sentence and the membership rule with: 'Keep 2.1's rule: the entry must have `membership_status = 'active'`, OR `is_super_admin` is true and the entry has `membership_status = null` (my_context returns every org for super admins). Non-super users with a missing, `pending` or `disabled` entry get `notFound()`. For super admins `hasPerm`/`hasAnyPerm` return true (mirrors `app.has_perm`; confirm in `9999_init.sql`) so `requirePerm` passes; `OrgShell` keeps 2.1's \"Viewing as super admin\" banner; `OrgSwitcher` lists active memberships plus, for super admins, the current org and a link to `/admin`.' Delete the 404-for-super-admin sentences from Finish (HANDOFF note), done_when #2 ('404 for unknown slug, non-member, pending or disabled membership' → add 'except super admins, who pass with membershipStatus null'), done_when #9, notes, and open_issues #1 (resolved by G2/G5; G5's 2.2 already tells 2.5 to add the founder as first admin only as an option)."
+    },
+    {
+      "step": "3.1",
+      "severity": "major",
+      "category": "self-containment / divergent signatures",
+      "quote": "if `require-org.ts` already exports `requireOrgMember(slug)` and `require-perm.ts` exports `requirePerm(ctx, perm)`, extend them; if they are stubs, complete them with the signatures below.",
+      "problem": "G5's 2.1 ships them fully, not as stubs, with a fixed shape: `requireOrgMember(slug)` → `OrgContext = {org: {orgId, slug, name, status}, membershipStatus, personId, householdId, permissions: PermissionKey[], isSuperAdmin}`, `requireWritable(ctx)` (throws `organization_suspended` when status = 'suspended'), `hasPerm`/`hasAnyPerm`/`requirePerm(ctx, perm)` → `forbidden()` with `experimental.authInterrupts` already set, `getAuthContext()` in `src/lib/auth/context.ts`, plus `toActionError`/`ActionResult` for Server Action returns. 3.1 then defines a different shape (`org: {org_id, …}`, `writable` field), re-instructs setting `authInterrupts` and an `error.tsx` fallback, and uses `ctx.org.org_id` in Build 4. An agent following 3.1 literally rewrites 2.1's guards and breaks 2.2's `/admin` code.",
+      "fix": "Rewrite Build 1 to: 'These files exist from 2.1 with exactly this shape: … (paste the G5 shape). Change only: (a) `requirePerm(ctx, perm | perms[])` — an array means any-of; (b) add `isWritable(ctx)` (= status in trial/active/past_due) next to `requireWritable` (or a derived `writable` getter) — do not rename fields; (c) add `app/(org)/o/[orgSlug]/{not-found,forbidden}.tsx` if 2.1 did not. Use `ctx.org.orgId` everywhere, `toActionError`/`ActionResult` for every Server Action result, and 2.1's 403 mechanism as recorded in HANDOFF (do not add an `error.tsx` fallback unless HANDOFF says `forbidden()` failed).' Update Inputs bullet 1 and open_issues #2/#4 accordingly."
+    },
+    {
+      "step": "3.1",
+      "severity": "major",
+      "category": "verify not executable",
+      "quote": "remove `org.settings` from that admin in `/admin/churches/[orgId]` → `/o/<slug>/settings` → 403",
+      "problem": "2.2's Admins tab (G5) can only disable/enable a membership or grant it all 12 permissions; it cannot remove a single permission. The per-permission grid arrives in 3.2. The manual check cannot be followed as written.",
+      "fix": "Replace with: 'in the Supabase SQL Editor run `delete from public.org_membership_permissions where membership_id = '<id>' and permission = 'org.settings';` (find the id in `/admin/churches/[orgId]` Admins tab or `select id from public.org_memberships where …`) → `/o/<slug>/settings` → 403 and Settings hidden from the nav; restore with `insert into public.org_membership_permissions (membership_id, permission) values ('<id>', 'org.settings');` (or use the Admins tab \"grant all\"). Test with a second, non-super account — a super admin passes every permission check.'"
+    },
+    {
+      "step": "3.1",
+      "severity": "major",
+      "category": "RLS / data access",
+      "quote": "(c) success → `confirmLogoUpload(orgSlug, path)` re-checks the object via `storage.from('org-assets').list('<org_id>/logo')`",
+      "problem": "Reads on `storage.objects` go through `ca_storage_select` → `app.can_read_object`, which for `org-assets` is true only when the org appears in `org_directory_info`; that is fine for members, but `list()` also depends on the `storage.foldername`/prefix search which the local shim only approximates and which some Supabase versions gate differently from `createSignedUrl`. More importantly the DESIGN §7 path template is `{org_id}/logo/{uuid}.png` and G4 reports a `logo_path` check expression copied from `9999_init.sql`; if 1.2's check pins the extension (or the `{org_id}/logo/` prefix), a `.jpg`/`.webp` `prepareLogoUpload` fails at the DB before the upload with SQLSTATE 23514 and the UI shows a confusing check error.",
+      "fix": "Add to Build 4 Logo: 'Read the `organization_settings.logo_path` check constraint in `9999_init.sql` first; accept client-side only the extensions/prefix it allows (if it forces `.png`, offer PNG only and say so in the helper text). Confirm the upload with `createSignedUrl(path, 60)` (a 200 proves the object exists) instead of `list()`; map a 23514 from `prepareLogoUpload` to \"Unsupported file name\" rather than a generic error.'"
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "self-containment",
+      "quote": "the latest `billing_subscriptions` row (`status`, `status_raw`, period end only if that column exists in `9999_init.sql`)",
+      "problem": "G2 1.2 / G5 fixed the columns: `billing_subscriptions (stripe_subscription_id, org_id, status, status_raw, event_created, price_id, current_period_end, cancel_at_period_end, …)`; 2.2's Billing tab already renders them. The hedge makes two agents render different fields.",
+      "fix": "Replace with: 'the latest `billing_subscriptions` row ordered by `updated_at desc`: `status` badge (same colours as 2.2's Billing tab), `status_raw`, `current_period_end` in the org timezone, `cancel_at_period_end` (\"cancels at period end\"); reuse 2.2's `src/features/orgs/billing-queries.ts` if the read is already there.' Drop open_issues #7."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "self-containment",
+      "quote": "`app/(org)/o/page.tsx`: signed-in user with no slug → redirect … Update step 2.1's post-login redirect so non-super users land on `/o` (leave super admins on `/admin`); if 2.1 already does this, keep it.",
+      "problem": "2.1 already created `app/(org)/o/page.tsx` as a placeholder and `/invite/[token]` redirects to `/o` on success; `proxy.ts` sends unauthenticated `/o` to `/login?next=`. The prompt reads as if the file is new and leaves the login redirect ambiguous.",
+      "fix": "Replace with: 'Replace the placeholder `app/(org)/o/page.tsx` from 2.1 with the landing logic below (keep its route). 2.1's `/invite/[token]` and login flow already send non-super users to `/o` (or to `next=`); do not change them unless they land somewhere else — record what you found in HANDOFF.' Drop open_issues #3."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "data semantics",
+      "quote": "\"Published sermons\", \"Active announcements\", \"Current bulletin\" counts (`sermons`, `announcements`, `bulletins` with `publish_at <= now()`; RLS limits rows)",
+      "problem": "`bulletins` carry `starts_on`/`ends_on` (check `ends_on >= starts_on`) plus `publish_at default now()`; 'current' by `publish_at` alone counts every bulletin ever uploaded. 'Active announcements' also ignores `expires_at`.",
+      "fix": "Replace with: '\"Published sermons\" = `publish_at <= now()`; \"Active announcements\" = `publish_at <= now() and (expires_at is null or expires_at > now())`; \"Current bulletin\" = the bulletin with `publish_at <= now() and starts_on <= today and ends_on >= today` (today in the org timezone via `@church/domain/dates.ts`), else \"No bulletin for this week\".'"
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "tests / duplication",
+      "quote": "`organizationSettingsSchema` accepts the defaults, rejects `youth_min_age = 30, youth_max_age = 25`, rejects `adult_min_age = 22`, rejects `directory_share_with_fellowship = true` with `directory_share_in_congregation = false`, rejects an unknown timezone",
+      "problem": "G4 1.6b already ships `organizationSettingsSchema` (with `timezoneSchema` and refinements whose `path`/message carry the DB constraint names) and `updateSettingsSchema`, with Vitest tables. Re-specifying the tests in `apps/web` duplicates them and the 'create `schemas/settings.ts` if 1.6 did not' branch is dead.",
+      "fix": "Replace the Inputs sentence about `schemas/org.ts` or `schemas/settings.ts` with: '`@church/domain` exports `organizationSettingsSchema`, `updateSettingsSchema` and `timezoneSchema` from `packages/domain/src/schemas/settings.ts` (1.6b); their refinements put the DB constraint name in `path`/message — use that to focus the field.' In Build 8 keep only web-side tests (nav visibility, `hasAnyPerm`, the 23514/22023 → field-error mapping) and say 'the schema tests exist in `packages/domain` — extend, do not duplicate'. Drop open_issues #5."
+    },
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "cross-group conflict",
+      "quote": "if the email already exists, find the user with `service.auth.admin.listUsers` (or `getUserByEmail` if supabase-js 2.112 exposes it), continue with that `user_id` WITHOUT changing its password, and return `existingAccount: true`",
+      "problem": "G5's 2.2 already built `src/lib/users/create-direct.ts` with `createUserDirect(input: {orgId, email, tempPassword, displayName, personId: string | null, permissions}, deps?)`, maps `email_exists` (422) to 'An account with this email already exists — use Invite instead; accepting the invitation links the existing account to this church', has ≥ 5 Vitest cases for exactly that, and states 'Do not call `listUsers` to look people up by email'. 3.2 respecifies a different signature (`createUserDirect(ctx, input)`, `newPerson`), adds an attach-existing-account branch that contradicts 2.2's rule and tests, and only vaguely says 'look for `createUserDirect` or an equivalent'.",
+      "fix": "Rewrite Inputs bullet 3 to name the exact file, signature and `deps` injection from 2.2. Rewrite Build 7 to: 'Reuse `createUserDirect` unchanged; the org Server Action `createAccount` calls it with `{orgId: ctx.org.orgId, email, tempPassword, displayName, personId (null for a new person), permissions}`. New person = `personId: null` + `displayName` — `srv_attach_user` creates the one-person household (`created_via = 'admin'`, role `head`, `attendee`) from `display_name` (G2 1.3b). Keep 2.2's `email_exists` → \"use Invite instead\" behaviour; do not look users up by email and do not touch the existing tests.' Remove `existingAccount`, `getUserByEmail`/`listUsers`, the 'existing-account branch' from done_when #4, Finish, notes and open_issues #8/#9."
+    },
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "invented names vs 1.6b/1.7",
+      "quote": "extend `packages/domain/src/schemas/` with `inviteUserSchema` (`email` …, `personId` uuid nullable, `permissions` …) and `createAccountSchema` (`email`, `displayName` 1–80, `tempPassword` 12–72 chars, `personId` xor `newPerson`, `permissions`)",
+      "problem": "G4 1.6b already exports `createInvitationSchema { org, email, person_id, perms }` and `createUserDirectSchema { org, email, temp_password (≥ 12), display_name, person_id xor new_household { household_name, first_name, last_name }, perms }` (snake_case = SQL parameter names) plus `urls.ts` with the invite-link builder; G4 1.7 exports object-form wrappers `createInvitation(db, {org, email, person_id, perms})` → raw token, `setMembershipPermissions(db, {membership_id, perms})`, `setMembershipStatus(db, {membership_id, status})`, `removeMembership(db, {membership_id})`, `revokeInvitation(db, {invitation_id})`, `srvAttachUser`. 3.2 invents parallel camelCase schemas, positional RPC calls (`create_invitation(org_id, email, person_id ?? null, perms)`) and string-builds `${NEXT_PUBLIC_APP_URL}/invite/${token}`.",
+      "fix": "Build 12: 'Reuse `createInvitationSchema` and `createUserDirectSchema` from `@church/domain` (keys `org`, `email`, `person_id`, `perms`, `temp_password`, `display_name`, `new_household {household_name, first_name, last_name}`); the dialogs' RHF forms use those keys; add only a form-level `.omit({org: true})` if the org comes from `ctx`. Because `srv_attach_user` takes `display_name` only, map `new_household` to `display_name = first_name + ' ' + last_name` in the Server Action.' Build 5/7: call the 1.7 wrappers in object form and build the link with the 1.6b `urls.ts` invite builder (use its exported name). Update done_when #3/#7 and notes/open_issues #12 to those names."
+    },
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "data access / views",
+      "quote": "`listLinkablePersons(orgId, search)` — `directory_persons` with `user_id is null` and `deceased_on is null`",
+      "problem": "The `directory_persons` view (DESIGN §4.4 sketch, built in 1.3a) exposes `id, org_id, household_id, first_name, last_name, preferred_name, sex, household_role, congregation_status, directory_listed, photo_path, email, phones, deceased_on, marital_status, birthdate_visibility, birthday_display, youth_override, member_since, view_level` — no `user_id`. Both `listMemberships` ('the linked `directory_persons` row') and `listLinkablePersons` filter on a column that does not exist; PostgREST returns 400.",
+      "fix": "Build 1: 'Read the `directory_persons` column list in `9999_init.sql`. If `user_id` is not exposed (DESIGN's sketch omits it), read `id, user_id` from the base table `persons` (its select policy admits exactly the rows visible through the view; the column grant excludes only `birthdate`/`anniversary`) and join in JS to `directory_persons` for names: `listLinkablePersons` = `persons` where `org_id = … and user_id is null` → ids → `directory_persons` `in (ids)` with `deceased_on is null`, `ilike` search, limit 20; `listMemberships` = memberships + `persons` (`user_id in (…)`) + `directory_persons` by id. Do not change SQL.'"
+    },
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "sizing (orchestrator decision 13)",
+      "quote": "No split: about 20 new files, one new runtime dependency (`resend` 6.25.0).",
+      "problem": "Counting Build 1–14: `queries/users.ts`, `keys.ts` edit, `nav.ts` edit, `users/page.tsx`, `UsersPage`, `PermissionGrid`, `permission-grid.logic.ts`, `use-debounced-permissions.ts`, `actions.ts` (7 actions), `InviteDialog`, `PersonPicker`, `PermissionPicker`, `CreateAccountDialog`, `temp-password.ts`, `create-direct.ts` changes, `resend.ts`, `MembershipActions`, `users/[membershipId]/page.tsx`, `invitations/page.tsx`, `InvitationsTable`, two schemas, five Vitest suites, an e2e addition, two docs, four shadcn components, plus a hosted manual script with 15 checks — ≈ 30 files and the densest behaviour list in M3 (optimistic coalescing grid, dialogs, email, direct creation, detail + invitations pages).",
+      "fix": "Either split: 3.2a 'Users grid, membership actions, detail page' (Build 1–5 without invite/create/resend/revoke actions, 9, 10, grid/logic tests, docs) and 3.2b 'Invitations, direct accounts, email' (remaining actions, Build 6, 7, 8, 11, 12, schema/temp-password/resend tests, ENV.md), each with full prompt, `depends_on` ['3.1'] / ['3.2a'], commit messages `feat(web): users grid and membership actions` / `feat(web): invitations, direct accounts, Resend email`, recorded in notes — or trim to one session by dropping the detail page's `audit_log` section and the `/users/[membershipId]` permission editor (link to the grid instead). State the choice in notes."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "error catalogue",
+      "quote": "raises the message key 1.3b catalogued (`last_org_manager` in the G2 draft — read `docs/RLS.md` for the exact key and SQLSTATE)",
+      "problem": "G2, G3, G4 and G5 all fix the key as `last_org_manager`; other keys the UI must map are also fixed by 1.3b: `permission_denied` (detail `users.edit_permissions`) from `create_invitation`, `person_not_found`, `membership_not_found`, `invalid_payload` (setting `pending` is not allowed), `organization_suspended`. The hedge leaves the agent to guess which keys to map.",
+      "fix": "Replace with: 'raises `last_org_manager` (map to \"This is the last user who can manage permissions; grant users.edit_permissions to someone else first\"). Also map `permission_denied` (detail `users.edit_permissions`) → \"You cannot grant permissions without users.edit_permissions\", `person_not_found`, `membership_not_found`, `invalid_payload`, `organization_suspended` through `@church/domain/errors.ts`; confirm the keys in the error catalogue at the top of section (5c) of `9999_init.sql` / `docs/RLS.md`.' Drop open_issues #11."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "self-containment / reuse",
+      "quote": "Step 2.2 created `/admin/churches/[orgId]` with an Admins tab that invites or creates the first admin with all 12 permissions",
+      "problem": "2.2's Admins tab also lists and revokes pending invitations and shows the invite link once (G5), so a first invitation table/link-reveal component exists under `src/features/orgs/`. 3.2 creates `InvitationsTable` and the link-shown-once UI from scratch without telling the agent what to reuse.",
+      "fix": "Append: 'It also lists/revokes pending invitations and shows the one-time invite link (components under `src/features/orgs/`). Read them first; extract shared pieces (link-reveal-with-copy, invitation row) into `src/features/users/` and import them from the Admins tab only if that is a one-line change — otherwise leave `/admin` untouched.'"
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "verify wording",
+      "quote": "only `src/lib/users/create-direct.ts` plus pre-existing 2.x usages (Stripe, share, cron)",
+      "problem": "Share (`/s/[token]`, 3.4) and cron (3.6) do not exist at 3.2; the expected grep output is wrong.",
+      "fix": "Replace with: 'only `src/lib/users/create-direct.ts` (2.2) and the 2.3 Stripe files (`src/lib/stripe/*`, `app/api/stripe/webhook`, `app/api/billing/*`).'"
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "RPC semantics",
+      "quote": "membership and permissions deleted, directory person unlinked but kept, push devices for this church removed",
+      "problem": "G2 1.3b's `remove_membership` deletes the user's `notification_preferences` for the org and their `push_devices` only when the user has no other active membership; the confirm text overstates it.",
+      "fix": "Replace with: 'membership and permissions deleted, directory person unlinked but kept, notification settings for this church removed (push devices only if this was their last church)'. Add the same nuance to `MembershipActions` done_when if it is quoted there."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "self-containment",
+      "quote": "the last 20 `audit_log` rows for this membership (filter by row id; skip the section if `9999_init.sql`'s columns make that awkward and note it in HANDOFF)",
+      "problem": "1.2 fixed `audit_log (org_id, actor_user_id, table_name, row_id, action, old_data, new_data, created_at)`; the hedge is unnecessary and leaves the filter undefined for permission rows (composite PK).",
+      "fix": "Replace with: 'the last 20 `audit_log` rows where `org_id = ctx.org.orgId and ((table_name = 'org_memberships' and row_id = membershipId) or (table_name = 'org_membership_permissions' and new_data->>'membership_id' = membershipId or old_data->>'membership_id' = membershipId))` ordered by `created_at desc` — read `app.audit_row` to confirm what `row_id` holds for the composite-PK table and adjust the filter.'"
+    }
+  ]
+}
