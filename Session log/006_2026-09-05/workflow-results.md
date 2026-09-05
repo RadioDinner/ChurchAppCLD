@@ -29,3 +29,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   Full result saved in `todo-drafts/reviews/G8.result.json`.
 - Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 910,814**, tool_uses 127, duration 2,005,756 ms (~33 min).
 - **G8 total sub-agent tokens: 314,081 + 910,814 = 1,224,895.**
+
+## Run 3 — G9 — wf_d7df784f-664 (task wkz1ehl0a), launched 2026-09-05 15:16 America/New_York (19:16 UTC)
+- args: {"groups": ["G9"]} (no group file existed → full draft; steps 3.5, 3.6).
+- Outcome: (pending)
