@@ -24,7 +24,9 @@ should update it.
 - `a6c93a6` chore(session): TODO.md group drafts G5/G6 (autosave)
 - `dc15da4` chore(session): TODO.md group drafts G5/G6 (autosave)
 - `fae39b1` chore(session): TODO.md group drafts G5/G6 (autosave)
-- The commit that adds this session_log.md (same message) follows the list above.
+- `212fb2e` chore(session): TODO.md group drafts G5/G6 (autosave) — adds session_log.md and workflow-results.md.
+- One further commit with the same message logs the founder's follow-up prompt ("usage limit … has reset now,
+  please continue"); by then the task was already complete, so it changed only prompt_history.txt and this line.
 
 Step table after revision:
 
