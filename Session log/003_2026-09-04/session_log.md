@@ -34,3 +34,33 @@
 3. Usage mode: lean (main-thread) or heavy multi-agent?
 4. Confirm lowercase `com.anacast.app`; accept Supabase Free limits (50 MB uploads, no backups, 7-day idle pause) for the trial;
    brand colours / domain may stay placeholders until deploy.
+
+## Founder decisions this session
+- 22:0x — founder chose option (A): "finish the todo.md, be thorough". No answer on branch, so work stayed on the
+  harness branch `claude/project-status-todo-plan-leghlm`; `origin/claude/plan-todo-prompts-ia7gkd` was merged into it
+  (commit 37aa965). Nothing merged to `main` (founder said on 2026-09-03 "I'll tell you when to merge to main").
+- 22:0x — founder said "pause!" while the drafting workflows were running. Everything was stopped.
+
+## State of the TODO.md work at the pause
+- Kit: `Session log/003_2026-09-04/todo-drafts/` — `skeleton.md` (from session 002), `orchestrator-decisions.md`
+  (14 cross-group decisions, NEW), `validate.py` (shape + prompt-rule checks, NEW), `assemble.py` (session-002 assembler
+  plus a "Decisions these prompts assume" header section), `workflow-groups.js` / `workflow-global.js` (the Workflow
+  scripts, parameterised by `args.groups` / `args.skipDraft`), `autosave.sh`.
+- Groups done: `groups/G1.json` (0.1, 1.1 — from session 002, not yet critiqued), `groups/G2.json` (1.2, 1.3a, 1.3b —
+  drafted this session, validator clean, NOT yet critiqued/revised). G3–G14 not drafted.
+- The first run of all drafters died on the account usage limit ("session limit, resets 2am UTC") after ~10 minutes;
+  G2 was the only file written. The relaunch at 02:00 UTC was stopped by the founder's "pause!" before any file landed.
+- Container facts that matter: 4 CPUs → each Workflow runs at most 2 agents concurrently; run several workflows in
+  parallel (one per group subset) to get throughput. Each drafter takes ~10 minutes at effort high.
+
+## How to resume
+1. `git checkout claude/project-status-todo-plan-leghlm` (or merge it to main first if the founder says so).
+2. Launch `workflow-groups.js` via the Workflow tool with `args` such as `{"groups":["G2","G3","G4"],"skipDraft":["G2"]}`,
+   `{"groups":["G5","G6","G7"]}`, `{"groups":["G8","G9","G10"]}`, `{"groups":["G11","G12","G13","G14","G1"]}` in
+   parallel. Any group whose `groups/G<n>.json` already validates can be listed in `skipDraft` (critique + revise only).
+3. When all groups validate, launch `workflow-global.js` (assemble → 4 global lenses → per-group fixers → loop ≤ 2).
+4. Read `docs/TODO.md`, fix the header/appendix by hand if needed, update `HANDOFF.md` (State: TODO.md done; remove the
+   "in progress on branch" line), commit `docs: TODO.md — build order with a prompt per step`, push, wait for the founder
+   before merging to main.
+5. Cheaper alternative if usage is a concern: draft G3–G14 directly in the main session using `skeleton.md`,
+   `orchestrator-decisions.md` and `G2.json` as the exemplar, validate each, then run only `workflow-global.js` once.

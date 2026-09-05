@@ -4,3 +4,5 @@ what is the status of this project? IS the plan with to-do list items ready?
 Let's get working on this again. Before you begin, what input do you need from me?
 --- 2026-09-04 18:08 ---
 finish the todo.md, be thorough
+--- 2026-09-04 22:02 ---
+pause!
