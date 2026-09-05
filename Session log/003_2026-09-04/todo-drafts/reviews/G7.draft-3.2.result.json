@@ -1,0 +1,40 @@
+{
+ "group": "G7",
+ "stage": "draft 3.2 only",
+ "tokens": 140688,
+ "agents": 1,
+ "result": [
+  {
+   "group": "G7",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "3.1",
+     "title": "Org shell, dashboard, settings, billing read-only",
+     "actor": "agent",
+     "prompt_words": 3141
+    },
+    {
+     "id": "3.2",
+     "title": "Users & permissions",
+     "actor": "agent",
+     "prompt_words": 3286
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "[3.2] `srv_attach_user(user_id, org_id, person_id, display_name, perms[])` is documented only as 'person link/creation'; the docs do not say what it creates for a null `person_id`. 3.2 tells the agent to read the SQL body (1.3b) and adapt the call, never the SQL; the assembler should align 3.2's `createUserDirect` input (`newPerson: {firstName, lastName}`) with what G2's 1.3b implemented.",
+    "[3.2] Direct creation for an email that already has an auth account attaches the existing user without changing its password (DESIGN §5 shared-household accounts); supabase-js 2.112 may not expose `auth.admin.getUserByEmail`, so the prompt falls back to `listUsers`. Orchestrator may prefer refusing existing emails instead.",
+    "[3.2] Resend of an invitation = `revoke_invitation` + new `create_invitation` (raw token is returned only once); no `resend_invitation` RPC/migration proposed.",
+    "[3.2] Last-manager error key is `last_org_manager` in G2's draft; 3.2 tells the agent to read docs/RLS.md for the exact key — 1.5's RLS.md must list it.",
+    "[3.2] `pending` memberships are created by nothing in Phase 1 (join requests are 5.6); the grid still renders/approves them so 5.6 needs no grid change.",
+    "[3.2] Names chosen where docs are silent: `packages/db/src/queries/users.ts` (`listMemberships`, `getMembership`, `listInvitations`, `listLinkablePersons`), Server Actions `updatePermissions`/`setMembershipStatus`/`removeMembership`/`inviteUser`/`revokeInvitation`/`resendInvitation`/`createAccount`, components `UsersPage`/`PersonPicker`/`PermissionPicker`/`InvitationsTable`, `permission-grid.logic.ts`, `use-debounced-permissions.ts`, `src/lib/users/temp-password.ts`, schemas `inviteUserSchema`/`createAccountSchema`, `isEmailConfigured`/`sendInvitationEmail`. G4 (1.6) may have chosen other schema names; the prompt says to reuse whatever exists.",
+    "[3.1, carried over] Super admins are not org members (404 on `/o/<slug>/*` unless invited); guard names/signatures assumed from DESIGN §2 pending G5; 403 via Next `forbidden()` with `error.tsx` fallback; settings schema location depends on G4; logo orphans cleaned only by 3.6 cron; billing_subscriptions columns per 1.2/2.3."
+   ]
+  }
+ ]
+}
