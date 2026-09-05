@@ -1,0 +1,18 @@
+--- 2026-09-04 22:58 ---
+You are working in the ChurchAppCLD repository. Follow the session-start checklist in CLAUDE.md
+(new-session.sh, prompt_history.txt). Check out and stay on the branch
+claude/project-status-todo-plan-leghlm (git fetch origin && git checkout claude/project-status-todo-plan-leghlm).
+Another session is drafting other groups on this same branch.
+
+Task: run the Workflow tool with the script file
+"Session log/003_2026-09-04/todo-drafts/workflow-groups.js" and args {"groups": ["G4"]}.
+It drafts, critiques and revises group G4 (steps 1.6 and 1.7 of docs/TODO.md) into
+"Session log/003_2026-09-04/todo-drafts/groups/G4.json". Read
+"Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md" first so you understand the rules.
+
+When it finishes: run python3 "Session log/003_2026-09-04/todo-drafts/validate.py"
+"Session log/003_2026-09-04/todo-drafts/groups/G4.json" and confirm 0 errors. Commit only
+groups/G4.json, reviews/G4.*.json and your own Session log folder. Before every push run
+git pull --rebase origin claude/project-status-todo-plan-leghlm. Do not edit HANDOFF.md, docs/TODO.md,
+any other group file, or the kit files, and do not run workflow-global.js. Report the sub-agent
+token count from the workflow result when done.
