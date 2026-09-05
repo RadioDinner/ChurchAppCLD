@@ -30,6 +30,9 @@ const ALL = [
 ]
 const wanted = (args && args.groups) || []
 const skipDraft = (args && args.skipDraft) || []
+const STAGE = (args && args.stage) || 'all'            // 'all' | 'draft' | 'critique' | 'revise'
+const ONLY_STEPS = (args && args.steps) || []            // restrict the drafter to these step ids
+const ONLY_LENSES = (args && args.lenses) || []          // restrict critics to these lens keys
 const GROUPS = ALL.filter(G => wanted.includes(G.g)).map(G => skipDraft.includes(G.g) ? { ...G, draft: false } : G)
 if (!GROUPS.length) throw new Error('args.groups must name at least one group')
 
@@ -95,12 +98,13 @@ const LENSES = [
 
 const results = await pipeline(GROUPS,
   async (G) => {
-    if (!G.draft) return { group: G.g, file: `${KIT}/groups/${G.g}.json`, steps: [], validator_errors: 0, open_issues: [], proposed_additional_steps: [] }
+    if (!G.draft || (STAGE !== 'all' && STAGE !== 'draft')) return { group: G.g, file: `${KIT}/groups/${G.g}.json`, steps: [], validator_errors: 0, open_issues: [], proposed_additional_steps: [] }
     return agent(`You are the drafter for group ${G.g} of docs/TODO.md. ${COMMON}
 
 Your group's steps (ids and titles are FIXED by the skeleton; read the skeleton bullets for the full content of each):
 ${G.steps.map(s => '- ' + s).join('\n')}
 Most relevant doc sections for this group: ${G.reads} (read others as needed).
+${ONLY_STEPS.length ? `THIS RUN DRAFTS ONLY STEP(S) ${ONLY_STEPS.join(', ')}. The group's other steps are drafted in later runs: leave any steps already in the file untouched, do not draft the others now, and keep the file valid JSON containing only the steps drafted so far. Still fill the group-level open_issues/proposed_additional_steps for what you drafted.` : ''}
 
 Write ${Q(KIT + '/groups/' + G.g + '.json')} following the JSON shape in the skeleton exactly (all 14 keys per step). For AGENT steps write the complete ready-to-paste prompt (1200–3000 words) with the exact opening lines and the six sections required by orchestrator decision 9, concrete numbered Build instructions with exact file paths and names, Constraints, Verify commands with expected results, and the Finish block. For FOUNDER steps write the numbered click-path checklist (dashboard → menu → field → value, what to record where, "Done when") and a helper_prompt where an agent can verify or record the result; for FOUNDER+AGENT steps write both. Steps that are reusable templates (2.6, 3.10) must still be complete prompts with placeholders for the pasted observations. If a step is too large for one session, split into <id>a/<id>b with full prompts each. Fill done_when (>= 4 objectively checkable items), reads, estimated_session, commit_message, notes (risks, deviations, things the founder should know) and, at group level, proposed_additional_steps and open_issues.
 
@@ -115,8 +119,10 @@ Then run the validator on your file and fix every error (warnings are fine but r
   },
   async (d, G) => {
     if (!d) return null
+    if (STAGE !== 'all' && STAGE !== 'critique') return { draft: d, findings: [] }
     const file = `${KIT}/groups/${G.g}.json`
-    const crit = await parallel(LENSES.map(l => () =>
+    const lenses = LENSES.filter(l => !ONLY_LENSES.length || ONLY_LENSES.includes(l.key))
+    const crit = await parallel(lenses.map(l => () =>
       agent(`You are a critic for group ${G.g} of docs/TODO.md (file ${Q(file)}). ${COMMON}
 
 ${l.prompt}
@@ -124,17 +130,19 @@ ${l.prompt}
 Read the group file in full, then only the doc sections you need (grep + sed -n line ranges; never cat DESIGN.md end to end). Before returning, save your findings as JSON to ${Q(KIT + '/reviews/' + G.g + '.' + l.key + '.json')} so they survive an interruption. Produce concrete findings only — each with the step id, severity (blocker = would make the built result wrong or the step unexecutable; major = significant gap or inconsistency; minor = polish), a short verbatim quote of the offending text (or MISSING), the problem, and a fix the reviser can apply directly (replacement text or precise instruction). Do not rewrite the file yourself. Do not pad: if something is right, do not mention it. Aim for the complete list of real problems, not a sample.`,
         { label: `crit:${G.g}:${l.key}`, phase: 'Critique', schema: FINDINGS, effort: 'medium' })
     ))
-    const findings = crit.filter(Boolean).flatMap((c, i) => c.findings.map(f => ({ lens: LENSES[i].key, ...f })))
+    const findings = crit.map((c, i) => c ? c.findings.map(f => ({ lens: lenses[i].key, ...f })) : []).flat()
     log(`${G.g}: ${findings.length} findings (${findings.filter(f => f.severity === 'blocker').length} blockers)`)
     return { draft: d, findings }
   },
   async (x, G) => {
     if (!x) return null
+    if (STAGE !== 'all' && STAGE !== 'revise') return { group: G.g, stage: STAGE, drafted: x.draft.steps, findings: x.findings.length, blockers: x.findings.filter(f => f.severity === 'blocker').length, applied: null, rejected: [], validator_errors: x.draft.validator_errors, open_issues: x.draft.open_issues }
     const file = `${KIT}/groups/${G.g}.json`
+    const findingsText = x.findings.length ? JSON.stringify(x.findings, null, 1) : `NOT PASSED INLINE — read them from the saved critic files ${Q(KIT + '/reviews/' + G.g + '.fidelity.json')}, ${Q(KIT + '/reviews/' + G.g + '.executability.json')} and ${Q(KIT + '/reviews/' + G.g + '.completeness.json')} (each has a "findings" array; a missing file means that lens has not run yet — apply the ones that exist).`
     const rev = await agent(`You are the reviser for group ${G.g} of docs/TODO.md (file ${Q(file)}). ${COMMON}
 
 Three critics reviewed the file. Their findings (JSON):
-${JSON.stringify(x.findings, null, 1)}
+${findingsText}
 
 Apply every blocker and major finding, and every minor finding that is cheap, by editing the JSON file in place (use a Python script or careful Edit calls; keep valid JSON; do not shorten prompts — add or correct). Where two findings conflict or a finding contradicts docs/PLAN.md, the founder decisions or the orchestrator decisions, reject it and say why. Keep ids, titles and dependencies fixed unless a finding shows a dependency is wrong. If a critic asks for an a/b split, do it with full prompts for both halves. Update notes/open_issues to reflect what changed. Write the file back after each step you finish revising (valid JSON each time) so an interruption loses at most one step. Run the validator until it prints 0 errors. Return the structured summary only.`,
       { label: `revise:${G.g}`, phase: 'Revise', schema: REVISE_SUMMARY, effort: 'high' })
