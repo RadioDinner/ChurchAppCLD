@@ -1,0 +1,102 @@
+{
+  "group": "G8",
+  "lens": "completeness against the plan",
+  "findings": [
+    {
+      "step": "3.3a",
+      "severity": "major",
+      "category": "missing edge case",
+      "quote": "`publish_at` changes go through `publishSermon(db, id, publishAt | null)` so \"Unpublish (back to draft)\" is possible.",
+      "problem": "The edit form's Publish control can publish an `upload` row whose file never arrived (`file_size_bytes is null`). PLAN §6 fixes the upload flow as insert (publish_at null) → upload → update size/mime → set publish_at; publishing before the object exists makes a broken sermon visible to members and shareable (3.4 only checks `publish_at <= now()`). The prompt shows an 'Upload incomplete' notice but never blocks the publish path.",
+      "fix": "In Build 7 `updateSermon`: reject a non-null `publish_at` when `media_kind === 'upload' && file_size_bytes === null` with `invalid_payload` and the message 'Finish the upload before publishing'. In Build 8, hide the Publish control (render the read-only details form) for such rows. Add the case to `actions.test.ts` in Build 11 and to done_when."
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "missing state",
+      "quote": "`page.tsx` (list), `loading.tsx`, `new/page.tsx`, `[id]/page.tsx`, `[id]/loading.tsx`, `[id]/not-found.tsx`",
+      "problem": "PLAN §12 / step 3.7 audit 'empty/loading/error states'; the route list has loading and not-found files but no `error.tsx` boundary, so a failed Supabase read (e.g. paused Free-plan project, the risk PLAN §13 names) surfaces as the framework's default error page under `/o/[orgSlug]/sermons`.",
+      "fix": "Add `app/(org)/o/[orgSlug]/sermons/error.tsx` (client component with a 'Try again' button calling `reset()` and the neutral text 'Could not load sermons. If the church's Supabase project was paused, the founder must restore it from the dashboard.') to Build 1, and list it in done_when."
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "unused plan input",
+      "quote": "`SIGNED_URL_TTL_SECONDS` (3600), `SIGNED_URL_CACHE_MS`",
+      "problem": "PLAN §6 says signed URLs are cached 50 min by TanStack (`SIGNED_URL_CACHE_MS`, `SIGNED_URL_KEY_ROOT` from 1.7a `keys.ts`). The prompt lists the constant as an input but the Build never uses it, and the detail page mints a fresh signed URL on every server render; the agent cannot tell whether caching is required on web.",
+      "fix": "Add to Build 9: 'The admin page mints the signed URL server-side per request (no TanStack cache on web — `SIGNED_URL_CACHE_MS` is consumed by the mobile app in 4.2). In `SermonPlayer` treat the URL as stale when `Date.now() > expiresAt - (SIGNED_URL_TTL_SECONDS*1000 - SIGNED_URL_CACHE_MS)` and re-mint before play, so the 50-minute rule from PLAN §6 is honoured with the shared constant.' Remove `SIGNED_URL_CACHE_MS` from Inputs if you prefer not to use it."
+    },
+    {
+      "step": "3.3b",
+      "severity": "major",
+      "category": "incomplete docs for the founder",
+      "quote": "how to raise both when the project moves to Supabase Pro (Vercel env + a `9998_*` bucket upsert paste — never edit the frozen `9999_init.sql`)",
+      "problem": "DESIGN §7 says the 2 GiB sermon limit needs 'Pro + raised global limit': Supabase caps every bucket at the project-wide upload limit in Dashboard → Storage → Settings (a bucket `file_size_limit` above it has no effect). The ENV.md section names two of the three limits, so the founder raises the env var and the bucket row and still gets 413s.",
+      "fix": "Extend Build 12: 'Name THREE limits: (1) `NEXT_PUBLIC_MAX_UPLOAD_MB` (Vercel env), (2) the `sermon-media` bucket `file_size_limit` (raised by a `9998_*` upsert paste), (3) the project-wide upload limit in Supabase Dashboard → Storage → Settings (Free fixed at 50 MB; Pro allows raising it to 50 GB — set it to at least the bucket value). The effective cap is the smallest of the three.' Add the same sentence to the HANDOFF founder to-dos in Finish."
+    },
+    {
+      "step": "3.3b",
+      "severity": "minor",
+      "category": "missing verification",
+      "quote": "`grep -c \"tus-js-client\" apps/web/package.json` → `1`",
+      "problem": "The Verify block checks the dependency and constants but never proves the exact-path invariant that the whole design rests on (DESIGN §6: object name must equal `storage_path` byte for byte). The actions test asserts a regex on `storage_path` but not that `ResumableUpload`/`startTusUpload` receives the identical string as `objectName`.",
+      "fix": "Add to Build 11 `upload-client.test.ts`: 'assert `metadata.objectName === plan.storagePath` (the same string object passed through, no re-computation)'; add to `UploadSermonForm` a comment and a test that the `objectName` prop is `plan.storagePath` verbatim. Add a done_when bullet: 'A test proves the tus `objectName` equals the `storage_path` returned by `planSermonUpload`.'"
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "missing acceptance criterion (3.7 smoke)",
+      "quote": "Start the built app with the mock env plus `SHARE_LINK_COOKIE_SECRET=$(openssl rand -base64 32)` and check: `curl -sI http://localhost:3000/s/unknown` → `404`",
+      "problem": "PLAN §12 and step 3.7 run the Playwright smoke with the MOCK env only (`NEXT_PUBLIC_SUPABASE_URL`, dummy key, `NEXT_PUBLIC_APP_URL`) and expect `/s/unknown` → 404. Build 3 says a missing `SHARE_LINK_COOKIE_SECRET` throws `ShareNotConfiguredError`; if the page reads the secret (or `serverEnv()`/`createServiceSupabase()`) before the token-shape check, `/s/unknown` becomes a 500/503 in CI and the 'Never cut' smoke breaks.",
+      "fix": "Add to Build 4/5: 'Order of operations on GET: validate the token shape FIRST and return `notFound()` before touching `SHARE_LINK_COOKIE_SECRET`, `serverEnv()` or the service client; read the secret lazily inside `resolveShare`/`loadUnlockedShare` only for well-formed tokens.' Add to Verify: 'Run the same curl WITHOUT `SHARE_LINK_COOKIE_SECRET` and without `SUPABASE_SECRET_KEY`: `/s/unknown` must still be 404 (this is the 3.7 smoke path).' Add the same to done_when bullet 2."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "missing behaviour (password-less links)",
+      "quote": "`ok` → `{ kind: 'ok', result }`",
+      "problem": "The flow covers password-protected links end to end but never states what happens for a link WITHOUT a password: the GET itself returns `ok`, the RPC increments `view_count` on every visit, and with `max_views` set a browser refresh consumes a view and eventually 404s. The skeleton bullet ('stream player', 'max_views') and founder decision 5 imply password-less links must work like unlocked ones.",
+      "fix": "Add to Build 5: 'When the initial GET (no cookie, `password: null`) returns `ok`, set the same unlock cookie as the unlock route (`cookies().set(...)` from a Server Component is not allowed — do it by redirecting 303 to `/api/share/<token>/unlock?auto=1`, whose handler calls `resolveShare` with `password: null`, sets the cookie on `ok`, and redirects back; or render via the route handler). Subsequent visits go through `loadUnlockedShare` and do not increment `view_count`.' Add an actions/route test for the password-less path and a done_when bullet: 'A password-less link with `max_views = 1` survives a reload after the first visit.'"
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "missing admin state",
+      "quote": "status badge (Active / Revoked / Expired / Views exhausted)",
+      "problem": "`srv_resolve_share_link` returns `needs_password_reset` when the church has since turned `sermon_share_requires_password` on for a link created without a password, and the public page renders a 404 with the hint 'ask them for a new link'. The panel never shows leaders which links are in that state (`requires_password = false` while the setting is on), so they cannot act on the visitor's request.",
+      "fix": "Add a fifth badge to Build 10: 'Needs new link — your church now requires passwords' shown when `!link.requires_password && settings.sermon_share_requires_password && link.revoked_at === null`, with helper text to revoke it and create a password-protected one. Cover it in the panel's render test and in done_when bullet 1."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "missing route hardening",
+      "quote": "`runtime = 'nodejs'`, `POST` only; read `password` from form data or JSON",
+      "problem": "The route is public and anonymous; the prompt fixes redirects but not the response headers or the non-POST behaviour, and PLAN §12's smoke checks security headers on public routes. Nothing says GET → 405 or that unlock responses are `no-store`.",
+      "fix": "Add to Build 7: 'Export only `POST`; Next answers other methods with 405. Set `Cache-Control: no-store` on every response of the route. Reject a body over 1 KB with 413.' Add `curl -sI -X GET /api/share/unknown/unlock → 405` to Verify."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "missing doc hand-off",
+      "quote": "add a note for step 4.2 (`/embed/yt/[id]` contract: 11-char id, frame-able, noindex) and for 3.7 (the E2E script above)",
+      "problem": "DESIGN §7 requires it to be DOCUMENTED that signed URLs and provider links stay reachable up to 1 h after revocation, and PLAN §12's `docs/CHECKLIST_SECURITY.md` (step 3.8) lists 'share page noindex' and 'srv_* service-role only'. The prompt puts the 1-hour caveat only in the Revoke dialog and leaves the checklist items implicit; 3.8 and 4.4 (`docs/MEDIA.md`) will not know to pick them up.",
+      "fix": "Extend Finish: 'Add to HANDOFF a \"Notes for later steps\" block: for 3.8 — CHECKLIST_SECURITY items \"share page mints signed URLs only after `srv_resolve_share_link`/`loadUnlockedShare` succeeded\", \"`/s/*` responses carry noindex + no-referrer\", \"raw token never logged\"; for 4.4 — `docs/MEDIA.md` must state that signed URLs / provider links remain reachable ≤ 1 h after revocation (DESIGN §7) and the `/embed/yt/[id]` contract.'"
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "missing parity test",
+      "quote": "Step 4.2 loads `${EXPO_PUBLIC_WEB_URL}/embed/yt/<id>` in `react-native-webview`.",
+      "problem": "1.6a/1.6b export `youtubeHostedEmbedPath(id)` / `youtubeHostedEmbedUrl(appUrl, id)` that mobile will use to build the URL; nothing in 3.4 ties the hosted route to that builder, so a later rename of either side silently breaks mobile playback.",
+      "fix": "Add to Build 9/12: 'Test that `youtubeHostedEmbedPath('dQw4w9WgXcQ')` equals the route this page serves (`/embed/yt/dQw4w9WgXcQ`) and that the 11-character regex matches `parseMediaLink`'s YouTube `externalId` for the parser's own fixtures.'"
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "dependency id",
+      "quote": "\"depends_on\": [\"3.1\", \"1.6\"]",
+      "problem": "G4 split 1.6 into 1.6a/1.6b; the prompt's Inputs already cite 1.6a/1.6b but `depends_on` still names the removed id, so the assembler's dependency graph has a dangling edge.",
+      "fix": "Set `depends_on` to `[\"3.1\", \"1.6b\", \"1.7a\"]` (the prompt relies on 1.7a's `queries/sermons.ts` as well)."
+    }
+  ]
+}
