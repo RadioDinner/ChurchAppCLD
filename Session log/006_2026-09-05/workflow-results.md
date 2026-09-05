@@ -41,3 +41,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   numbering vs reserved 9998/9997), proposed step 3.12. Full result in `todo-drafts/reviews/G9.result.json`.
 - Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,097,561**, tool_uses 150, duration 2,508,092 ms (~42 min).
 - **G9 total sub-agent tokens: 1,097,561.**
+
+## Run 4 — G10 — wf_c2d38310-89e (task w3ti3ti32), launched 2026-09-05 16:00 America/New_York (20:00 UTC)
+- args: {"groups": ["G10"]} (no group file existed → full draft; steps 3.7, 3.8, 3.9 founder, 3.10 template).
+- Outcome: (pending)
