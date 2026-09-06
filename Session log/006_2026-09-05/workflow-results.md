@@ -54,3 +54,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - args: {"groups": ["G10"]} (identical; resumeFromRunId wf_c2d38310-89e — nothing cached, full pipeline runs).
 - Outcome: (pending)
 - 20:29 ET (task wv5jzw3qi): drafter done; critics running.
+- Outcome: completed, 0 failures. G10: 49 findings (2 blockers — share-header assertion applied to both public routes;
+  see reviews), 47 applied, 2 partially rejected with reasons; validator 0 errors, 0 warnings. Drafter split 3.7 into
+  3.7a (harness, smoke, CI) + 3.7b; reviser carved 3.7c (accessibility + empty/loading/error-state audit) out of 3.7b, so
+  3.8 now depends on 3.7c. 3.9 is the founder Stripe + Checkpoint B checklist; 3.10 the reusable fix/polish template.
+  11 open_issues (incl. the G5 2.1a vs G7 3.1 super-admin pass-through contradiction the orchestrator must settle),
+  proposed 3.11 + 3.12 (sketches). Full result in `todo-drafts/reviews/G10.result.json`.
+- Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,065,135**, tool_uses 126, duration 2,659,095 ms (~44 min).
+- **G10 total sub-agent tokens: 147,910 + 1,065,135 = 1,213,045.**
