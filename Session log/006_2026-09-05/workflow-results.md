@@ -53,3 +53,4 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 5 — G10 resume of wf_c2d38310-89e (task see below), launched 2026-09-05 20:15 America/New_York (00:15 UTC 09-06)
 - args: {"groups": ["G10"]} (identical; resumeFromRunId wf_c2d38310-89e — nothing cached, full pipeline runs).
 - Outcome: (pending)
+- 20:29 ET (task wv5jzw3qi): drafter done; critics running.
