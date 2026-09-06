@@ -45,3 +45,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 4 — G10 — wf_c2d38310-89e (task w3ti3ti32), launched 2026-09-05 16:00 America/New_York (20:00 UTC)
 - args: {"groups": ["G10"]} (no group file existed → full draft; steps 3.7, 3.8, 3.9 founder, 3.10 template).
 - Outcome: (pending)
+- Outcome: stopped by usage limit — "You've hit your limit · resets 11:30pm (UTC)" after ~3.5 min; draft:G10 failed before
+  writing any file (no groups/G10.json, no reviews). Usage: agent_count 1, agents_done 0, agents_error 1,
+  **subagent_tokens 147,910**, tool_uses 15, duration 207,910 ms.
+- Session suspended; woke 2026-09-05 20:14 ET (00:14 UTC, 44 min after the reset) → no send_later; resumed immediately.
+
+## Run 5 — G10 resume of wf_c2d38310-89e (task see below), launched 2026-09-05 20:15 America/New_York (00:15 UTC 09-06)
+- args: {"groups": ["G10"]} (identical; resumeFromRunId wf_c2d38310-89e — nothing cached, full pipeline runs).
+- Outcome: (pending)
