@@ -62,3 +62,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   proposed 3.11 + 3.12 (sketches). Full result in `todo-drafts/reviews/G10.result.json`.
 - Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,065,135**, tool_uses 126, duration 2,659,095 ms (~44 min).
 - **G10 total sub-agent tokens: 147,910 + 1,065,135 = 1,213,045.**
+
+## Run 6 — G11 — wf_350e9ef8-185 (task wucs7fjqj), launched 2026-09-05 21:02 America/New_York (01:02 UTC 09-06)
+- args: {"groups": ["G11"]} (no group file existed → full draft; steps 4.1, 4.2, 4.3, 4.4, 4.5 founder).
+- Outcome: (pending)
