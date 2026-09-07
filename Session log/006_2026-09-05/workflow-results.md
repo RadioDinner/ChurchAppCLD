@@ -102,3 +102,9 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 9 — G13 — wf_7d914404-1a6 (task we42ggfoe), launched 2026-09-07 08:47 America/New_York (12:47 UTC)
 - args: {"groups": ["G13"]} (no group file existed → full draft; steps 5.4, 5.5, 5.6, 5.7).
 - Outcome: (pending)
+- Outcome: stopped by usage limit — "You've hit your limit · resets 4:20pm (UTC)" after ~3 min; draft:G13 failed before
+  writing any file (no groups/G13.json, no reviews). Usage: agent_count 1, agents_done 0, agents_error 1,
+  **subagent_tokens 141,601**, tool_uses 12, duration 173,546 ms.
+- Founder instruction on resume: "go in small bites, and have me confirm each step to prevent usage over run" → from here
+  the remaining groups run ONE AGENT PER RUN via the script's `stage` / `steps` / `lenses` selectors (session 003's paced
+  procedure), each run confirmed by the founder first. Full-pipeline runs stop here.
