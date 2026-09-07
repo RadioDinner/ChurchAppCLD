@@ -77,3 +77,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 7 — G11 resume of wf_350e9ef8-185, launched 2026-09-07 07:28 America/New_York (11:28 UTC)
 - args: {"groups": ["G11"]} (identical; resumeFromRunId wf_350e9ef8-185 — drafter + fidelity critic replay from cache).
 - Outcome: (pending)
+- Outcome: completed, 0 failures. G11: 53 findings (14 fidelity, 32 executability, 7 completeness; 0 blockers), 53 applied,
+  0 rejected; validator 0 errors, 1 intentional warning (4.4 greps for the old `com.churchappcld` placeholder). Steps:
+  4.1a, 4.1b, 4.2a, 4.2b, 4.3, 4.4, 4.5 (founder). Dependency changes for the assembler: 4.1a → [1.7b, 2.1a], 4.1b →
+  [4.1a, 2.1b]; G13 5.4/5.6 must repoint 4.1/4.2 → 4.1b/4.2b. 8 open_issues (Confirm-signup `{{ .Token }}` must be
+  mandatory in 2.4; `EAS_` env prefix contingency), proposed 4.6 (full 1740-word prompt). Full result in
+  `todo-drafts/reviews/G11.result.json`.
+- Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 682,786**, tool_uses 87, duration 1,372,658 ms (~23 min).
+- **G11 total sub-agent tokens: 707,900 + 682,786 = 1,390,686.**
