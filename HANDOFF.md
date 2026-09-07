@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-03, session 002._
+_Last updated: 2026-09-07, session 007 (status only; State line for docs/TODO.md refreshed)._
 
 ## What this is
 
@@ -15,7 +15,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 ## State
 
 - [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
-- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch `claude/plan-todo-prompts-ia7gkd`: skeleton (all steps 0.1–6.4, dependencies, prompt rules) and assembler are done, prompts written for steps 0.1 and 1.1 only. Kit lives in `Session log/002_2026-09-03/todo-drafts/`; see that session's `session_log.md` for how to resume.
+- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch `claude/project-status-todo-plan-leghlm` (`claude/plan-todo-prompts-ia7gkd` merged in; nothing on `main`). Kit: `Session log/003_2026-09-04/todo-drafts/` (skeleton 0.1–6.4, orchestrator-decisions, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-07: G1–G10 drafted and validating (G1, G2 never critiqued); G11 drafted, critique/revise in progress (session 006); G12–G14 (steps 5.1–6.4) not drafted; `workflow-global.js` (assemble → global review → fixers) not run; `docs/TODO.md` not yet generated. Resume notes: session 003 `session_log.md` "How to resume".
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`
