@@ -92,3 +92,7 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 - 11:52 ET founder: "Make a placeholder privacy policy, I'll have my lawyers write the policy and exchange it before go-live"
   → `docs/legal/privacy-policy.md` written (placeholder draft from PLAN/DESIGN, ~1,050 words, no real contact details);
   orchestrator decision 19; G14.json open_issue for 6.3a/6.6; HANDOFF bullet.
+
+## Bites 6+7 — critique, executability + completeness lenses in parallel — wf_92016a8e-6f6 (task wnsypykif), launched 2026-09-07 11:55 America/New_York (15:55 UTC)
+- args: {"groups": ["G14"], "stage": "critique", "lenses": ["executability", "completeness"]} (founder: "critics together").
+- Outcome: (pending)
