@@ -98,3 +98,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   `9996_directory_events_fixes.sql`). Full result in `todo-drafts/reviews/G12.result.json`.
 - Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,171,467**, tool_uses 170, duration 3,072,483 ms (~51 min).
 - **G12 total sub-agent tokens: 1,171,467.**
+
+## Run 9 — G13 — wf_7d914404-1a6 (task we42ggfoe), launched 2026-09-07 08:47 America/New_York (12:47 UTC)
+- args: {"groups": ["G13"]} (no group file existed → full draft; steps 5.4, 5.5, 5.6, 5.7).
+- Outcome: (pending)
