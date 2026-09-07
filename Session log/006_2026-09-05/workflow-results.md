@@ -136,3 +136,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   `reviews/G13.draft-5.6.result.json` (RPC set chosen beyond redeem/approve; 9999 re-paste drops 9998-only policies;
   migration-number collision watch; pending memberships vs permissions guard).
 - Usage: 1 agent, **subagent_tokens 229,320**, tool_uses 33, duration 961,191 ms (~16 min).
+
+## Bite G13-4 — wf_b0ba9161-f71 (task wn22arogr) — draft step 5.7 only, launched 2026-09-07 14:31 America/New_York — founder confirmed
+- args: {"groups": ["G13"], "stage": "draft", "steps": ["5.7"]} (one drafter agent).
+- Outcome: (pending)
