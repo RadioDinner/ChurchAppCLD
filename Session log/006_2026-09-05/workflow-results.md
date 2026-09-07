@@ -126,3 +126,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   `app.guard_system_audience_groups` trigger in 9999; deleting a custom group nulls `audience_group_id` → content
   becomes visible to everyone; `/groups/[groupId]` route deviation).
 - Usage: 1 agent, **subagent_tokens 141,621**, tool_uses 21, duration 417,615 ms (~7 min).
+
+## Bite G13-3 — wf_a9aaa30d-c8c (task w61g5jfcs) — draft step 5.6 only, launched 2026-09-07 13:49 America/New_York — founder confirmed
+- args: {"groups": ["G13"], "stage": "draft", "steps": ["5.6"]} (one drafter agent).
+- Outcome: (pending)
