@@ -4,3 +4,5 @@ Ok, G13 is running and G14 is open. I want to start G14 but I'm afraid of burnin
 Well pause this if it is creating merges. Take G14 in bites, I have another session working on G13. Then I'l have this audit run after all the G steps are done
 --- 2026-09-07 09:22 ---
 Pause if it is creating conflicts I meant
+--- 2026-09-07 09:24 ---
+Oh, you were working G14?
