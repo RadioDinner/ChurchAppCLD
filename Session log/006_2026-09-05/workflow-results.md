@@ -167,6 +167,6 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - Decision: the saved file is complete, so the lens is NOT re-run (the reviser reads the saved review files); ~300k tokens saved.
   Session woke 2026-09-07 18:02 ET (22:02 UTC), founder confirmed the reset → continuing with bite G13-7.
 
-## Bite G13-7 — critique, completeness lens only, launched 2026-09-07 18:02 America/New_York — queued
+## Bite G13-7 — wf_5f63735d-e77 (task ww9s7dq0x) — critique, completeness lens only, launched 2026-09-07 18:02 America/New_York — queued
 - args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["completeness"]} (one critic agent).
 - Outcome: (pending)
