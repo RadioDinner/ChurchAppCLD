@@ -1,0 +1,52 @@
+{
+ "run": "wf_b0486d4c-80e",
+ "task": "wakfonpoh",
+ "args": {
+  "groups": [
+   "G14"
+  ],
+  "stage": "draft",
+  "steps": [
+   "6.2"
+  ]
+ },
+ "usage": {
+  "subagent_tokens": 195513,
+  "tool_uses": 23,
+  "duration_ms": 579081
+ },
+ "result": [
+  {
+   "group": "G14",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "6.2a",
+     "title": "Audit log UI \u2014 `/o/[orgSlug]/audit` and `/admin/audit` with filters, diff view and CSV export",
+     "actor": "agent",
+     "prompt_words": 2914
+    },
+    {
+     "id": "6.2b",
+     "title": "Scheduled announcements polish and notification delivery status pages",
+     "actor": "agent",
+     "prompt_words": 2904
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (orchestrator decision 13): skeleton 6.2 \u2192 6.2a (audit UI, CSV export, `@church/db` `queries/audit.ts`) and 6.2b (scheduled announcements polish + `/o/[orgSlug]/notifications` delivery status). Chain 3.6b \u2192 6.2a \u2192 6.2b; the skeleton's `depends_on: 3.6` is repointed to `3.6b` per G9's note; the assembler should place both after 6.1c (6.2b links to 5.3a's `/events` and 6.1b's `/surveys/[surveyId]` when present).",
+    "Names chosen for 6.2a (docs stop at `/audit`, `/admin/audit`): export routes `/o/[orgSlug]/audit/export` and `/admin/audit/export`, `packages/db/src/queries/audit.ts` (`listAuditLog`, `listAuditActors`, `countAuditSince`, `AUDITED_TABLES`, `AUDIT_ACTIONS`), `apps/web/src/features/audit/`, base64url keyset cursor (shared codec `packages/db/src/cursor.ts` from 6.2b on), UI deny-list `NEVER_RENDER_KEYS`, 7-day default on `/admin/audit` because `audit_log` only has the `(org_id, created_at desc)` index; a cross-org `audit_log (created_at desc)` index would need a `9996_*` migration \u2014 flagged, not added.",
+    "Names chosen for 6.2b (docs name no delivery status page): routes `/o/[orgSlug]/notifications` and `/notifications/[notificationId]`, `src/features/notifications/`, helpers `listNotifications`, `countNotificationsByStatus`, `rescheduleQueuedNotification` (service), `listDeliveriesForNotification` (service), `getNotificationForOrg`, Server Actions `rescheduleAnnouncementAction`, `publishAnnouncementNowAction`, `listDeliveriesAction`; `queryKeys.notifications.list/detail` added to 1.7a's key factory.",
+    "6.2b widens `notification_deliveries` visibility (super-only in RLS) to `announcements.*` holders via an org-checked service-client Server Action showing recipient display names and device platforms (never emails/tokens) \u2014 a product decision recorded for the founder to veto; if vetoed the detail page keeps only 3.6a's aggregate counts.",
+    "6.2b's `rescheduleQueuedNotification` is a service-client write to `notifications` from a Server Action (after the user-client `publish_at` update), closing the gap G9 documented (a push moved earlier waited for the old `scheduled_for`). G9 revisers may prefer to put it in 3.5a/3.6a; then 6.2b's Build item 2 shrinks to the UI actions.",
+    "6.2a and 6.2b both add tiles to `src/features/org/Dashboard.tsx` additively; critics should check neither prompt restyles the dashboard.",
+    "6.3, 6.4 and 6.5 are drafted in later runs; nothing here pre-empts their names except the note that a `9996_*` audit index could ride along with 6.3."
+   ]
+  }
+ ]
+}
