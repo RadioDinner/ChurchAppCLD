@@ -1,118 +1,143 @@
 {
   "group": "G11",
   "lens": "executability",
+  "reviewed": "2026-09-07",
   "findings": [
-    {
-      "step": "4.1a",
-      "severity": "major",
-      "category": "cross-group-contract",
-      "quote": "dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === 'success' && q.meta?.persist !== false }",
-      "problem": "G4's 1.7a already ships the persistence contract the docs asked for: `packages/db/src/keys.ts` exports `SIGNED_URL_KEY_ROOT = 'signedUrl'` and `shouldPersistQuery(queryKey)` (false for `signedUrl` and `context` keys) and its HANDOFF note says 'step 4.1 passes it as the persister's dehydrateOptions.shouldDehydrateQuery'. 4.1a invents a parallel `meta.persist` contract instead, so two agents (1.7a vs 4.1a/4.2a) produce incompatible mechanisms and the `context` key would be persisted across accounts.",
-      "fix": "In Build 9 replace the shouldDehydrateQuery line with: `dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === 'success' && shouldPersistQuery(q.queryKey) && q.meta?.persist !== false }` importing `shouldPersistQuery` from `@church/db`; add to Inputs: '`@church/db` keys.ts exports `queryKeys.signedUrl(bucket, path)`, `SIGNED_URL_KEY_ROOT` and `shouldPersistQuery(queryKey)` (1.7a) — use them, do not add a parallel key'. In 4.2a drop the sentence 'If `queryKeys` has no signed-URL key, add `queryKeys.signedUrl(bucket, path)` additively…' (the key exists) and keep `meta: { persist: false }` only as belt-and-braces."
-    },
     {
       "step": "4.1a",
       "severity": "major",
       "category": "wrong-package-attribution",
       "quote": "Step 1.7a produced `@church/db`: `DbClient`, `Database` (`@church/db/types`), `queryKeys` (`packages/db/src/keys.ts`), `QUERY_STALE_TIME_MS`, `QUERY_GC_TIME_MS`, `SIGNED_URL_TTL_SECONDS`, `SIGNED_URL_CACHE_MS`",
-      "problem": "Per G4, `SIGNED_URL_TTL_SECONDS` and `SIGNED_URL_CACHE_MS` are exported by `@church/domain` (`src/limits.ts`, step 1.6a), not by `@church/db`. Only `QUERY_STALE_TIME_MS`/`QUERY_GC_TIME_MS`/`shouldPersistQuery` live in `@church/db` keys.ts. An agent importing the signed-URL constants from `@church/db` gets a typecheck failure and may retype the literals (which 4.2a's own Verify forbids).",
-      "fix": "Change the Inputs bullet to: '`@church/db` (1.7a): `DbClient`, `Database`, `queryKeys`, `QUERY_STALE_TIME_MS`, `QUERY_GC_TIME_MS`, `shouldPersistQuery`, the RPC wrappers and queries. `@church/domain` (1.6a): `SIGNED_URL_TTL_SECONDS = 3600`, `SIGNED_URL_CACHE_MS = 50 * 60 * 1000`, `BUCKETS`, `parseMediaLink`, `readMaxUploadMb`; 1.6b: `APP_SCHEME` in `src/urls.ts`.'"
+      "problem": "G4 puts `SIGNED_URL_TTL_SECONDS` and `SIGNED_URL_CACHE_MS` in `@church/domain` `src/limits.ts` (step 1.6a); 1.7a imports them and does not re-export. An agent importing them from `@church/db` gets a typecheck error at the first step that uses them, and the wrong attribution is copied verbatim into 4.2a.",
+      "fix": "Replace with: \"Step 1.7a produced `@church/db`: `DbClient`, `Database` (`@church/db/types`), `queryKeys` incl. `queryKeys.signedUrl(bucket, path)`, `QUERY_STALE_TIME_MS`, `QUERY_GC_TIME_MS`, `SIGNED_URL_KEY_ROOT`, `shouldPersistQuery(queryKey)` (`packages/db/src/keys.ts`), the RPC wrappers and queries. Step 1.6a produced `@church/domain` `src/limits.ts` with `SIGNED_URL_TTL_SECONDS` (3600) and `SIGNED_URL_CACHE_MS` (50 min) — import those from `@church/domain`.\""
+    },
+    {
+      "step": "4.1a",
+      "severity": "major",
+      "category": "cross-group-contract",
+      "quote": "dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === 'success' && q.meta?.persist !== false }",
+      "problem": "1.7a (G4) ships `shouldPersistQuery(queryKey)` in `packages/db/src/keys.ts` (false for `signedUrl` and `context` keys) and states 'step 4.1 passes it as the persister's dehydrateOptions.shouldDehydrateQuery'. 4.1a invents a parallel `meta.persist` contract instead, so the `context` query (another account's memberships) is persisted to disk and two agents implement two incompatible mechanisms.",
+      "fix": "Build 9: `dehydrateOptions: { shouldDehydrateQuery: (q) => q.state.status === 'success' && shouldPersistQuery(q.queryKey) && q.meta?.persist !== false }` with `shouldPersistQuery` imported from `@church/db`; keep the comment that 4.2a's hook also sets `meta: { persist: false }` as belt-and-braces. Add `shouldPersistQuery` to the done_when item about `query-client.ts`."
     },
     {
       "step": "4.1a",
       "severity": "major",
       "category": "build-will-fail",
-      "quote": "keep `theme.ts` free of React Native imports other than `react-native-paper` types so `app.config.ts` can load it under Node — if that fails, split the raw hex values into `src/theme/tokens.ts`",
-      "problem": "Build 6 also says `paperTheme` is built from `MD3LightTheme`/`MD3DarkTheme` of `react-native-paper`, which is a runtime import that pulls in `react-native` (Flow/JSX sources Node cannot parse). Loading `src/theme.ts` from `app.config.ts` (evaluated by Expo CLI under Node) and from `src/theme.test.ts` (Vitest node env, Build 1) will therefore fail deterministically; the 'if that fails' fallback means two agents end up with different file layouts (`src/theme.ts` vs `src/theme/tokens.ts`) that 4.1b–4.3 import by name.",
-      "fix": "Mandate the split now: '`src/theme/tokens.ts` — pure data, no imports: `export const colors = {...}`, `export const brand = { appName: 'Anacast' }`. `src/theme.ts` — `export { colors, brand } from './theme/tokens'` plus `export const paperTheme` built from `react-native-paper`'s `MD3LightTheme`/`MD3DarkTheme`. `app.config.ts` and `src/theme.test.ts` import ONLY `./src/theme/tokens`; screens import `@/theme`.' Update the done_when bullet and 4.1b/4.2a/4.2b Inputs accordingly (they say `src/theme.ts`; keep that as the screen-facing module)."
+      "quote": "keep `theme.ts` free of React Native imports other than `react-native-paper` types so `app.config.ts` can load it under Node — if that fails, split",
+      "problem": "Build 6 also requires `paperTheme` built from `MD3LightTheme`/`MD3DarkTheme`, a RUNTIME import of `react-native-paper`, which imports `react-native` (Flow/JSX sources Node cannot parse). `app.config.ts` is evaluated by Expo CLI under Node and `src/theme.test.ts` / `src/config.test.ts` run in Vitest's node environment, so `expo export`, `expo config` and `pnpm turbo test` all fail as written; the 'fallback' is in fact the only working design.",
+      "fix": "Make the split the primary design: `src/theme/tokens.ts` = plain hex/number constants (`colors`, `brand`), no imports; `src/theme.ts` = `export * from './theme/tokens'` plus `paperTheme` built from `react-native-paper`; `app.config.ts`, `src/theme.test.ts` (rename to `src/theme/tokens.test.ts`) and `src/config.test.ts` import ONLY `./src/theme/tokens`. State how the config test gets the object: `import config from '../app.config'; const c = config({ config: {} } as ConfigContext); expect(c.scheme).toBe(APP_SCHEME)`."
     },
     {
       "step": "4.1a",
       "severity": "major",
       "category": "missing-dependency",
       "quote": "`doctor: expo-doctor`, `export:android: expo export --platform android --output-dir dist`",
-      "problem": "`expo-doctor` is not listed in dependencies or devDependencies, so the `doctor` script fails (`expo-doctor: command not found`) and 4.4's CI command `pnpm --filter mobile exec expo-doctor` cannot run; 4.4 then hedges with `npx expo-doctor@latest`, which is exactly the unpinned behaviour 4.4 says it wants to avoid.",
-      "fix": "In Build 1 add `expo-doctor` to devDependencies via `pnpm add -D expo-doctor` (pure JS tool; `npx expo install expo-doctor` is also acceptable) and state 'CI (4.4) runs the repo-pinned `pnpm exec expo-doctor`'. In Verify use `pnpm exec expo-doctor` alongside `npx expo-doctor`. In 4.4 Build 3 delete the 'if `expo-doctor` is not a dependency, `npx expo-doctor@latest` is acceptable' clause."
+      "problem": "`expo-doctor` is not in the dependency list of Build 1, so `pnpm --filter mobile doctor` fails with 'command not found' and 4.4's CI command `pnpm --filter mobile exec expo-doctor` cannot run (4.4 then hedges with `npx expo-doctor@latest`, which is the unpinned behaviour it says it avoids).",
+      "fix": "In Build 1 devDependencies add `expo-doctor` (pure JS, not a native module: `pnpm add -D expo-doctor` from `apps/mobile`, current 1.x). In Verify replace `cd apps/mobile && npx expo-doctor` with `pnpm --filter mobile doctor` (same in 4.1b–4.4 Verify blocks) so every step runs the pinned copy."
+    },
+    {
+      "step": "4.1a",
+      "severity": "minor",
+      "category": "missing-dependency",
+      "quote": "with a small script (`sharp` is already an allowed build dependency, or use `node` with `pngjs`)",
+      "problem": "Neither `sharp` nor `pngjs` is installed anywhere in the workspace (1.1 only lists `sharp` in `onlyBuiltDependencies`); the agent would have to add a dependency the step does not budget for.",
+      "fix": "Replace with: \"generate the PNGs with a dependency-free Node script (`zlib.deflateSync` + CRC32 over raw RGBA rows) kept in `apps/mobile/scripts/make-placeholder-assets.mjs`, or run `npx --yes sharp-cli` in the scratchpad and copy the files — do not add an image library to the workspace.\""
     },
     {
       "step": "4.1a",
       "severity": "minor",
       "category": "dependency-graph",
       "quote": "\"depends_on\": [\"1.7b\", \"2.1b\"]",
-      "problem": "4.1a uses nothing from 2.1b (invite page / `inviteDeepLink`); that dependency belongs to 4.1b, which builds `invite/[token]`. 4.1a only mirrors 2.1a's `brand.ts`/`@theme` approach. Over-strict dependency delays the mobile scaffold behind a web step it does not need.",
-      "fix": "Set 4.1a `depends_on` to `[\"1.7b\", \"2.1a\"]` and 4.1b `depends_on` to `[\"4.1a\", \"2.1b\"]`; adjust the notes sentence '`depends_on` uses the split ids… 2.1b (invite web page / `inviteDeepLink`)' to 4.1b."
-    },
-    {
-      "step": "4.1a",
-      "severity": "minor",
-      "category": "test-instructions",
-      "quote": "add a Vitest test in `src/config.test.ts` that imports both and asserts equality",
-      "problem": "`app.config.ts` exports a function of `ConfigContext`; the prompt does not say how the test obtains the config object, and with the theme import problem above the test fails unless `app.config.ts` imports only `./src/theme/tokens`.",
-      "fix": "Write: '`src/config.test.ts`: `import config from '../app.config'; const c = config({ config: {}, projectRoot: process.cwd(), staticConfigPath: null, packageJsonPath: null } as ConfigContext); expect(c.scheme).toBe(APP_SCHEME); expect(c.android?.package).toMatch(/^com\\.anacast\\.app$/i)`' (the second assertion tolerates the founder's casing)."
+      "problem": "4.1a uses nothing from 2.1b (the web invite page / `inviteDeepLink` are consumed by 4.1b); it only mirrors 2.1a's `brand.ts`/`@theme` approach. The over-strict dependency delays the scaffold behind a web step it does not need.",
+      "fix": "Set 4.1a `depends_on` to `[\"1.7b\", \"2.1a\"]` and add `\"2.1b\"` to 4.1b's `depends_on` (`[\"4.1a\", \"2.1b\"]`)."
     },
     {
       "step": "4.1a",
       "severity": "minor",
       "category": "self-contradiction",
       "quote": "`app/(app)/(tabs)/_layout.tsx` (a real `Tabs` with `home`, `sermons`, `more` and `@expo/vector-icons` icons — this one is final)",
-      "problem": "4.1b Build 9 adds a header org-switcher button to the tabs layout and 4.2a Build 3 puts the switcher button in the Home header, so the tabs layout is edited again; 'final' misleads the 4.1a agent into locking it down.",
-      "fix": "Replace 'this one is final' with 'this one is real, not a placeholder; 4.1b adds the org-switcher header button'."
+      "problem": "4.1b Build 9 adds an org-switcher header button to the tabs layout and 4.2a Build 3 puts it in the Home header; calling the file 'final' tells the 4.1a agent to lock down something two later steps edit.",
+      "fix": "Replace 'this one is final' with 'real `Tabs` now; 4.1b adds the org-switcher header button, 4.3 fills the More tab content'."
+    },
+    {
+      "step": "4.1a",
+      "severity": "minor",
+      "category": "ambiguity",
+      "quote": "\"types\": [\"react-native\", \"expo-router/types\" or the generated `.expo/types/router.d.ts` include]",
+      "problem": "A JSON-shaped instruction with an inline 'or' cannot be pasted; two agents would produce different tsconfigs and one of them (`expo-router/types` in `types`) does not exist as a types package.",
+      "fix": "Replace with: `\"compilerOptions\": { \"paths\": { \"@/*\": [\"./src/*\"] } }` (inherit `types` from `@church/tsconfig/react-native.json`) and `\"include\": [\"**/*.ts\", \"**/*.tsx\", \".expo/types/**/*.ts\", \"expo-env.d.ts\", \"app.config.ts\", \"vitest.config.ts\"]`; typed routes come from the generated `.expo/types/router.d.ts` referenced by `expo-env.d.ts`."
+    },
+    {
+      "step": "4.1a",
+      "severity": "minor",
+      "category": "dependency-hedge",
+      "quote": "`react-native-vector-icons`/`@expo/vector-icons` (whichever `react-native-paper` 5.15 requires — read its peer list)",
+      "problem": "Installing `react-native-vector-icons` in an Expo app duplicates the icon fonts and needs a config plugin; `@expo/vector-icons` is already bundled with `expo` and Expo's Metro config aliases paper's icon import to it. Two agents would resolve the hedge differently.",
+      "fix": "Replace with: \"do NOT install `react-native-vector-icons`; `@expo/vector-icons` ships with `expo` and satisfies `react-native-paper`. If `expo export` still complains about `MaterialCommunityIcons`, pass `settings={{ icon: (props) => <MaterialCommunityIcons {...props} /> }}` to `PaperProvider`.\""
     },
     {
       "step": "4.1b",
-      "severity": "minor",
-      "category": "verify-command",
-      "quote": "`git grep -n \"anacast://\" apps/mobile` → nothing outside a comment or test",
-      "problem": "`apps/mobile/README.md` (4.1a Build 12, 4.2a/4.2b/4.3 README sections) legitimately documents `anacast://invite/<token>`, so this check produces hits the agent must judge manually; it also does not exercise the intended rule (no hand-rolled scheme strings in code).",
-      "fix": "Change to `git grep -n \"anacast://\" apps/mobile/src apps/mobile/app -- ':!*.test.ts'` → nothing (comments excepted); same edit in the done_when bullet."
+      "severity": "major",
+      "category": "hosted-config-prerequisite",
+      "quote": "Rule for `shouldCreateUser`: `true` when a `pending_invite_token` exists in kv (an invited person may have no account yet",
+      "problem": "When `signInWithOtp` creates a NEW user, Supabase sends the **Confirm signup** email template, not Magic Link. Step 2.4 (G6) only makes `{{ .Token }}` optional in Confirm signup ('you may add'), so an invited member without an account receives a link instead of a 6-digit code and the mobile invite flow dead-ends; nothing in 4.1b, 4.4 or 4.5 mentions it.",
+      "fix": "In Inputs add: \"New-user OTP sign-ups use the **Confirm signup** template; the founder must add `{{ .Token }}` to BOTH Magic Link and Confirm signup (2.4 made the second optional).\" In Finish founder to-dos add that line. Propagate: 4.4 Build 1.2 and 1.10 list both templates; 4.5 item 1 reads 'the Magic Link AND Confirm signup templates contain `{{ .Token }}`'. Also ask G6 to make the Confirm signup edit mandatory in 2.4."
     },
     {
       "step": "4.1b",
       "severity": "minor",
       "category": "ambiguity",
       "quote": "Use expo-router `Stack.Protected` guards if the installed `expo-router` exposes them (SDK 53+); otherwise the `Redirect` pattern above.",
-      "problem": "Expo SDK 57's expo-router (~57.0.18, pinned in PLAN §3) always exposes `Stack.Protected`; offering two patterns makes two agents build different gates and leaves `app/index.tsx` logic duplicated with the layout guard.",
-      "fix": "Pick one: 'Use `Stack.Protected guard={...}` in `app/(app)/_layout.tsx` and `app/(auth)/_layout.tsx` (expo-router 57 has it); keep `app/index.tsx` as the only place that decides the initial destination.' Remove the Redirect alternative from Build 8 and the `Stack.Protected` vs `Redirect` deviation hint in Finish."
+      "problem": "Expo SDK 57's expo-router (~57.0.18, PLAN §3) always has `Stack.Protected`; offering two patterns means two agents build different gates and duplicate the routing logic between `app/index.tsx` and the layout.",
+      "fix": "Replace with: \"Use `Stack.Protected guard={...}` in `app/(app)/_layout.tsx` (signed_in && activeOrgs.length > 0) and in `app/(auth)/_layout.tsx` (not signed_in or no active org, except `invite/[token]`); `app/index.tsx` only shows the splash while loading, runs the pending-invite resume, then `<Redirect>`s.\""
+    },
+    {
+      "step": "4.1b",
+      "severity": "minor",
+      "category": "verify-command",
+      "quote": "`git grep -n \"anacast://\" apps/mobile` → nothing outside a comment or test",
+      "problem": "`apps/mobile/README.md` (4.1a/4.4) legitimately documents `anacast://invite/<token>`, so the command produces hits the agent must judge by hand and does not test the intended rule (no hand-rolled scheme strings in code).",
+      "fix": "Use `git grep -n \"anacast://\" apps/mobile/src apps/mobile/app -- ':!*.test.ts'` → nothing (README and docs are exempt)."
     },
     {
       "step": "4.2a",
       "severity": "major",
       "category": "wrong-package-attribution",
-      "quote": "constants `SIGNED_URL_TTL_SECONDS` (3600) and `SIGNED_URL_CACHE_MS` (50 min)",
-      "problem": "Listed under `@church/db` in Inputs, repeated in Constraints ('from `@church/db` only'), in Verify ('constants come from `@church/db`') and in done_when. Per G4 they are exported by `@church/domain` `limits.ts` (1.6a). The agent will hit a missing-export typecheck error on the central hook of the step.",
-      "fix": "Everywhere in 4.2a (Inputs, Build 1, Constraints, Verify, done_when) change the source of `SIGNED_URL_TTL_SECONDS`/`SIGNED_URL_CACHE_MS` to `@church/domain`; keep `createSignedUrl` and `queryKeys.signedUrl(bucket, path)` under `@church/db`."
+      "quote": "constants `SIGNED_URL_TTL_SECONDS` (3600) and `SIGNED_URL_CACHE_MS` (50 min). If `queryKeys` has no signed-URL key, add `queryKeys.signedUrl(bucket, path)` additively",
+      "problem": "Listed under `@church/db` in Inputs and repeated in Constraints ('from `@church/db` only'), Verify ('constants come from `@church/db`') and done_when. G4 exports both from `@church/domain` `limits.ts` (1.6a), and 1.7a already ships `queryKeys.signedUrl(bucket, path)` and `SIGNED_URL_KEY_ROOT` — the hedge invites a duplicate key.",
+      "fix": "Inputs: move the two constants to the `@church/domain` bullet; delete the 'If `queryKeys` has no signed-URL key…' sentence and state `queryKeys.signedUrl(bucket, path)` exists (1.7a). Constraints/Verify/done_when: replace 'from `@church/db`' with 'from `@church/domain` (`limits.ts`)' for the two constants; the key and `shouldPersistQuery` stay `@church/db`. Remove `queryKeys.signedUrl` from open_issues."
     },
     {
       "step": "4.2a",
       "severity": "minor",
       "category": "exact-names-available",
       "quote": "`queries/settings.ts` — the org settings reader (read the file for its name; it returns `organization_settings` including `timezone`)",
-      "problem": "G4 fixes the names: `getSettings(db, orgId)` in `queries/settings.ts`, and `@church/domain` `dates.ts` exports `todayInZone(tz)` and `bulletinPresets`. Leaving them as 'read the file' is unnecessary hedging that invites divergent wrappers.",
-      "fix": "Write `getSettings(db, orgId)` and `todayInZone(timezone)` explicitly in Inputs and Build 2 ('compute `todayIso = todayInZone(settings.timezone ?? 'America/New_York')`')."
+      "problem": "G4 fixes the names: `getSettings(db, orgId)` in `queries/settings.ts`, `todayInZone(tz)` and `DEFAULT_TIMEZONE = 'America/New_York'` in `@church/domain` `dates.ts`. 'Read the file' hedges invite parallel helpers and cost the agent a search.",
+      "fix": "Write `getSettings(db, orgId)` in Inputs and Build 2; in Build 2 replace 'compute `todayIso` with the `@church/domain` date helper' with '`todayInZone(settings.timezone ?? DEFAULT_TIMEZONE)`'."
     },
     {
       "step": "4.2a",
       "severity": "minor",
       "category": "api-availability",
       "quote": "`FileSystem.getContentUriAsync(localUri)` (or the `File` equivalent)",
-      "problem": "In SDK 54+ the object API (`File`/`Paths`) does not expose `getContentUriAsync`; it lives in `expo-file-system/legacy`. 'or the File equivalent' sends the agent hunting for a function that may not exist.",
-      "fix": "Write: 'download with the object API (`new File(Paths.cache, fileName)`, `File.downloadFileAsync`); for the Android content URI import `getContentUriAsync` from `expo-file-system/legacy` (the object API has no equivalent as of SDK 57 — check the installed typings and record which you used).'"
+      "problem": "In `expo-file-system` for SDK 54+ the object API (`File`/`Paths`) has no `getContentUriAsync`; it lives in `expo-file-system/legacy`. 'Or the File equivalent' sends the agent hunting for a function that does not exist, and mixing the two APIs is error-prone.",
+      "fix": "Replace Build 6 (b)–(c) with: \"use `expo-file-system/legacy` for the whole flow — `downloadAsync(url, cacheDirectory + fileName)` then `getContentUriAsync(uri)` for the intent; do not mix with the `File`/`Paths` API. If the installed version has no `/legacy` subpath (SDK < 54), import from `expo-file-system` directly.\""
     },
     {
       "step": "4.2b",
       "severity": "major",
       "category": "exact-names-available",
       "quote": "Read `packages/domain/src/media-links.ts` and `src/urls.ts` to see how the hosted YouTube embed URL is built (1.6b added a builder for `/embed/yt/<id>`)",
-      "problem": "G4's 1.6b fixes the builder: `youtubeHostedEmbedUrl(appUrl, id)` = `appUrl + youtubeHostedEmbedPath(id)` in `packages/domain/src/urls.ts`, trailing slash trimmed, and names 'G11 4.2 WebView' as a consumer. The prompt's 'read the file / add it if missing' hedge and the open_issue are resolvable now; naming it prevents an agent from adding a duplicate builder.",
-      "fix": "In Inputs write: '`@church/domain` `src/urls.ts` (1.6b): `youtubeHostedEmbedUrl(appUrl, videoId)` → `${appUrl}/embed/yt/${videoId}` (trailing slash trimmed) and `youtubeHostedEmbedPath(videoId)`.' In Build 7 write `hostedEmbedUrl = youtubeHostedEmbedUrl(publicEnv().webUrl, videoId)`. Delete the 'if the builder does not exist, add it' sentence from notes and remove the corresponding open_issue."
+      "problem": "G4 1.6b fixes the builder: `youtubeHostedEmbedUrl(appUrl, id)` = `appUrl + youtubeHostedEmbedPath(id)` in `packages/domain/src/urls.ts`, trailing slash trimmed, and names 4.2's WebView as its consumer; G8 3.4a/3.4b use the same names. The prompt's 'read the file / add it if missing' hedge plus the open issue is resolvable now and the fallback ('add the builder additively') would create a duplicate.",
+      "fix": "Inputs: \"`@church/domain` `urls.ts` (1.6b): `youtubeHostedEmbedPath(id)` → `/embed/yt/<id>` and `youtubeHostedEmbedUrl(appUrl, id)` (trims a trailing slash) — the WebView `source.uri` is `youtubeHostedEmbedUrl(publicEnv().webUrl, videoId)`.\" Build 7 and Constraints: name the function instead of 'the domain builder'. Build 11: `hostedEmbedUrl.test.ts` becomes a one-case wrapper test (or drop it — 1.6b already tests the builder). Delete the third open_issue and the sentence in notes."
     },
     {
       "step": "4.2b",
       "severity": "minor",
       "category": "wrong-enum-values",
       "quote": "`media_kind ('upload' | youtube | dropbox | gdrive | other — read the enum)`",
-      "problem": "G2's `media_kind` enum is `upload, youtube, dropbox, google_drive, url`. Wrong literals in the prompt risk a wrong `resolvePlayer` switch and wrong test fixtures even though the agent is told to read the enum.",
-      "fix": "Replace with `media_kind` (`upload | youtube | dropbox | google_drive | url` — the `media_kind` enum from 1.2)."
+      "problem": "G2's `media_kind` enum is `upload, youtube, dropbox, google_drive, url`. Wrong literals risk a wrong `resolvePlayer` switch and wrong test fixtures even though the agent is told to read the enum.",
+      "fix": "Write `media_kind` (`'upload' | 'youtube' | 'dropbox' | 'google_drive' | 'url'`, enum from 1.2) and use `google_drive`/`url` in the Build 3 rules and test table."
     },
     {
       "step": "4.2b",
@@ -120,95 +145,119 @@
       "category": "prompt-hygiene",
       "quote": "No background audio for YouTube (ToS) — say so in a one-line caption when the app is backgrounded? No: just do not request it.",
       "problem": "Drafting self-dialogue left in the prompt; an executing agent cannot tell whether a caption is wanted.",
-      "fix": "Replace with: 'No background audio for YouTube (ToS): do not request it and do not add a caption.'"
+      "fix": "Replace with: \"YouTube playback stops when the app is backgrounded (YouTube ToS) — do not request background audio for this strategy and add no caption.\""
     },
     {
       "step": "4.2b",
       "severity": "minor",
       "category": "path-hedge",
       "quote": "3.4b's `app/(public)/embed/yt/[id]/page.tsx` renders a `youtube-nocookie` iframe",
-      "problem": "G8's 3.4b allows the page under `app/(share)/embed/yt/[id]/page.tsx` instead of `(public)`; the reads entry names only the `(public)` path, so the agent may report the file missing.",
-      "fix": "Write 'apps/web/app/(public)/embed/yt/[id]/page.tsx or app/(share)/embed/yt/[id]/page.tsx — whichever 3.4b created (the URL is `/embed/yt/<id>` either way)' in Inputs and reads."
+      "problem": "G8's 3.4b allows the page under `app/(share)/embed/yt/[id]/page.tsx` when the `(public)` layout has chrome; Inputs and `reads` name only the `(public)` path, so the agent may report the file missing.",
+      "fix": "Write `apps/web/app/(public)/embed/yt/[id]/page.tsx` (or `app/(share)/embed/yt/[id]/page.tsx` — 3.4b chose one; `git ls-files 'apps/web/app/*/embed/yt/*'`) in Inputs and reads."
     },
     {
       "step": "4.3",
-      "severity": "minor",
-      "category": "wrong-step-attribution",
-      "quote": "`@church/domain` (1.6b): `schemas/notifications.ts` — `registerPushDeviceSchema` … `urls.ts` — `notificationTargetPath(kind, refId)`",
-      "problem": "`notificationTargetPath` is added to `packages/domain/src/urls.ts` additively by G9's 3.6a, not by 1.6b (G4 never mentions it). Harmless at runtime, but an agent verifying provenance via the TODO will not find it in 1.6b's done_when.",
-      "fix": "Write '`urls.ts` — `notificationTargetPath(kind, refId)` (added by 3.6a)'; same in reads."
+      "severity": "major",
+      "category": "missing-wiring",
+      "quote": "in `src/features/push/index.ts` call `registerBeforeSignOut(async () => { const token = await getKv('push_token'); if (token) { await deletePushDevice(supabase, token).catch(noop); await deleteKv('push_token'); } })`",
+      "problem": "A module-level side effect runs only if something imports the module; the prompt never says where `src/features/push/index.ts` is imported, so the done_when item 'Signing out deletes the stored device row' can silently fail while every unit test passes.",
+      "fix": "Replace the module side effect with an exported `installPushSignOutCleanup()` in `src/features/push/signOutCleanup.ts`, called once in `useNotificationNavigation`'s mount effect (or directly in `app/(app)/_layout.tsx` after the org gate) and unit-tested by asserting `registerBeforeSignOut` was called with a function that deletes the device before `auth.signOut()`."
     },
     {
       "step": "4.3",
       "severity": "minor",
       "category": "file-layout-collision",
       "quote": "`src/lib/push.ts` … `src/lib/push/capability.ts`",
-      "problem": "A file `src/lib/push.ts` and a directory `src/lib/push/` side by side resolve (`@/lib/push` → the file) but confuse tooling and readers; DESIGN §11 step 10 names only `src/lib/push.ts`.",
-      "fix": "Rename Build 2's module to `src/lib/push-capability.ts` (and the test to `push-capability.test.ts`); update Verify's test list from `capability` to `push-capability`."
+      "problem": "A file `src/lib/push.ts` next to a directory `src/lib/push/` resolves (`@/lib/push` → the file) but confuses readers and some tooling; DESIGN §11 step 10 names only `src/lib/push.ts`.",
+      "fix": "Put the pure capability check in `src/lib/push-capability.ts` (or `src/features/push/capability.ts`) and keep `src/lib/push.ts` as the only `push` path under `src/lib`."
     },
     {
       "step": "4.3",
       "severity": "minor",
-      "category": "missing-wiring",
-      "quote": "in `src/features/push/index.ts` call `registerBeforeSignOut(async () => { … })`",
-      "problem": "A module-level side effect only runs if something imports the module; the prompt never says where `src/features/push/index.ts` is imported, so the device row may never be deleted on sign-out.",
-      "fix": "Add: 'Import `@/features/push` once from `app/(app)/_layout.tsx` (next to `useNotificationNavigation`) so the registration runs whenever the app group mounts; the sign-out hook test asserts the registration happened.'"
+      "category": "wrong-step-attribution",
+      "quote": "`@church/domain` (1.6b): `schemas/notifications.ts` — `registerPushDeviceSchema` … `urls.ts` — `notificationTargetPath(kind, refId)`",
+      "problem": "`notificationTargetPath` is added to `packages/domain/src/urls.ts` additively by G9's 3.6a, not by 1.6b (G4 never mentions it). Harmless at runtime, but an agent checking provenance against the TODO will not find it under 1.6b.",
+      "fix": "Write \"`urls.ts` — `notificationTargetPath(kind, refId)` (added by 3.6a)\"."
     },
     {
       "step": "4.3",
       "severity": "minor",
       "category": "test-instructions",
-      "quote": "Tests (Vitest, node, `vi.mock` for `expo-notifications`, `expo-device`, `expo-constants`)",
-      "problem": "`src/lib/push.ts` imports `Platform` from `react-native` and `@church/db` helpers; in a node Vitest run `react-native` cannot be parsed, so the `registerForPush` state-machine test fails unless `react-native` and the `supabase` module are mocked too.",
-      "fix": "Extend the list: '`vi.mock` for `expo-notifications`, `expo-device`, `expo-constants`, `react-native` (`Platform.OS = 'android'`), `@/lib/supabase` and the `@church/db` notification helpers'. Apply the same `react-native` mock note to 4.2a Build 8 and 4.2b Build 11."
-    },
-    {
-      "step": "4.4",
-      "severity": "minor",
-      "category": "exact-value-missing",
-      "quote": "a second grep for the old placeholder package id that PLAN §9 lists",
-      "problem": "The value is known (`com.churchappcld.app`, PLAN §9 / DESIGN §10); making the agent look it up is unnecessary and the grep is otherwise unspecified.",
-      "fix": "Write `git grep -n \"com.churchappcld.app\\|churchapp://\" docs README.md HANDOFF.md apps` and list the same literal in Verify."
+      "quote": "**Tests** (Vitest, node, `vi.mock` for `expo-notifications`, `expo-device`, `expo-constants`)",
+      "problem": "`src/lib/push.ts` imports `Platform` from `react-native` and `supabase` from `src/lib/supabase.ts` (which imports Expo native modules); in a node Vitest run `react-native` cannot even be parsed, so the `registerForPush` state-machine test fails unless those are mocked too.",
+      "fix": "Either add `vi.mock('react-native', () => ({ Platform: { OS: 'android' } }))` and `vi.mock('@/lib/supabase')` to the list, or (preferred) give `registerForPush(deps)` an injected `{ notifications, device, platform, upsertDevice, kv }` object so the pure state machine needs no native mocks."
     },
     {
       "step": "4.4",
       "severity": "minor",
       "category": "verify-command",
       "quote": "use `python3 -c \"import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml'))\"`",
-      "problem": "PyYAML is not guaranteed on the agent's machine any more than `js-yaml` is; the Verify step that depends on it may be unrunnable.",
-      "fix": "Offer the fallback: 'if `import yaml` fails, run `npx --yes js-yaml .github/workflows/ci.yml > /dev/null`'; better, after the push confirm with `gh run list --limit 1` as already stated."
+      "problem": "PyYAML is no more guaranteed on the agent's machine than `js-yaml`; the Verify step may be unrunnable.",
+      "fix": "Write: \"parse-check with `python3 -c \\\"import yaml…\\\"` if PyYAML is present, else `npx --yes js-yaml .github/workflows/ci.yml > /dev/null`; if neither works, rely on the GitHub Actions run after the push (`gh run list --limit 1`).\""
+    },
+    {
+      "step": "4.4",
+      "severity": "minor",
+      "category": "exact-value-missing",
+      "quote": "a second grep for the old placeholder package id that PLAN §9 lists",
+      "problem": "The value is known (`com.churchappcld.app`, PLAN §9 / DESIGN §10); making the agent look it up leaves the grep unspecified.",
+      "fix": "Write `git grep -n \"com.churchappcld.app\" docs README.md HANDOFF.md apps` → hits only in `docs/PLAN.md`/`docs/DESIGN.md`."
+    },
+    {
+      "step": "4.4",
+      "severity": "minor",
+      "category": "hosted-config-prerequisite",
+      "quote": "code never arrives (template missing `{{ .Token }}`, default SMTP rate limit — 2.4)",
+      "problem": "Troubleshooting and prerequisites name only the Magic Link template; an invited member without an account triggers the Confirm signup template (see 4.1b finding), which 2.4 left optional.",
+      "fix": "Build 1.2: 'Magic Link AND Confirm signup templates containing `{{ .Token }}`'. Build 1.10: add 'link instead of code for a brand-new member → Confirm signup template lacks `{{ .Token }}`'."
     },
     {
       "step": "4.4",
       "severity": "minor",
       "category": "external-constraint-risk",
       "quote": "`EAS_PROJECT_ID` (plaintext)",
-      "problem": "EAS reserves the `EAS_` prefix for built-in build variables and may reject creating a user variable named `EAS_PROJECT_ID` (`eas env:create`). The name comes from PLAN §9/DESIGN §10 so it must stay the default, but the docs step should tell the founder what to do if EAS refuses it, otherwise 4.5 stalls.",
-      "fix": "Add to Build 1.4 and the troubleshooting list: 'If EAS rejects the name `EAS_PROJECT_ID` (reserved prefix), rename the variable to `EXPO_PUBLIC_EAS_PROJECT_ID` in `app.config.ts`, `.env.example`, `docs/ENV.md` and this document together, and record the deviation in HANDOFF.' The same note belongs in 4.5 item 8."
+      "problem": "EAS reserves the `EAS_` prefix for its built-in build variables and `eas env:create` may refuse a user variable with that name (unverified offline). The name comes from PLAN §9/DESIGN §10 so it stays the default, but the founder needs to know what to do if EAS rejects it, otherwise 4.5 stalls.",
+      "fix": "Build 1.4: add \"If `eas env:create` rejects the name `EAS_PROJECT_ID`, create it as `ANACAST_EAS_PROJECT_ID` instead and tell an agent to make `app.config.ts` read `process.env.EAS_PROJECT_ID ?? process.env.ANACAST_EAS_PROJECT_ID` (one-line change, record in HANDOFF).\" Mirror the sentence in 4.5 item 8."
     },
     {
       "step": "4.5",
       "severity": "major",
       "category": "click-path-wrong",
       "quote": "on the web, `/o/<slug>/users` → Create account or Invite yourself (Checkpoint B created the church; if you are only the super admin, add yourself as a member now)",
-      "problem": "The founder's email already has an auth account (super admin sign-up in 2.5). `Create account` (`createUserDirect` → `auth.admin.createUser`) fails for an existing email, so only the Invite path works, and the invitation must then be accepted (web `/invite/<token>` while signed in with that email, or in the app). The checklist offers a dead path first and omits the accept step.",
-      "fix": "Replace item 2 with: 'You are an **active member** of the first church with the email you will type into the phone. Because that email already has an account, use `/o/<slug>/users` → **Invite** (not Create account) with your own email, then open the invite link on the web while signed in and accept it (or accept it later in the app via the `anacast://invite/<token>` \"Open in app\" button). Confirm `/o/<slug>/users` lists you as active. The Supabase Free project must not be paused…'"
+      "problem": "The founder's email already has an auth account (super-admin sign-up in 2.5). 'Create account' (`createUserDirect` → `auth.admin.createUser`) fails for an existing email, and an invitation is not a membership until accepted; `my_context()` gives a super admin `membership_status` null, which the app's `activeOrgs` filter rejects. As written the founder reaches the `no-church` screen.",
+      "fix": "Replace item 2 with: \"You must be an ACTIVE member of the first church with the email you will type into the phone. As super admin your email already has an account, so use Invite, not Create account: `/o/<slug>/users` → Invite → your email (no permissions needed) → if Resend is not configured, copy the link → open it in the same browser where you are signed in → Accept. Check `/o/<slug>/users` lists you as active (or SQL Editor: `select status from public.org_memberships where user_id = auth.uid()` while signed in). A second person with a fresh email can instead be created with Create account.\""
     },
     {
       "step": "4.5",
       "severity": "minor",
       "category": "expectation-mismatch",
       "quote": "lock the phone → audio keeps playing and the lock screen shows the title",
-      "problem": "4.2b explicitly allows shipping without lock-screen metadata ('lock-screen controls pending expo-audio API' recorded under Deviations); the checklist then fails on a known, documented gap.",
-      "fix": "Append: '(if HANDOFF 'Deviations from plan' says lock-screen controls are pending, expect the audio to continue but no title on the lock screen — record it, do not count it as a failure)'. Mirror in done_when bullet 5."
+      "problem": "4.2b explicitly allows shipping without now-playing metadata ('lock-screen controls pending expo-audio API' under Deviations); the checklist then fails on a documented gap.",
+      "fix": "Write: \"lock the phone → audio keeps playing (required); the lock screen shows the sermon title if HANDOFF's 4.2b deviation list does not say lock-screen controls are pending\"."
+    },
+    {
+      "step": "4.5",
+      "severity": "minor",
+      "category": "click-path-gap",
+      "quote": "the Magic Link email template contains `{{ .Token }}` (Supabase → Authentication → Email Templates → Magic Link)",
+      "problem": "Item 23 (a second invited family member) and any invited member without an account go through the Confirm signup template, which 2.4 left without `{{ .Token }}`; the checklist only verifies Magic Link.",
+      "fix": "Item 1: \"the Magic Link AND Confirm signup templates both contain `{{ .Token }}`\"; item 23: add \"(needs the Confirm signup template edit from item 1)\"."
     },
     {
       "step": "4.5",
       "severity": "minor",
       "category": "click-path-gap",
       "quote": "`npx eas-cli init` → confirm creating the project under your account (slug `anacast`). Because `app.config.ts` is dynamic, EAS prints the project id instead of writing it",
-      "problem": "`eas init` on a dynamic config prints an instruction to add `extra.eas.projectId` and may exit non-zero until the id is present; the founder is not told that the subsequent `npx eas-cli project:info` and `build` only work after `apps/mobile/.env` contains `EAS_PROJECT_ID=<id>` (Expo CLI loads `.env` when evaluating `app.config.ts`).",
-      "fix": "Add after item 6: 'Create `apps/mobile/.env` from `.env.example` and set `EAS_PROJECT_ID=<id>` (plus the three `EXPO_PUBLIC_*` values for local runs); re-run `npx eas-cli init` (it now finds the id and links the project) before item 7.'"
+      "problem": "`eas init` on a dynamic config may exit with an instruction to add `extra.eas.projectId` yourself; the founder is not told that `project:info` (item 7) and `build` (item 13) work only after `apps/mobile/.env` contains `EAS_PROJECT_ID=<id>` (eas-cli and Expo CLI load `.env` from `apps/mobile`).",
+      "fix": "Append to item 6: \"If the command ends with an error saying to add `extra.eas.projectId`, that is expected: copy the id from the message or from expo.dev → project → Overview, write `EAS_PROJECT_ID=<id>` into `apps/mobile/.env`, and re-run `npx eas-cli project:info` — it must now print the id.\""
+    },
+    {
+      "step": "4.6",
+      "severity": "minor",
+      "category": "prompt-completeness",
+      "quote": "## Build\\n1. Classify each observation: bug / copy / UX / configuration / out of scope (Phase 2+). 2. Fix bugs",
+      "problem": "The proposed template is far below orchestrator decision 9's 1200-word floor and gives no Verify detail beyond the standing commands, no HANDOFF sections to touch, and no rule for how a fix that needs a rebuild is reported; as a reusable template it should mirror 3.10's structure.",
+      "fix": "Expand to the 3.10 shape: Inputs list the exact files per area (`src/features/{auth,feed,bulletins,sermons,push}`, `src/lib/{signed-url,push,deep-links}.ts`), Build adds 'one commit per observation group', 'regression test first for pure functions', 'never change `@church/domain` parsers without updating web tests too'; Verify keeps the standing commands plus `git grep` guards from 4.1b–4.3; Finish names the HANDOFF sections (Mobile (Phase 1) known gaps, builds ledger, Deviations)."
     }
   ]
 }
