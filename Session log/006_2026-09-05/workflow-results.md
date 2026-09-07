@@ -170,3 +170,10 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-7 — wf_5f63735d-e77 (task ww9s7dq0x) — critique, completeness lens only, launched 2026-09-07 18:02 America/New_York — queued
 - args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["completeness"]} (one critic agent).
 - Outcome: (pending)
+- Outcome: completed. reviews/G13.completeness.json — 13 findings, 0 blockers. All three G13 lenses now on disk
+  (fidelity 17 / executability 30 / completeness 13 = 60 findings, 2 blockers).
+- Usage: 1 agent, **subagent_tokens 252,031**, tool_uses 35, duration 390,079 ms (~6.5 min).
+
+## Bite G13-8 — revise (reads the three saved review files), launched 2026-09-07 18:09 America/New_York — queued
+- args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "revise"} (one reviser agent, effort high).
+- Outcome: (pending)
