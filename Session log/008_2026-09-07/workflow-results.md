@@ -24,3 +24,7 @@ Bite plan (each bite = one Workflow run = one sub-agent):
   Summary saved in `todo-drafts/reviews/G14.draft-6.1.result.json`.
 - Usage: agent_count 1, agents_done 1, agents_error 0, **subagent_tokens 200,700**, tool_uses 27, duration 595,285 ms (~10 min).
 - Founder (09:26 ET): "keep going on G14 bites" → bite 2 launched.
+
+## Bite 2 — draft 6.2 — wf_b0486d4c-80e (task wakfonpoh), launched 2026-09-07 09:28 America/New_York (13:28 UTC)
+- args: {"groups": ["G14"], "stage": "draft", "steps": ["6.2"]} (G14.json holds 6.1a/6.1b/6.1c; drafter adds 6.2 only).
+- Outcome: (pending)
