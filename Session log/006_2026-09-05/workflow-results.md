@@ -140,3 +140,9 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-4 — wf_b0ba9161-f71 (task wn22arogr) — draft step 5.7 only, launched 2026-09-07 14:31 America/New_York — founder confirmed
 - args: {"groups": ["G13"], "stage": "draft", "steps": ["5.7"]} (one drafter agent).
 - Outcome: (pending)
+- Outcome: completed. 5.7 split into 5.7a (Android App Links + YouTube oEmbed re-check, 2632 words), 5.7b (CSV directory
+  import, 2988 words) and 5.7c (5k-row perf test, Phase 2 RLS matrix, Playwright sweep, docs, 2919 words). Validator
+  0 errors. 12 open issues saved in `reviews/G13.draft-5.7.result.json` (RLS test-file numbering collision with G14 6.3a;
+  proposed 5.9 Checkpoint D). **G13 drafting complete: 5.4a, 5.4b, 5.5, 5.6a, 5.6b, 5.6c, 5.7a, 5.7b, 5.7c.**
+- Usage: 1 agent, **subagent_tokens 204,407**, tool_uses 30, duration 829,281 ms (~14 min).
+- G13 draft bites total: 206,582 + 141,621 + 229,320 + 204,407 = **781,930** sub-agent tokens.

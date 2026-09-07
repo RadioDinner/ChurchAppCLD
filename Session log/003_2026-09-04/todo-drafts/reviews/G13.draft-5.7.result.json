@@ -1,0 +1,99 @@
+{
+ "run_id": "wf_b0ba9161-f71",
+ "task": "wn22arogr",
+ "args": {
+  "groups": [
+   "G13"
+  ],
+  "stage": "draft",
+  "steps": [
+   "5.7"
+  ]
+ },
+ "outcome": "completed",
+ "subagent_tokens": 204407,
+ "tool_uses": 30,
+ "duration_ms": 829281,
+ "logs": [],
+ "result": [
+  {
+   "group": "G13",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "5.4a",
+     "title": "Documents (web) — upload, category, audience, schedule, delete; announcements attach a document",
+     "actor": "agent",
+     "prompt_words": 3109
+    },
+    {
+     "id": "5.4b",
+     "title": "Documents (mobile) — list by category, open or share files, linked document on announcements, More tab row",
+     "actor": "agent",
+     "prompt_words": 2095
+    },
+    {
+     "id": "5.5",
+     "title": "Custom audience groups",
+     "actor": "agent",
+     "prompt_words": 2913
+    },
+    {
+     "id": "5.6a",
+     "title": "Join codes & join requests — migration 9998_join_codes.sql, RLS tests, domain/db",
+     "actor": "agent",
+     "prompt_words": 3349
+    },
+    {
+     "id": "5.6b",
+     "title": "Join codes & join requests (web) — /join-codes with printable page, /join-requests",
+     "actor": "agent",
+     "prompt_words": 2469
+    },
+    {
+     "id": "5.6c",
+     "title": "Join codes (mobile) — join and pending screens, join-code entry on no-church, More tab",
+     "actor": "agent",
+     "prompt_words": 2115
+    },
+    {
+     "id": "5.7a",
+     "title": "Phase 2 hardening (a) — Android App Links (intentFilters + /.well-known/assetlinks.json) and YouTube oEmbed \"Re-check link\"",
+     "actor": "agent",
+     "prompt_words": 2632
+    },
+    {
+     "id": "5.7b",
+     "title": "Phase 2 hardening (b) — CSV directory import (web): template, dry run with row/column errors, duplicate warnings, batched import through the directory RPCs",
+     "actor": "agent",
+     "prompt_words": 2988
+    },
+    {
+     "id": "5.7c",
+     "title": "Phase 2 hardening (c) — directory performance test (5k-row fixture, explain analyze, documented budget), Phase 2 RLS directory matrix, Playwright sweep, docs consolidation",
+     "actor": "agent",
+     "prompt_words": 2919
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (decision 13): 5.7 → 5.7a (App Links + oEmbed re-check; depends 5.6c, 3.3b, 4.4), 5.7b (CSV import; depends 5.1b, 5.2b), 5.7c (perf test + Phase 2 RLS matrix 12_directory_matrix_phase2.sql + Playwright sweep + docs; depends 5.2b, 5.3b, 5.4b, 5.5, 5.6c, 5.7a, 5.7b). G14 6.4/6.5 references to '5.7' should point at 5.7a (assetlinks) / 5.7c (Phase 2 gate).",
+    "Names chosen for 5.7a (docs silent): server env var ANDROID_CERT_SHA256_FINGERPRINTS ([] when unset), ANDROID_PACKAGE_ID / APP_LINK_PATH_PREFIXES / isAppLinkPath in @church/domain urls.ts, src/lib/app-links/assetlinks.ts, route apps/web/app/.well-known/assetlinks.json/route.ts (fallback api route + rewrite), src/lib/media/youtube-oembed.ts, recheckYouTubeLinkAction, RecheckLinkButton, RECHECK_MESSAGES, web error key rate_limited. Only /invite is claimed; /join waits for proposed 5.8.",
+    "oEmbed results are not persisted (would need sermons.last_checked_at/last_check_status via a 999x migration); the 10/min per-user throttle is in-memory best-effort because private.rate_limits is scoped to share-link passwords.",
+    "intentFilters is native config: founder must rebuild the preview APK after 5.7a; 6.5 must add the Play App Signing fingerprint (G14 already plans it); the agent cannot verify App Links without a device and matching signed build.",
+    "5.7b imports through existing client RPCs in 20-household browser-driven batches (non-atomic; dry run + head-first ordering + duplicate flags make re-runs safe). An atomic srv_import_directory(jsonb) service RPC would be better but needs a migration and a decision.",
+    "households.created_via stays 'admin' for imports (DESIGN §4.2 lists admin|invitation|self); an 'import' value may hit a 1.2 check constraint — G2 could add it while 9999 is unfrozen.",
+    "5.7b column set and limits are drafter choices (household_key grouping, 24 columns, ISO + MM/DD/YYYY dates, 2000 rows / 1 MB / 500 reported errors / 20-household batches, in-repo RFC 4180 parser, no update-existing or photo import); Server Action bodySizeLimit may need raising to 2 MB.",
+    "RLS test numbering collision: 5.6a takes 11_join_codes.sql and G14 6.3a also names 11_account_deletion.sql; 5.7c takes 12_directory_matrix_phase2.sql, 6.1a takes 10_. Recommend renumbering 6.3a's file to 13_.",
+    "5.7c perf budget (250 ms/query, local PG16, warm cache, 5k persons) and the eight measured queries are drafter defaults; remedy ladder allows an index migration (next free number — 6.1a assumes 9997) but forbids rewriting directory_* views; JWT claims hook documented, not built.",
+    "5.7c asserts the custom-group-deletion consequence (targeted announcements become visible to everyone) as current behaviour, cross-referencing 5.5's open issue; the schema fix belongs to G2/founder.",
+    "DM-25 (archived account = disabled membership, decision 15) is conditional on whether the global-review fixers add the archive columns to 1.2–1.4 before 5.7c runs; otherwise a reserved comment for 6.3a.",
+    "M5 has no founder checkpoint in the skeleton; proposed 5.9 (Checkpoint D) covers the new APK, fingerprints and the Phase 2 acceptance/device checklists."
+   ]
+  }
+ ]
+}
