@@ -114,4 +114,27 @@ Bite plan (each bite = one Workflow run = one sub-agent):
   9 blockers; expected to rewrite 6.3a around decisions 15 and 19).
 - Note: the rebase before launch pulled in session 006's commit cdd9a6c ("G13 run stopped on usage limit; switching to
   confirmed single-agent bites") — record only, no overlap with G14 files; no conflict.
-- Outcome: (pending)
+- Outcome: completed, 0 failures. 68 findings applied, 3 partially rejected with reasons (legal text stays in 6.3a per
+  decisions 16/19; 6.1c hint keyed off the caller's own `household_role` instead of widening 6.1a's frozen RPC shape; two
+  overlapping fixes on the counsel notes merged). Validator 0 errors, 0 warnings. Reviser split 6.3a per decision 13 →
+  6.3a (web: deactivate/delete/restore routes, `/admin/users`, legal.ts from `docs/legal/privacy-policy.md`, cron proof) +
+  NEW 6.3c (mobile account screens + `docs/PLAY_DATA_SAFETY.md`). Dependency edits: 6.3a → [3.6b, 3.8]; 6.3c → [6.3a, 4.3];
+  6.3b → [6.3a, 6.3c]; 6.5 → [4.5, 6.3c, 6.6]; 6.6 → [6.3a, 6.3b, 6.3c]. Names chosen for decision 15: `profiles.archived_at/
+  archived_by/archive_reason`, `account_deletion_requests.scheduled_for`, RPCs `deactivate_account()`, `restore_my_account()`,
+  `srv_archive_account()`, `srv_restore_account()`, `ACCOUNT_DELETION_GRACE_DAYS` in `packages/domain/src/limits.ts` — the
+  G2/G3 fixers must adopt them at the global review. New proposal 6.1p (founder paste of 9998/9997/9996 + ledger). 6.3a is
+  3392 words (threshold 3400). 8 open_issues. Full result in `todo-drafts/reviews/G14.result.json`.
+- Usage: agent_count 1, agents_done 1, agents_error 0, **subagent_tokens 278,922**, tool_uses 49, duration 1,048,655 ms (~17 min).
+- **G14 complete. Total sub-agent tokens, bites 1–8: 1,624,021 + 278,922 = 1,902,943** (8 runs, 9 agents, ~93 min of agent time).
+
+## Per-bite summary
+| bite | run | agents | sub-agent tokens | wall-clock |
+|---|---|---|---|---|
+| 1 draft 6.1 | wf_6f1227ac-3cd | 1 | 200,700 | ~19 min |
+| 2 draft 6.2 | wf_b0486d4c-80e | 1 | 195,513 | ~10 min |
+| 3 draft 6.3 | wf_1d6ea4a7-187 | 1 | 161,024 | ~9 min |
+| 4 draft 6.4 + 6.5 + 6.6 | wf_52683d08-590 | 1 | 183,793 | ~14 min |
+| 5 fidelity critic | wf_228fbde8-6d3 | 1 | 311,914 | ~8 min |
+| 6+7 executability + completeness critics | wf_92016a8e-6f6 | 2 | 571,077 | ~10 min |
+| 8 revise | wf_589f6b5c-744 | 1 | 278,922 | ~17 min |
+| **total** | | **9** | **1,902,943** | |

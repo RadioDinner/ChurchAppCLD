@@ -1,0 +1,49 @@
+{
+ "run": "wf_589f6b5c-744",
+ "task": "wl5jvvp32",
+ "args": {
+  "groups": [
+   "G14"
+  ],
+  "stage": "revise"
+ },
+ "usage": {
+  "subagent_tokens": 278922,
+  "tool_uses": 49,
+  "duration_ms": 1048655
+ },
+ "result": [
+  {
+   "group": "G14",
+   "drafted": [],
+   "findings": 0,
+   "blockers": 0,
+   "applied": 68,
+   "rejected": [
+    {
+     "finding": "executability #0 (6.3a) \u2014 proposed split allocation: put the legal text copy (decision 19) and docs/PLAY_DATA_SAFETY.md into the new 6.3c together with the mobile screens",
+     "reason": "Partially applied. The split was done (6.3a / new 6.3c) but the legal text stays in 6.3a: orchestrator decisions 16 and 19 name 6.3a as the step that writes apps/web/src/content/legal.ts and 6.6 depends on 6.3a for it, and legal.ts is web code. Only the mobile screens, the copy mirror and docs/PLAY_DATA_SAFETY.md moved to 6.3c; 6.3b/6.5/6.6 were repointed to depend on 6.3c as the critic asked. Recorded in 6.3a/6.3c notes and open_issues."
+    },
+    {
+     "finding": "executability #12 (6.1c) alternative \u2014 extend list_survey_proxy_targets to return { targets, caller_is_head, head_has_account }",
+     "reason": "Took the critic's primary fix (hint keyed off the caller's own household_role from directory_persons) instead of the alternative, which would change 6.1a's frozen JSON shape across two steps."
+    },
+    {
+     "finding": "completeness #0 (6.3a) \u2014 counsel notes shown inside the draft banner via a `counselNotes` array AND change done_when to a Vitest reading the markdown; executability #1 asked for a grep-based Verify excluding the banner",
+     "reason": "Both applied in merged form (privacyCounselNotes rendered only inside the banner, legal.source.test.ts comparing the markdown, grep restricted to legal.ts with the banner exception); no conflict, listed here only because the two fixes overlapped and were reconciled rather than applied verbatim."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Names chosen for decision 15 (the docs only give defaults): `profiles.archived_at/archived_by/archive_reason`, `account_deletion_requests.scheduled_for`, client RPCs `deactivate_account()`, `restore_my_account()` (self-restore for reasons user/deletion_request; refuses `admin` with new error `account_archived_by_admin`), service RPCs `srv_archive_account(user_id, reason)` / `srv_restore_account(user_id)`, web routes `/account/{deactivate,delete,restore,deactivated,deleted}` and super-admin page `/admin/users`, `ACCOUNT_DELETION_GRACE_DAYS` in packages/domain/src/limits.ts, `deletion-copy.ts` exports `ACCOUNT_ACTION_COPY` / `DELETION_POLICY_COPY`, mobile routes `app/account/{deactivate,delete,restore}.tsx`, tests `11_account_deletion.sql`, `tick.concurrency.test.ts`, `legal.source.test.ts`, `deletion-copy.test.ts`. The G2/G3 fixers must adopt these names or 6.3a adapts to theirs (prompt says to read HANDOFF Decisions and 9999).",
+    "New step 6.3c (mobile account screens + Play Data Safety worksheet) created by splitting 6.3a per decision 13. Dependency edits: 6.3a \u2192 [3.6b, 3.8]; 6.3c \u2192 [6.3a, 4.3]; 6.3b \u2192 [6.3a, 6.3c]; 6.5 \u2192 [4.5, 6.3c, 6.6]; 6.6 \u2192 [6.3a, 6.3b, 6.3c]. Decisions 15/16/19 say '6.3a' for legal.ts and the UI \u2014 legal.ts and the web UI stay in 6.3a; the assembler should read '6.3a' there as '6.3a (web) / 6.3c (mobile, worksheet)'.",
+    "Founder decisions still open (recorded in 6.3a Finish as 'founder may veto'): the 30-day grace, self-restore by signing in, and 6.3a's own choice that an `admin`-archived account cannot be self-restored.",
+    "6.3a schema case B assumes `9996_account_archival.sql` is free (9998 join codes, 9997 surveys); the ledger decides. 6.2a's AUDITED_TABLES/AUDIT_ACTIONS depend on whether the fixers audit archive/restore \u2014 the prompt derives the lists from the migration and reports a gap otherwise.",
+    "Proposed founder step 6.1p (paste 9998/9997/9996 into the hosted project, ledger rows) added to proposed_additional_steps per the completeness critic; the assembler decides whether it becomes a step or a ledger note. 6.4 and 6.5 checklists now check the ledger first.",
+    "Store-asset generation in 6.4/6.5 (decision 17 palette) relies on a Node script using deps already installed (`sharp`/`pngjs`); if neither exists the agent commits an SVG source and export instructions \u2014 the assembler may want 1.1/4.1a to add `sharp` as a root devDependency.",
+    "6.3a's prompt is 3392 words (validator threshold 3400, decision 9's target 1200\u20133000); it is the largest step in the group because decision 15 doubled its scope even after the split. If the orchestrator wants it shorter, the super-admin `/admin/users` page (Build 7) is the natural candidate for a further split.",
+    "6.1a's `app.can_answer_for` now treats an archived or membership-disabled family member as answerable-for (executability #17 / completeness #5); the assertions are guarded by `if exists` on `profiles.archived_at` so the test passes before and after the fixers land. `docs/RLS.md` must record the reading."
+   ]
+  }
+ ]
+}
