@@ -60,3 +60,8 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 - "Add a to-do item to create a privacy policy" → orchestrator decision 16: adopted step 6.6 (FOUNDER+AGENT), 6.4 and 6.5
   depend on it; former proposal 6.6 renumbered 6.7. Added to the G14 entry in workflow-groups.js; drafted in bite 4.
 - HANDOFF.md: Decisions + "Still open for the founder" 4–5 updated.
+
+## Bite 4 — draft 6.4 + 6.5 + 6.6 — wf_52683d08-590 (task wd4jkhzw7), launched 2026-09-07 11:25 America/New_York (15:25 UTC)
+- args: {"groups": ["G14"], "stage": "draft", "steps": ["6.4", "6.5", "6.6"]} (G14.json holds 6.1a–c, 6.2a–b, 6.3a–b; the
+  drafter adds the three founder+agent steps; 6.6 is the founder-requested privacy-policy step from decision 16).
+- Outcome: (pending)
