@@ -29,6 +29,13 @@ HANDOFF.md. Nothing merged to `main`; the founder has not yet said to merge.
 - Asked the founder which bite this session should take (decision memo / critique G1+G2 / stand by). Answer: **Stand by**.
   This session does nothing further; G13 and G14 stay with sessions 006 and 008.
 
+## Wrap-up (founder, 13:2x ET: "wrap this session. I want to start narrowing down to a single session")
+- This session is closed. It owns no in-flight work. Nothing in the kit, HANDOFF.md (beyond the one State line), or
+  any group file was changed by this session.
+- Consolidation note for the founder: the only sessions with live work are 006 (G13, resuming in bites) and 008 (G14
+  revise bite pending). Once both land, one session should do the rest in order: critique G1+G2 → decision memo →
+  `workflow-global.js` → assemble `docs/TODO.md` → HANDOFF.md update → founder's word on merging to `main`.
+
 ## Next step
 - Let session 006 finish G11–G14, then run `workflow-global.js`, assemble `docs/TODO.md`, resolve the orchestrator
   items above, update HANDOFF.md, and wait for the founder before merging to `main`.
