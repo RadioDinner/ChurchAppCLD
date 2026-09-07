@@ -10,3 +10,7 @@ Oh, you were working G14?
 Ok, I thought you went back to G6. I mis-read that. You can keep going on G14 bites
 --- 2026-09-07 10:04 ---
 I'm not sure how to answer the decisions you left to me. Go ahead on bite 3
+--- 2026-09-07 11:19 ---
+I want to use an archival system rather than delete. Users will be able to delete their accounts by request, but canceling/deleting on the user UI will just archive their account so I can un-archive them later. 
+
+Add a to-do item to create a privacy policy. Now run bite 4

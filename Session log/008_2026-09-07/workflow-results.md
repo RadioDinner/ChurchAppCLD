@@ -52,3 +52,11 @@ Bite plan (each bite = one Workflow run = one sub-agent):
   Summary saved in `todo-drafts/reviews/G14.draft-6.3.result.json`.
 - Usage: agent_count 1, agents_done 1, agents_error 0, **subagent_tokens 161,024**, tool_uses 13, duration 546,762 ms (~9 min).
 - Paused for founder evaluation before bite 4 (draft 6.4 + 6.5).
+
+## Founder decisions recorded before bite 4 (2026-09-07 11:19 ET)
+- Archival instead of deletion; deletion by request only. Verified against Google Play's account-deletion policy (in-app
+  path + web link required; deactivation does not qualify) → orchestrator decision 15: Deactivate = archive (restorable by
+  the super admin), Delete = archive now + real deletion after a 30-day grace (cancellable). Proposed 6.7 absorbed.
+- "Add a to-do item to create a privacy policy" → orchestrator decision 16: adopted step 6.6 (FOUNDER+AGENT), 6.4 and 6.5
+  depend on it; former proposal 6.6 renumbered 6.7. Added to the G14 entry in workflow-groups.js; drafted in bite 4.
+- HANDOFF.md: Decisions + "Still open for the founder" 4–5 updated.

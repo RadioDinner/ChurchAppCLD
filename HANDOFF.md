@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-07, session 007 (status only; State line for docs/TODO.md refreshed)._
+_Last updated: 2026-09-07, session 008 (founder decisions: account archival, privacy-policy step 6.6)._
 
 ## What this is
 
@@ -76,6 +76,10 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - Surveys (Phase 3): the head of house answers per-person surveys for household members without accounts.
 - App name Anacast, Android package id `com.Anacast.app` as given (lowercase recommended, see below).
 - Supabase Free plan to start (50 MB upload cap), Vercel Pro at launch.
+- Account archival (2026-09-07): the self-service action is **Deactivate**, which archives the account so the super admin
+  can restore it later; real **Delete account** stays available in-app and on the web because Google Play requires it,
+  with a 30-day grace during which the user or the super admin can cancel (orchestrator decision 15 in the TODO kit).
+- Privacy policy and terms are a real step (6.6, founder+agent) before the App Store and Play listings (2026-09-07).
 
 ## Added by plan (founder may veto)
 
@@ -105,6 +109,9 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 1. Confirm lowercase `com.anacast.app` (see answer 9).
 2. Brand colours and the production domain (affects deep links, invite emails, share URLs).
 3. Explicit yes/no on the permission mapping (answer 4 ships the default).
+4. Legal entity name, postal address, governing state and privacy contact email for the privacy policy and terms
+   (step 6.6; needed before the App Store and Play listings).
+5. Confirm the 30-day deletion grace and the self-restore-on-sign-in default in orchestrator decision 15.
 
 ## Version pins worth remembering
 

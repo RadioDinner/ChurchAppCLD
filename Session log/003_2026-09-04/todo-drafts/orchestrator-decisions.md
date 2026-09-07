@@ -51,3 +51,56 @@ and reviser must follow them; they override the skeleton where they differ. Do n
     `<id>a`, `<id>b` with their own full prompts and `depends_on` chains. Never merge steps. Every split is recorded in
     `notes`.
 14. **Session numbering.** This work happens in session 003 (2026-09-04); the assembler header mentions both sessions.
+
+## Added 2026-09-07 (session 008, founder decisions)
+
+15. **Account archival instead of deletion (founder decision, 2026-09-07).** The self-service action in both apps is
+    **Deactivate account**, not delete: it archives the account (reversible) and signs the user out; nothing is deleted.
+    Super admins restore archived accounts from `/admin` (users list → Archived → Restore); a restored account gets its
+    memberships, permissions and directory visibility back. Recommended default (founder may veto): a user can also
+    restore their own archived account by signing in and confirming "Restore my account".
+    - Archived accounts behave like disabled memberships everywhere: the `app.*` membership helpers treat them as
+      non-members (no org reads, no push, excluded from the directory and from audiences); `persons` rows stay; push
+      devices are deleted at archive time. Prompts take column/RPC names from DESIGN §4 where an equivalent exists;
+      otherwise use, consistently, `archived_at timestamptz`, `archived_by uuid`, `archive_reason`
+      (`'user' | 'deletion_request' | 'admin'`) on the per-user table DESIGN §4 defines, client RPC
+      `deactivate_account()`, service RPCs `srv_archive_account(user_id, reason)` and `srv_restore_account(user_id)`,
+      and flag them in `open_issues`.
+    - **Real deletion stays, in-app and on the web, because Google Play requires it.** Google Play's account-deletion
+      policy (Play Console Help, "Understanding Google Play's app account deletion requirements") demands an in-app path
+      plus a web link to delete the account and its associated data, and says temporary deactivation, disabling or
+      freezing does not qualify. So `/account/delete` and the mobile Delete account screen remain and still call
+      `request_account_deletion()`. What changes: the request archives the account immediately (reason
+      `deletion_request`) and records `scheduled_for = requested_at + 30 days` (constant
+      `ACCOUNT_DELETION_GRACE_DAYS = 30`, documented where it is defined); `srv_process_account_deletions()` processes
+      only rows whose `scheduled_for` has passed; during the window the user (sign in → "Keep my account") or a super
+      admin (`/admin`) cancels by deleting the request row and restoring the account. Super admins can also start a
+      deletion request for a user who asks by email (same row, same grace). The 30-day window is a recommended default
+      the founder may change.
+    - UI copy distinguishes the two: "Deactivate account — hides you from your church and signs you out; your data is
+      kept so an administrator can restore you later" vs "Delete account — permanently deletes your account and data
+      after 30 days unless you cancel". The privacy policy, `docs/PLAY_DATA_SAFETY.md` and the App Store privacy
+      answers describe both paths and the window.
+    - Schema home: `9999_init.sql` is not pasted anywhere yet, so the global review's fixers add the columns, RPCs,
+      policies and RLS tests to the G2/G3 prompts (1.2–1.4), and 6.3a builds only the UI, cron proof and docs on top.
+      If the founder has pasted `9999_init.sql` before 6.3a runs, 6.3a ships the schema in the next free `999x_*`
+      migration instead; 6.3a's prompt must state both cases. The G14 drafter's proposed 6.7 (grace period and cancel
+      flow) is absorbed here and is no longer a separate step.
+
+16. **Adopted step 6.6 — Privacy policy and terms of service (founder request, 2026-09-07).** FOUNDER+AGENT, after
+    6.3a; 6.4 (App Store) and 6.5 (Play Console) depend on it because both stores require a live privacy-policy URL.
+    There is no skeleton bullet; this paragraph is the brief. Founder checklist: choose and record in HANDOFF.md the
+    legal entity name, postal address, governing state and privacy contact email (placeholders `<LEGAL_ENTITY_NAME>`,
+    `<POSTAL_ADDRESS>`, `<STATE>`, `<FOUNDER_EMAIL>`); decide how the final text is produced — the 6.3a agent draft
+    reviewed by a lawyer, a policy generator, or both; check the text covers what the app actually does (Supabase
+    hosting in US East, Stripe billing for churches, push tokens, directory data shared inside the congregation and
+    optionally with the fellowship, the deactivate-vs-delete paths and the 30-day window from decision 15, no ads, no
+    analytics SDK, error monitoring if 6.3b's Sentry is enabled); approve the final text and its effective date; hand the
+    approved text to the agent. Agent part: replace the draft in `apps/web/src/content/legal.ts` with the approved text,
+    remove the draft banner and every placeholder (`LEGAL_IS_DRAFT` false), show "Last updated <date>", keep the
+    deletion/deactivation paragraph word-for-word in sync with `src/features/account/deletion-copy.ts` on web and
+    mobile, link `https://<DOMAIN>/privacy` and `/terms` from the mobile sign-in screen, the More tab and the web
+    footer, update `docs/PLAY_DATA_SAFETY.md` with the live URL, add a smoke test that `/privacy` and `/terms` return
+    200 with no "draft" or placeholder text, and record the effective date in HANDOFF.md. Done when: entity recorded,
+    both pages live without placeholders, mobile links open them, the Data Safety worksheet names the URL, the smoke
+    test passes. The G14 drafter's proposed super admin operations view is renumbered 6.7 (still a proposal).
