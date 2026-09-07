@@ -104,3 +104,20 @@ and reviser must follow them; they override the skeleton where they differ. Do n
     200 with no "draft" or placeholder text, and record the effective date in HANDOFF.md. Done when: entity recorded,
     both pages live without placeholders, mobile links open them, the Data Safety worksheet names the URL, the smoke
     test passes. The G14 drafter's proposed super admin operations view is renumbered 6.7 (still a proposal).
+
+17. **Brand palette (founder, 2026-09-07).** Five blues, given by the founder with their names: Prussian Blue `#00072d`,
+    Deep Navy `#001c55`, Imperial Blue `#0a2472`, Bright Marine `#0e6ba8`, Icy Blue `#a6e1fa`. This replaces the
+    "neutral default theme" in decision 5; the single token file rule stays (web: Tailwind tokens / `theme.ts` in 2.1a;
+    mobile: `theme.ts` in 4.1a, also used for the splash `backgroundColor` and the adaptive-icon background; store
+    assets in 6.4/6.5 use the same values). Recommended token roles (founder may veto): `primary` Imperial Blue
+    (buttons, links, app bar), `primaryDark` Deep Navy (headers, pressed states, dark-mode surfaces), `ink` Prussian
+    Blue (body text on light surfaces, darkest dark-mode surface, splash), `accent` Bright Marine (secondary buttons,
+    active tab, focus rings), `tint` Icy Blue (backgrounds, badges, selected rows, hover). Measured WCAG contrast:
+    white on Imperial 13.9, on Deep Navy 16.2, on Prussian 19.7, on Bright Marine 5.7 (AA pass, AAA fail — keep body
+    text off Marine or use large text); Prussian on Icy 13.8; Icy on white 1.4 and Marine on Prussian 3.5 — never use
+    Icy as text on white, and Marine on Prussian only for large text or non-text UI. Error/success/warning colours are
+    not in the palette: use the framework defaults and note it in the token file.
+
+18. **Android package id confirmed: `com.anacast.app`** (founder, 2026-09-07, "com.anacast.app is fine"). Decision 5's
+    comment about `com.Anacast.app` becomes history; prompts use the lowercase id everywhere (app.config.ts, Firebase,
+    Play Console, assetlinks) with no case caveat.

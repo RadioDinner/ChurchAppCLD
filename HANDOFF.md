@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-07, session 008 (founder decisions: account archival, privacy-policy step 6.6)._
+_Last updated: 2026-09-07, session 008 (founder decisions: account archival, privacy-policy step 6.6, brand palette, package id)._
 
 ## What this is
 
@@ -74,7 +74,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - Share links may allow downloads of uploaded media when the church turns `sermon_share_allow_download` on.
 - Billing: $50 / month / church flat via one Stripe Price; 30-day trial; only `suspended` blocks writes.
 - Surveys (Phase 3): the head of house answers per-person surveys for household members without accounts.
-- App name Anacast, Android package id `com.Anacast.app` as given (lowercase recommended, see below).
+- App name Anacast, Android package id **`com.anacast.app`** (lowercase confirmed by the founder 2026-09-07).
 - Supabase Free plan to start (50 MB upload cap), Vercel Pro at launch.
 - Account archival (2026-09-07): the self-service action is **Deactivate**, which archives the account so the super admin
   can restore it later; real **Delete account** stays available in-app and on the web because Google Play requires it,
@@ -106,12 +106,25 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 
 ## Still open for the founder
 
-1. Confirm lowercase `com.anacast.app` (see answer 9).
-2. Brand colours and the production domain (affects deep links, invite emails, share URLs).
-3. Explicit yes/no on the permission mapping (answer 4 ships the default).
-4. Legal entity name, postal address, governing state and privacy contact email for the privacy policy and terms
+1. Production domain (affects deep links, invite emails, share URLs, the privacy-policy URL).
+2. Explicit yes/no on the permission mapping (answer 4 ships the default).
+3. Legal entity name, postal address, governing state and privacy contact email for the privacy policy and terms
    (step 6.6; needed before the App Store and Play listings).
-5. Confirm the 30-day deletion grace and the self-restore-on-sign-in default in orchestrator decision 15.
+4. Confirm the 30-day deletion grace and the self-restore-on-sign-in default in orchestrator decision 15.
+5. Confirm the token roles suggested for the brand palette (below), or assign your own.
+
+## Brand palette (founder, 2026-09-07)
+
+| Name | Hex | Suggested token (founder may change) |
+|---|---|---|
+| Prussian Blue | `#00072d` | `ink` — body text on light surfaces, darkest dark-mode surface, splash |
+| Deep Navy | `#001c55` | `primaryDark` — headers, pressed states, dark-mode surfaces |
+| Imperial Blue | `#0a2472` | `primary` — buttons, links, app bar |
+| Bright Marine | `#0e6ba8` | `accent` — secondary buttons, active tab, focus rings (white text on it: 5.7:1, AA) |
+| Icy Blue | `#a6e1fa` | `tint` — backgrounds, badges, selected rows; never text on white (1.4:1) |
+
+One token file per app (web Tailwind tokens / `theme.ts`, mobile `theme.ts`); store assets use the same values.
+Recorded as orchestrator decision 17 in the TODO kit.
 
 ## Version pins worth remembering
 
