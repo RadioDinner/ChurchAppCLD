@@ -36,3 +36,9 @@ Bite plan (each bite = one Workflow run = one sub-agent):
   not added). Summary saved in `todo-drafts/reviews/G14.draft-6.2.result.json`.
 - Usage: agent_count 1, agents_done 1, agents_error 0, **subagent_tokens 195,513**, tool_uses 23, duration 579,081 ms (~10 min).
 - Paused for founder evaluation before bite 3 (draft 6.3).
+
+## Bite 3 — draft 6.3 — wf_1d6ea4a7-187 (task w7wnejqi7), launched 2026-09-07 10:05 America/New_York (14:05 UTC)
+- args: {"groups": ["G14"], "stage": "draft", "steps": ["6.3"]} (G14.json holds 6.1a–c, 6.2a–b; drafter adds 6.3 only).
+- Founder on the bite-2 decisions: "I'm not sure how to answer the decisions you left to me" → they stay recorded in
+  G14.json open_issues; collected into one founder decision list with recommended defaults at the end of G14.
+- Outcome: (pending)
