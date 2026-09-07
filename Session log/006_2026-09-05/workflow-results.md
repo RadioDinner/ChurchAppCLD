@@ -89,3 +89,4 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Run 8 — G12 — wf_6fc75791-433 (task wwbm69dbq), launched 2026-09-07 07:52 America/New_York (11:52 UTC)
 - args: {"groups": ["G12"]} (no group file existed → full draft; steps 5.1, 5.2, 5.3).
 - Outcome: (pending)
+- 08:09 ET: drafter done; critics running.
