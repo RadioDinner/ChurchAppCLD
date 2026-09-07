@@ -1,2 +1,6 @@
 --- 2026-09-07 09:11 ---
 Ok, G13 is running and G14 is open. I want to start G14 but I'm afraid of burning through my 5 hour session limits. Can you run G14 in segments? And pause between them for me to evaluate? I want to run them in little bites
+--- 2026-09-07 09:22 ---
+Well pause this if it is creating merges. Take G14 in bites, I have another session working on G13. Then I'l have this audit run after all the G steps are done
+--- 2026-09-07 09:22 ---
+Pause if it is creating conflicts I meant
