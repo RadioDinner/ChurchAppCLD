@@ -67,3 +67,13 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - args: {"groups": ["G11"]} (no group file existed → full draft; steps 4.1, 4.2, 4.3, 4.4, 4.5 founder).
 - Outcome: (pending)
 - 21:22 ET: drafter done; critics running.
+- Outcome: stopped by a model-tier limit — "You've reached your Fable limit. Switch to another model to continue." (no reset
+  time named). Completed: draft:G11 (4.1a 2658 words, 4.1b 2152, 4.2a 1797, 4.2b 1917, 4.3 1927, 4.4 2587, 4.5 founder
+  checklist 1250; validator 0 errors), crit:G11:fidelity (14 findings, 0 blockers). Failed: crit:G11:executability (its
+  findings file was saved before the failure), crit:G11:completeness, revise:G11.
+- Usage: agent_count 5, agents_done 2, agents_error 3, **subagent_tokens 707,900**, tool_uses 112, duration 1,773,016 ms (~30 min).
+- Session suspended; woke 2026-09-07 07:27 ET (11:27 UTC). Founder: "Try again" → resumed.
+
+## Run 7 — G11 resume of wf_350e9ef8-185, launched 2026-09-07 07:28 America/New_York (11:28 UTC)
+- args: {"groups": ["G11"]} (identical; resumeFromRunId wf_350e9ef8-185 — drafter + fidelity critic replay from cache).
+- Outcome: (pending)
