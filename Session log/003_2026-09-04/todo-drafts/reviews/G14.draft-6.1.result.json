@@ -1,0 +1,58 @@
+{
+ "run": "wf_6f1227ac-3cd",
+ "task": "wd122uaij",
+ "args": {
+  "groups": [
+   "G14"
+  ],
+  "stage": "draft",
+  "steps": [
+   "6.1"
+  ]
+ },
+ "usage": {
+  "subagent_tokens": 200700,
+  "tool_uses": 27,
+  "duration_ms": 595285
+ },
+ "result": [
+  {
+   "group": "G14",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "6.1a",
+     "title": "Surveys \u2014 migration 9997_surveys_head_of_house.sql, RLS tests, domain and db wrappers",
+     "actor": "agent",
+     "prompt_words": 2821
+    },
+    {
+     "id": "6.1b",
+     "title": "Surveys (web) \u2014 builder, open/close, results and CSV export",
+     "actor": "agent",
+     "prompt_words": 2068
+    },
+    {
+     "id": "6.1c",
+     "title": "Surveys (mobile) \u2014 responder, head-of-house 'answer for' flow, push target",
+     "actor": "agent",
+     "prompt_words": 1905
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (orchestrator decision 13): skeleton 6.1 \u2192 6.1a (migration 9997 + RLS tests + @church/domain/@church/db), 6.1b (web builder, open/close with push, results, CSV), 6.1c (mobile responder + head-of-house 'answer for' + push target). Chain: 5.2b + 5.5 \u2192 6.1a \u2192 6.1b \u2192 6.1c (6.1c's code needs only 6.1a; its device checklist uses 6.1b). depends_on 5.2 repointed to 5.2b per G12; 5.5 kept as written because G13 is not drafted \u2014 assembler should repoint if G13 splits 5.5.",
+    "Names chosen because the docs only say 'adjust stamp_response_scope + policies': RPCs submit_survey_response_for(uuid, uuid, jsonb) and list_survey_proxy_targets(uuid), helper app.can_answer_for(uuid) (and app.validate_survey_answers only if 1.3b did not factor it), column survey_responses.answered_on_behalf, transaction-local setting app.answer_for, error keys survey_proxy_not_allowed (42501, detail \u2208 not_head_of_house/different_household/person_has_account/person_not_active), survey_not_per_person (22023), survey_not_found (P0002), test file supabase/tests/rls/10_surveys_head_of_house.sql. A new RPC was preferred over a third parameter on submit_survey_response because G2's 1.3b froze client RPC signatures and PostgREST overload resolution on jsonb args is fragile. G2/G3 revisers must not rename the survey error keys these prompts assert on.",
+    "Founder decision 8 is implemented purely through household_role = 'head': only the head WITH an account can proxy. If the father has no account but the mother does, the household must make her head (5.2b picker, blocked for household adults until proposed 5.8's set_head_of_house is adopted; 5.1a's admin control works today). Founder should confirm this reading or ask for a broader rule (any household adult with an account may proxy) \u2014 a one-line change in app.can_answer_for before 9997 is pasted.",
+    "Web has no member-facing survey responder (members answer in the app; DESIGN \u00a711 calls a member web view optional). Proposed 6.1d covers it if wanted.",
+    "The 9997 migration must be pasted into the hosted Supabase project by the founder before 6.1b/6.1c can be trialled; 6.1a adds the founder to-do and a 'ready to paste' ledger row but the skeleton has no founder step for it \u2014 assembler may add a tiny FOUNDER checklist (paste 9998 if present, then 9997; record dates) or fold it into 6.3/6.4's founder items.",
+    "Push data.url for surveys is /surveys/<id> from notificationTargetPath (G9 3.6a, G11 4.3); 6.1c flips G11's not_built ignore to navigate. G9's PushStatusBadge retry permission map needs a survey \u2192 announcements.edit entry (6.1b adds it additively); G9 revisers may include it upfront.",
+    "6.2, 6.3, 6.4 and 6.5 are drafted in later runs of this group; nothing here pre-empts their names."
+   ]
+  }
+ ]
+}
