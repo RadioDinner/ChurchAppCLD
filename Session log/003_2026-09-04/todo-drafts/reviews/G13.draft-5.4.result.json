@@ -1,0 +1,55 @@
+{
+ "run_id": "wf_3377d638-f65",
+ "task": "w7t00f355",
+ "args": {
+  "groups": [
+   "G13"
+  ],
+  "stage": "draft",
+  "steps": [
+   "5.4"
+  ]
+ },
+ "outcome": "completed",
+ "subagent_tokens": 206582,
+ "tool_uses": 23,
+ "duration_ms": 673803,
+ "logs": [],
+ "result": [
+  {
+   "group": "G13",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "5.4a",
+     "title": "Documents (web) — upload, category, audience, schedule, delete; announcements attach a document",
+     "actor": "agent",
+     "prompt_words": 3109
+    },
+    {
+     "id": "5.4b",
+     "title": "Documents (mobile) — list by category, open or share files, linked document on announcements, More tab row",
+     "actor": "agent",
+     "prompt_words": 2095
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (orchestrator decision 13): skeleton 5.4 → 5.4a (web + @church/db queries/documents.ts + announcement attachment) and 5.4b (mobile). depends_on repointed to other groups' splits: 5.4a ← 3.5a, 3.5b, 3.8 (3.8 added: edits docs/ACCEPTANCE_WEB.md, uses 3.7a's Playwright smoke project / expectStrictHeaders); 5.4b ← 5.4a, 4.3 (More tab menu is built in 4.3, not 4.2). Later steps naming 5.4 (G13 5.7, G14) should point at 5.4b.",
+    "documents.description: G4 1.6b's documentSchema has description ≤ 4000, but DESIGN §4.2 defines documents as bulletins shape + category, audience_group_id only. 5.4a reads 9999_init.sql section (3) and drops the field if the column is absent; G2/G4 should settle it while 9999_init.sql is unfrozen (recommend adding the column).",
+    "FK action on announcements.document_id (set null vs restrict) is unstated in PLAN/DESIGN; 5.4a handles both and records the finding. Recommend G2 make it on delete set null.",
+    "documents.publish_at nullability: the draft-row upload flow needs null (same issue G9 raised for bulletins); 5.4a stops and asks if it is not null. G2 should make both columns explicitly nullable in 9999_init.sql.",
+    "Documents have no push kind (notification_kind = announcement, event, survey, bulletin; on_content_publish not attached to documents). 5.4a/5.4b use 'announcement + attached document' as the notify path. A document push would need an enum paste (9998a/9998b pattern), trigger, mobile preference and notificationTargetPath('document', id) — a new step.",
+    "Names chosen because the docs are silent (later groups must reuse): @church/db queries/documents.ts API (listDocuments, listPublishedDocuments, getDocument, insertDocumentDraft, finalizeDocument, updateDocument, deleteDocument, listDocumentOptions, listDocumentCategories), countAnnouncementsForDocument in queries/announcements.ts, queryKeys.documents.detail/.categories; @church/domain documents.ts (documentKind, DOCUMENT_KIND_LABELS), documentPath, documentCategorySchema; web src/features/documents/{form-schema,actions,UploadDocumentForm,EditDocumentDialog,DocumentsTable,OpenDocument,DocumentPicker}, resolveDocumentMime, audienceMismatch, actions prepareDocumentUpload/finalizeDocumentUpload/discardDocumentUpload/updateDocumentAction/deleteDocumentAction/mintDocumentUrl; AudienceGroupSelect moved to src/features/audience/ (re-export kept; 5.5 extends it); mobile app/(app)/documents/{index,[id]}.tsx, src/features/documents/{useDocuments,format,DocumentList,DocumentDetail,LinkedDocumentCard}, src/lib/open-file.ts openStoredFile (openBulletinFile becomes a wrapper), cache dir anacast-files/.",
+    "Route shape: PLAN §8 lists only /documents, so upload and edit live in a Sheet/Dialog on that page (no /documents/new or /documents/[id]); orchestrator may prefer dedicated routes.",
+    "Category is free text (≤ 60, datalist suggestions) — no enum or categories table exists in PLAN/DESIGN; a fixed per-church list would be a later settings feature.",
+    "Prompt length: 5.4a is ~3,100 words (target 3,000, warning 3,400); the announcement attachment (Build 10 + tests) could become a 5.4c if the assembler wants it shorter.",
+    "Web member feed on /announcements gets the paper-clip link in 5.4a; no web announcement detail page for members exists (consistent with 3.5a); optional (me) web routes remain unbuilt."
+   ]
+  }
+ ]
+}

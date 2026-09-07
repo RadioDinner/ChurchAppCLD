@@ -112,3 +112,8 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-1 — wf_3377d638-f65 (task w7t00f355) — draft step 5.4 only, launched 2026-09-07 13:07 America/New_York (17:07 UTC) — founder confirmed
 - args: {"groups": ["G13"], "stage": "draft", "steps": ["5.4"]} (one drafter agent; critics/reviser skipped by stage).
 - Outcome: (pending)
+- Outcome: completed. 5.4 split into 5.4a (web documents + @church/db queries + announcement attachment, 3109 words,
+  depends_on 3.5a, 3.5b, 3.8) and 5.4b (mobile documents, 2095 words, depends_on 5.4a, 4.3). Validator 0 errors.
+  10 open_issues saved in `reviews/G13.draft-5.4.result.json` (documents.description / publish_at nullability /
+  announcements.document_id FK action for G2; no document push kind).
+- Usage: 1 agent, **subagent_tokens 206,582**, tool_uses 23, duration 673,803 ms (~11 min).
