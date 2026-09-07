@@ -117,3 +117,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   10 open_issues saved in `reviews/G13.draft-5.4.result.json` (documents.description / publish_at nullability /
   announcements.document_id FK action for G2; no document push kind).
 - Usage: 1 agent, **subagent_tokens 206,582**, tool_uses 23, duration 673,803 ms (~11 min).
+
+## Bite G13-2 — wf_7bbcdf86-264 (task wo2l038gz) — draft step 5.5 only, launched 2026-09-07 13:29 America/New_York — founder confirmed
+- args: {"groups": ["G13"], "stage": "draft", "steps": ["5.5"]} (one drafter agent).
+- Outcome: (pending)
