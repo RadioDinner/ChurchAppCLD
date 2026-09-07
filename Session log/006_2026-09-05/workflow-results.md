@@ -174,6 +174,6 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   (fidelity 17 / executability 30 / completeness 13 = 60 findings, 2 blockers).
 - Usage: 1 agent, **subagent_tokens 252,031**, tool_uses 35, duration 390,079 ms (~6.5 min).
 
-## Bite G13-8 — revise (reads the three saved review files), launched 2026-09-07 18:09 America/New_York — queued
+## Bite G13-8 — wf_1caf88d8-6ca (task w9r04bgxf) — revise (reads the three saved review files), launched 2026-09-07 18:09 America/New_York — queued
 - args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "revise"} (one reviser agent, effort high).
 - Outcome: (pending)
