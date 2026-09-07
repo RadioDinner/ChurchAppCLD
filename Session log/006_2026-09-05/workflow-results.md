@@ -108,3 +108,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - Founder instruction on resume: "go in small bites, and have me confirm each step to prevent usage over run" → from here
   the remaining groups run ONE AGENT PER RUN via the script's `stage` / `steps` / `lenses` selectors (session 003's paced
   procedure), each run confirmed by the founder first. Full-pipeline runs stop here.
+
+## Bite G13-1 — wf_3377d638-f65 (task w7t00f355) — draft step 5.4 only, launched 2026-09-07 13:07 America/New_York (17:07 UTC) — founder confirmed
+- args: {"groups": ["G13"], "stage": "draft", "steps": ["5.4"]} (one drafter agent; critics/reviser skipped by stage).
+- Outcome: (pending)
