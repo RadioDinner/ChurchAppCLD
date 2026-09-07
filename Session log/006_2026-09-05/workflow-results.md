@@ -189,3 +189,25 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G14-1 — wf_1cc2e558-a84 (task wo0rg8ddt) — draft step 6.1 only, launched 2026-09-07 18:25 America/New_York — queued
 - args: {"groups": ["G14"], "stage": "draft", "steps": ["6.1"]} (one drafter agent).
 - Outcome: (pending)
+- STOPPED at 2026-09-07 18:26 ET after ~2 min (TaskStop), before it wrote anything: groups/G14.json already existed on the branch —
+  another session (008, commit 57b5b38 "TODO.md group G14 drafted, critiqued and revised (bites 1-8 complete)") had
+  finished G14 (6.1a, 6.1b, 6.1c, 6.2a, 6.2b, 6.3a, 6.3b, 6.3c, 6.4, 6.5, 6.6; validator 0 errors; reviews/G14.{fidelity,
+  executability,completeness,result}.json present). HANDOFF.md (updated by that session) already said so; I missed it when
+  queuing. G14.json verified unmodified (git clean, mtime 17:30 UTC = the other session's commit). Tokens for the stopped
+  drafter: not reported by the harness (stopped run); at most a couple of minutes of reading.
+- Decision: G14 is complete; no further G14 bites (a second revise pass would only re-apply already-applied findings).
+
+## Per-group sub-agent token summary (this session)
+
+| group | sub-agent tokens |
+|---|---|
+| G8 | 1,224,895 |
+| G9 | 1,097,561 |
+| G10 | 1,213,045 |
+| G11 | 1,390,686 |
+| G12 | 1,171,467 |
+| G13 | 2,105,216 |
+| G14 | 0 |
+| **total** | **8,202,870** |
+
+G14 (session 008, for reference): 1,902,943.
