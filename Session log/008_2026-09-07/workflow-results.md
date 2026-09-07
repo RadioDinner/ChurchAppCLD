@@ -108,3 +108,10 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 - Usage: agent_count 2, agents_done 2, agents_error 0, **subagent_tokens 571,077**, tool_uses 80, duration 577,949 ms (~10 min).
 - **G14 running total (bites 1–7): 741,030 + 311,914 + 571,077 = 1,624,021 sub-agent tokens.**
 - Paused for the founder before bite 8 (revise).
+
+## Bite 8 — revise — wf_589f6b5c-744 (task wl5jvvp32), launched 2026-09-07 13:06 America/New_York (17:06 UTC)
+- args: {"groups": ["G14"], "stage": "revise"} (reviser reads the three saved `reviews/G14.<lens>.json` files: 72 findings,
+  9 blockers; expected to rewrite 6.3a around decisions 15 and 19).
+- Note: the rebase before launch pulled in session 006's commit cdd9a6c ("G13 run stopped on usage limit; switching to
+  confirmed single-agent bites") — record only, no overlap with G14 files; no conflict.
+- Outcome: (pending)
