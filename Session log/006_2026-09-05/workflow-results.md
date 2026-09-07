@@ -185,3 +185,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - Usage: 1 agent, **subagent_tokens 286,223**, tool_uses 41, duration 858,917 ms (~14 min).
 - **G13 total sub-agent tokens (failed full run + 8 bites): 2,105,216.** Final steps: 5.4a, 5.4b, 5.5, 5.6a, 5.6b, 5.6c,
   5.7a, 5.7b, 5.7c.
+
+## Bite G14-1 — wf_1cc2e558-a84 (task wo0rg8ddt) — draft step 6.1 only, launched 2026-09-07 18:25 America/New_York — queued
+- args: {"groups": ["G14"], "stage": "draft", "steps": ["6.1"]} (one drafter agent).
+- Outcome: (pending)
