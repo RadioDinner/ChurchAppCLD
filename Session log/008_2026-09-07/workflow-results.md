@@ -95,4 +95,16 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 
 ## Bites 6+7 — critique, executability + completeness lenses in parallel — wf_92016a8e-6f6 (task wnsypykif), launched 2026-09-07 11:55 America/New_York (15:55 UTC)
 - args: {"groups": ["G14"], "stage": "critique", "lenses": ["executability", "completeness"]} (founder: "critics together").
-- Outcome: (pending)
+- Outcome: completed, 0 failures. Executability: 31 findings (3 blockers, 7 major, 21 minor) in `reviews/G14.executability.json`;
+  completeness: 20 findings (2 blockers, 6 major, 12 minor) in `reviews/G14.completeness.json`. Blockers: 6.3a vs decision 15
+  (both lenses), 6.3a vs decision 19 (Build 6 still authors its own privacy text instead of copying `docs/legal/privacy-policy.md`;
+  both lenses), 6.1a correctness (the `stamp_response_scope` trigger overwrites the proxied row's ids when the head of house edits
+  it through the widened update policy). Majors: 6.1b/6.1c/6.3a Verify steps need the hosted project (no Auth/PostgREST in the local
+  shim) — mark them env-gated; 6.1b must use G9's `afterContentPublish({ orgId })` and the real `OrgContext` shape; 6.1c cannot see
+  whether the head of house has an account (`directory_persons` has no `user_id`); 6.3b's revoke list must match DESIGN §4.4 (9);
+  cron idempotency under concurrency untested; no founder paste checklist for `9998_join_codes.sql`/`9997_surveys…`; 6.4/6.5
+  store assets and 6.5 case caveats not yet updated for decisions 17/18; 6.6 Inputs not updated for decision 19.
+  Three-lens total: 72 findings, 9 blockers (all 6.3a except one 6.1a).
+- Usage: agent_count 2, agents_done 2, agents_error 0, **subagent_tokens 571,077**, tool_uses 80, duration 577,949 ms (~10 min).
+- **G14 running total (bites 1–7): 741,030 + 311,914 + 571,077 = 1,624,021 sub-agent tokens.**
+- Paused for the founder before bite 8 (revise).
