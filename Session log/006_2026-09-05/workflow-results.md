@@ -146,3 +146,7 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   proposed 5.9 Checkpoint D). **G13 drafting complete: 5.4a, 5.4b, 5.5, 5.6a, 5.6b, 5.6c, 5.7a, 5.7b, 5.7c.**
 - Usage: 1 agent, **subagent_tokens 204,407**, tool_uses 30, duration 829,281 ms (~14 min).
 - G13 draft bites total: 206,582 + 141,621 + 229,320 + 204,407 = **781,930** sub-agent tokens.
+
+## Bite G13-5 — wf_b9f25f61-889 (task wqezd0s1p) — critique, fidelity lens only, launched 2026-09-07 14:46 America/New_York — founder confirmed
+- args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["fidelity"]} (one critic agent).
+- Outcome: (pending)
