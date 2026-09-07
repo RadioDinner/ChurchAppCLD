@@ -1,0 +1,63 @@
+{
+ "run_id": "wf_a9aaa30d-c8c",
+ "task": "w61g5jfcs",
+ "args": {
+  "groups": [
+   "G13"
+  ],
+  "stage": "draft",
+  "steps": [
+   "5.6"
+  ]
+ },
+ "outcome": "completed",
+ "subagent_tokens": 229320,
+ "tool_uses": 33,
+ "duration_ms": 961191,
+ "logs": [],
+ "result": [
+  {
+   "group": "G13",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "5.6a",
+     "title": "Join codes & join requests — migration `9998_join_codes.sql`, RLS tests, domain and db wrappers",
+     "actor": "agent",
+     "prompt_words": 3349
+    },
+    {
+     "id": "5.6b",
+     "title": "Join codes & join requests (web) — `/join-codes` with printable page, `/join-requests` approval queue with person linking",
+     "actor": "agent",
+     "prompt_words": 2469
+    },
+    {
+     "id": "5.6c",
+     "title": "Join codes (mobile) — join and pending screens, join-code entry on no-church and sign-in, More tab row",
+     "actor": "agent",
+     "prompt_words": 2115
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (orchestrator decision 13): skeleton 5.6 → 5.6a (migration + RLS tests + @church/domain/@church/db), 5.6b (web /join-codes, printable page, /join-requests), 5.6c (mobile join/pending, sign-in and no-church entry, More tab). depends_on: 5.6a ← 1.7a, 3.2b; 5.6b ← 5.6a, 5.1b; 5.6c ← 5.6a, 4.3. Later steps naming 5.6 (G13 5.7; G14 6.5) should point at 5.6b/5.6c.",
+    "RPC set and signatures chosen because PLAN/DESIGN name only redeem_join_code/approve_join_request: create_join_code(org, label, auto_approve, expires_at, max_uses) returns join_codes; revoke_join_code(code_id); redeem_join_code(code, message) returns jsonb {status: already_member|pending|active, org_id, slug, name, request_id?}; approve_join_request(request_id, person_id, note) returns uuid; reject_join_request(request_id, note); drafter-added cancel_join_request(request_id); helpers app.generate_join_code(), app.attach_joined_user(org, uid, person, approver); additive column join_requests.review_note and index join_requests_org_pending_idx; error keys join_code_invalid P0002, join_code_expired 22023, join_code_exhausted 22023, membership_disabled 42501, join_request_not_pending 22023, person_already_linked 23505, invalid_argument 22023, join_code_generation_failed P0001. Orchestrator may trim cancel_join_request/review_note.",
+    "Redemption semantics: a non-auto-approve code creates an org_memberships row with status='pending' (G11 4.1b already renders membership_status='pending' from my_context()) plus a pending join_requests row; rejection deletes the pending membership so the user can redeem again; use_count increments once per new request.",
+    "9999_init.sql section (4) drops every ca_% policy, so a policy defined only in 9998 (the conditional ca_profiles_select_join_requesters) vanishes if 9999 is re-pasted. 5.6a documents the re-paste rule and avoids new policies when 9999's profiles policy already covers pending requesters; recommend G2/G3 make 9999's profiles select policy cover org_memberships of any status while 9999 is unfrozen.",
+    "Migration number collision: G3 1.5's README mentions a hypothetical 9998_storage_limit.sql; G14 6.1a takes 9997 assuming 9998 = join codes. 5.6a reads the HANDOFF ledger and takes the next free number if 9998 is used. RLS test file numbered 11_join_codes.sql to leave 10_ to 6.1a; 09_grants.sql must grow by the six RPCs (6.1a's prompt should expect them).",
+    "households.created_via='self' is used for a joiner's self-created household (DESIGN §4.2: admin|invitation|self). If 1.2 added a check constraint without 'self', 5.6a stops and asks.",
+    "Pending memberships and permissions: docs do not say set_membership_permissions refuses a pending membership; 5.6b disables the checkboxes in /users; recommend G2 add a DB guard (raise when membership is not active).",
+    "Mobile account creation: 4.1b allows shouldCreateUser:true only with an invite token; 5.6c extends it to a present join code (shouldCreateUserFor), making the Confirm signup email template's {{ .Token }} mandatory (already a 4.1b founder to-do). If the founder prefers web-only signup, 5.6c Build 6 shrinks to a link to /signup.",
+    "No rejection notification in Phase 2 (notification_kind has no value for it; pending users are not push targets); a rejected requester simply sees no-church again. Would be an enum addition + dispatcher path — a new step.",
+    "Printable sheet: DESIGN §11 asks for a 'printable page' without a route; 5.6b uses /o/[orgSlug]/join-codes/[codeId]/print and ships no QR code (dependency needed). Sheet step 1 ('Install Anacast from the Google Play Store') is a constant JOIN_SHEET_STEPS that 6.5 updates. See proposed 5.8.",
+    "Names chosen because the docs are silent (later groups must reuse): @church/domain join-codes.ts (JOIN_CODE_ALPHABET=ABCDEFGHJKLMNPQRSTUVWXYZ23456789, JOIN_CODE_LENGTH, normalizeJoinCode, isValidJoinCode, formatJoinCode), schemas/join.ts (createJoinCodeSchema, redeemJoinCodeSchema, approveJoinRequestSchema, rejectJoinRequestSchema, redeemJoinCodeResultSchema); @church/db rpc wrappers createJoinCode/revokeJoinCode/redeemJoinCode/approveJoinRequest/rejectJoinRequest/cancelJoinRequest, queries/join.ts (listJoinCodes, joinCodeState, listJoinRequests, countPendingJoinRequests, listMyJoinRequests), queryKeys.joinCodes.list, queryKeys.joinRequests.{list,pendingCount,mine}; web src/features/join/* with actions createJoinCodeAction/revokeJoinCodeAction/approveJoinRequestAction/rejectJoinRequestAction and routes /o/[orgSlug]/join-codes, /o/[orgSlug]/join-codes/[codeId]/print, /o/[orgSlug]/join-requests; mobile app/(auth)/{join,pending}.tsx, src/features/join/{JoinCodeInput,format,useRedeemJoinCode,JoinScreen,PendingScreen,copy}, src/features/auth/entry-route.ts (resolveEntryRoute), shouldCreateUserFor, kv key pending_join_code.",
+    "Earlier-run issues for 5.4a/5.4b/5.5 remain in the file unchanged (16 items: documents split, description column, FK actions, publish_at nullability, no document push, AudienceGroupSelect relocation, system-group DB guard, group deletion widening audience, etc.)."
+   ]
+  }
+ ]
+}

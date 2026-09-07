@@ -130,3 +130,9 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-3 — wf_a9aaa30d-c8c (task w61g5jfcs) — draft step 5.6 only, launched 2026-09-07 13:49 America/New_York — founder confirmed
 - args: {"groups": ["G13"], "stage": "draft", "steps": ["5.6"]} (one drafter agent).
 - Outcome: (pending)
+- Outcome: completed. 5.6 split into 5.6a (`9998_join_codes.sql` + RLS tests + domain/db wrappers, 3349 words, depends_on
+  1.7a, 3.2b), 5.6b (web /join-codes + printable page + /join-requests, 2469 words, depends_on 5.6a, 5.1b) and 5.6c
+  (mobile join/pending screens, 2115 words, depends_on 5.6a, 4.3). Validator 0 errors. 12 open issues saved in
+  `reviews/G13.draft-5.6.result.json` (RPC set chosen beyond redeem/approve; 9999 re-paste drops 9998-only policies;
+  migration-number collision watch; pending memberships vs permissions guard).
+- Usage: 1 agent, **subagent_tokens 229,320**, tool_uses 33, duration 961,191 ms (~16 min).
