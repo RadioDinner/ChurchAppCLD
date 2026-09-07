@@ -155,3 +155,9 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
   G13-6 executability critic → G13-7 completeness critic → G13-8 reviser → G13 commit → G14-1..5 drafts (6.1, 6.2, 6.3,
   6.4, 6.5) → G14-6..8 critics → G14-9 reviser → G14 commit → session_log.md. On a usage limit: commit/push what exists,
   send_later 5 min after the named reset, resume the same bite (same run id + args), continue.
+- Outcome: completed. reviews/G13.fidelity.json — 17 findings, 0 blockers (e.g. 5.5 misstates 3.7a's Playwright layout).
+- Usage: 1 agent, **subagent_tokens 313,525**, tool_uses 37, duration 577,324 ms (~10 min).
+
+## Bite G13-6 — wf_ea2be4f2-2dc (task wz77u5wfh) — critique, executability lens only, launched 2026-09-07 14:56 America/New_York — queued (no confirmation needed)
+- args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["executability"]} (one critic agent).
+- Outcome: (pending)
