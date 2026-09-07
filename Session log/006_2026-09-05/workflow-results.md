@@ -177,3 +177,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-8 — wf_1caf88d8-6ca (task w9r04bgxf) — revise (reads the three saved review files), launched 2026-09-07 18:09 America/New_York — queued
 - args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "revise"} (one reviser agent, effort high).
 - Outcome: (pending)
+- Outcome: completed. 56 findings applied, 4 rejected with reasons (no shortening; `<feature>.smoke.spec.ts` naming so
+  3.7a's testMatch collects the specs; no undocumented `test.sh --only`; proposals renumbered 5.9 / 5.10 to avoid G12's
+  5.8). Validator 0 errors (one warning: 5.6a ≈3,970 words). 10 open_issues for the assembler (Playwright layout drift
+  across G10/G12/G13/G14; `my_context()` and pending memberships; `08_rerunnable.sql` must re-apply 9998/9997/9996;
+  RLS test-file numbering). Full result in `todo-drafts/reviews/G13.result.json`.
+- Usage: 1 agent, **subagent_tokens 286,223**, tool_uses 41, duration 858,917 ms (~14 min).
+- **G13 total sub-agent tokens (failed full run + 8 bites): 2,105,216.** Final steps: 5.4a, 5.4b, 5.5, 5.6a, 5.6b, 5.6c,
+  5.7a, 5.7b, 5.7c.
