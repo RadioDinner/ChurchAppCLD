@@ -121,3 +121,8 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-2 — wf_7bbcdf86-264 (task wo2l038gz) — draft step 5.5 only, launched 2026-09-07 13:29 America/New_York — founder confirmed
 - args: {"groups": ["G13"], "stage": "draft", "steps": ["5.5"]} (one drafter agent).
 - Outcome: (pending)
+- Outcome: completed. 5.5 Custom audience groups (2913 words, depends_on 5.1b, 5.4a). Validator 0 errors. Open issues
+  saved in `reviews/G13.draft-5.5.result.json` (system audience groups protected only in UI — recommend a
+  `app.guard_system_audience_groups` trigger in 9999; deleting a custom group nulls `audience_group_id` → content
+  becomes visible to everyone; `/groups/[groupId]` route deviation).
+- Usage: 1 agent, **subagent_tokens 141,621**, tool_uses 21, duration 417,615 ms (~7 min).

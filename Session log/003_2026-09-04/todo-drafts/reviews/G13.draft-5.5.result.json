@@ -1,0 +1,58 @@
+{
+ "run_id": "wf_7bbcdf86-264",
+ "task": "wo2l038gz",
+ "args": {
+  "groups": [
+   "G13"
+  ],
+  "stage": "draft",
+  "steps": [
+   "5.5"
+  ]
+ },
+ "outcome": "completed",
+ "subagent_tokens": 141621,
+ "tool_uses": 21,
+ "duration_ms": 417615,
+ "logs": [],
+ "result": [
+  {
+   "group": "G13",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "5.4a",
+     "title": "Documents (web) — upload, category, audience, schedule, delete; announcements attach a document",
+     "actor": "agent",
+     "prompt_words": 3109
+    },
+    {
+     "id": "5.4b",
+     "title": "Documents (mobile) — list by category, open or share files, linked document on announcements, More tab row",
+     "actor": "agent",
+     "prompt_words": 2095
+    },
+    {
+     "id": "5.5",
+     "title": "Custom audience groups",
+     "actor": "agent",
+     "prompt_words": 2913
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "5.5 `depends_on` = [5.1b, 5.4a] (skeleton: 5.1). 5.4a relocates `AudienceGroupSelect` to `src/features/audience/`; 5.5 extends that component (custom-group separator, description, `canManageGroups` footer) and tolerates the old path. G14 6.1a/6.1b already expect `listAudienceGroups` to return custom groups and reuse the select — they should also pass `canManageGroups`.",
+    "System audience groups are protected only in the UI and Server Actions: DESIGN §6 grants the manager pair update/delete on every `audience_groups` row, and nothing in `9999_init.sql` forbids renaming or deleting the six system rows (which would break `SYSTEM_AUDIENCE_GROUPS` name parity and `app.on_org_created` assumptions). Recommend G2/G3 add a trigger `app.guard_system_audience_groups` plus an RLS test while `9999_init.sql` is unfrozen; otherwise 5.6's `9998_join_codes.sql` or a `9998_*` sibling should carry it. 5.5 does not add a migration.",
+    "Deleting a custom group sets `audience_group_id` to null on announcements/documents/calendars (G2's FK choice) and `app.user_in_group(null)` is true, so targeted content silently becomes visible to everyone. 5.5 mitigates with a consequences dialog (counts from `countGroupUsage`) and verifies FK actions via `pg_constraint`. If the orchestrator prefers a safer default (re-point to the `everyone` row, or `restrict`), that is a G2 schema change plus a change to 5.5's Build 7 copy. The FK action on `notifications.audience_group_id` is not stated in PLAN/DESIGN; 5.5 tells the agent to read it.",
+    "Names chosen because the docs are silent (later groups must reuse): `@church/domain` `schemas/audience.ts` (`customGroupSchema`, `customGroupUpdateSchema`, `groupMembersChangeSchema`); `@church/db` additions in `queries/audience-groups.ts` (`updateCustomGroup`, `addGroupMembers`, `listGroupMemberCounts`, `countGroupUsage`, `listPersonsForPicker`) and `queryKeys.audienceGroups.{list,detail,members,counts,usage,picker}`; web `src/features/groups/{GroupsTable,GroupFormDialog,DeleteGroupDialog,GroupMembersPanel,AddMembersDialog,actions,system-group-copy,delete-copy}`, actions `createGroupAction`/`updateGroupAction`/`deleteGroupAction`/`addGroupMembersAction`/`removeGroupMemberAction`/`getGroupUsageAction`, error code `system_group`; route `/o/[orgSlug]/groups/[groupId]` (deviation: the route map lists only `/groups`); `AudienceGroupSelect` prop `canManageGroups`.",
+    "No member count for system groups and no 'preview recipients': computing youth/men/women client-side needs birthdates that `directory_persons` masks for managers who are not directory admins. A client RPC such as `count_audience_group(group_id)` (security definer, integer only) would let the groups page and the announcement form show 'reaches N people / M with push' — needs a migration and grants, so it is a candidate follow-up (5.7 or a new 5.8), not part of 5.5.",
+    "Whether `directory_persons` exposes `user_id` (needed for the 'No account — will not receive pushes' badge) is not stated in PLAN/DESIGN; 5.5 makes the badge conditional on the view. G2/G3 could expose a boolean `has_account` at admin level if the founder wants the badge guaranteed.",
+    "(carried from the earlier 5.4a/5.4b run — unchanged in the file) split of 5.4 into 5.4a/5.4b with repointed dependencies; `documents.description` column uncertainty; FK action on `announcements.document_id`; `documents.publish_at` nullability; documents have no push kind; 5.4 names chosen; single-page `/documents` route shape; free-text category; 5.4a prompt length ~3,100 words; no web member announcement detail page."
+   ]
+  }
+ ]
+}
