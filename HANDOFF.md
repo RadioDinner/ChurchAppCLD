@@ -15,7 +15,14 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 ## State
 
 - [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
-- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch `claude/project-status-todo-plan-leghlm` (`claude/plan-todo-prompts-ia7gkd` merged in; nothing on `main`). Kit: `Session log/003_2026-09-04/todo-drafts/` (skeleton 0.1–6.4, orchestrator-decisions, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-07: G1–G10 drafted and validating (G1, G2 never critiqued); G11 drafted, critique/revise in progress (session 006); G12–G14 (steps 5.1–6.4) not drafted; `workflow-global.js` (assemble → global review → fixers) not run; `docs/TODO.md` not yet generated. Resume notes: session 003 `session_log.md` "How to resume".
+- [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch
+  `claude/project-status-todo-plan-leghlm` (nothing on `main`). Kit: `Session log/003_2026-09-04/todo-drafts/` (skeleton,
+  orchestrator-decisions 1–19, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-07 evening:
+  G1–G12 and **G14** drafted, critiqued and revised (G1, G2 never critiqued); **G13** (5.4–5.7) in progress in session 006
+  (single-agent bites after a usage-limit stop); `workflow-global.js` (assemble → global review → fixers) not run;
+  `docs/TODO.md` not yet generated. G14 was run in 8 single-agent bites (session 008, 1.90 M sub-agent tokens) and added
+  step 6.6 (privacy policy), split 6.3 into 6.3a/6.3b/6.3c, and proposes 6.1d, 6.1p, 6.7, 6.8. Resume notes: session 003
+  `session_log.md` "How to resume" and session 008 `workflow-results.md`.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`
