@@ -161,3 +161,12 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 ## Bite G13-6 — wf_ea2be4f2-2dc (task wz77u5wfh) — critique, executability lens only, launched 2026-09-07 14:56 America/New_York — queued (no confirmation needed)
 - args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["executability"]} (one critic agent).
 - Outcome: (pending)
+- Outcome: stopped by usage limit — "You've hit your limit · resets 10pm (UTC)" at the agent's final return; the critic had
+  already saved reviews/G13.executability.json (30 findings: 2 blockers, 11 major, 17 minor, covering all nine steps,
+  every field present). Usage: 1 agent, **subagent_tokens 329,906**, tool_uses 38, duration 712,815 ms (~12 min).
+- Decision: the saved file is complete, so the lens is NOT re-run (the reviser reads the saved review files); ~300k tokens saved.
+  Session woke 2026-09-07 18:02 ET (22:02 UTC), founder confirmed the reset → continuing with bite G13-7.
+
+## Bite G13-7 — critique, completeness lens only, launched 2026-09-07 18:02 America/New_York — queued
+- args: {"groups": ["G13"], "skipDraft": ["G13"], "stage": "critique", "lenses": ["completeness"]} (one critic agent).
+- Outcome: (pending)

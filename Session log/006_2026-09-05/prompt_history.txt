@@ -81,3 +81,8 @@ how many more bites in G14
 how many more bites
 --- 2026-09-07 14:55 ---
 Lets queue the remaining bites. We'll hit the session limit but just keep going, bite after bite after that.
+--- 2026-09-07 18:02 ---
+Continue from where you left off.
+Continue from where you left off.
+--- 2026-09-07 18:02 ---
+I hit my usage limit while you were working, but it has reset now. Please continue from where you left off.
