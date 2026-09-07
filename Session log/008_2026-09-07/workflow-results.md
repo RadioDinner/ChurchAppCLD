@@ -64,4 +64,15 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 ## Bite 4 — draft 6.4 + 6.5 + 6.6 — wf_52683d08-590 (task wd4jkhzw7), launched 2026-09-07 11:25 America/New_York (15:25 UTC)
 - args: {"groups": ["G14"], "stage": "draft", "steps": ["6.4", "6.5", "6.6"]} (G14.json holds 6.1a–c, 6.2a–b, 6.3a–b; the
   drafter adds the three founder+agent steps; 6.6 is the founder-requested privacy-policy step from decision 16).
-- Outcome: (pending)
+- Outcome: completed, 0 failures. 6.4 iOS (founder+agent; Apple Developer account, bundle id, APNs key via `eas credentials`,
+  `eas build -p ios`, TestFlight group 'Church leaders'; agent fixes iOS-only issues; stops at TestFlight — App Store review
+  proposed as 6.8; 2454 words), 6.5 Play Console (internal testing upload + store listing; `docs/PLAY_STORE_LISTING.md`;
+  personal accounts created after Nov 2023 need a closed test before production — production release proposed as 6.8;
+  1998 words), 6.6 privacy policy + terms (founder-approved text goes live; agent may not write legal wording; 2140 words).
+  Dependencies chosen: 6.6 ← 6.3a + 6.3b; 6.5 ← 4.5 + 6.3a + 6.6; 6.4 ← 4.5 + 6.3b + 6.6; suggested M6 order 6.1a–c, 6.2a–b,
+  6.3a–b, 6.6, 6.5, 6.4. Validator 0 errors. 10 open_issues incl.: store assets wait on brand colours; `android.package`
+  immutable after first upload; `cli.appVersionSource: remote` needed in eas.json; Play/Apple menu labels unverified offline.
+  All ten G14 steps now drafted (6.1a–c, 6.2a–b, 6.3a–b, 6.4, 6.5, 6.6). Summary in `todo-drafts/reviews/G14.draft-6.4-6.6.result.json`.
+- Usage: agent_count 1, agents_done 1, agents_error 0, **subagent_tokens 183,793**, tool_uses 19, duration 843,401 ms (~14 min).
+- **G14 draft total (bites 1–4): 200,700 + 195,513 + 161,024 + 183,793 = 741,030 sub-agent tokens.**
+- Paused for the founder: critics together (one run, 3 agents) or one lens per bite.
