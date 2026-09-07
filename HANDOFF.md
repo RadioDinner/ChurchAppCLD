@@ -80,6 +80,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
   can restore it later; real **Delete account** stays available in-app and on the web because Google Play requires it,
   with a 30-day grace during which the user or the super admin can cancel (orchestrator decision 15 in the TODO kit).
 - Privacy policy and terms are a real step (6.6, founder+agent) before the App Store and Play listings (2026-09-07).
+  A placeholder policy lives at `docs/legal/privacy-policy.md`; the founder's lawyers replace it before go-live.
 
 ## Added by plan (founder may veto)
 

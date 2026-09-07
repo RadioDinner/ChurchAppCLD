@@ -82,3 +82,6 @@ Bite plan (each bite = one Workflow run = one sub-agent):
 - Founder decisions received while it ran (11:39–11:41 ET): brand palette (five blues) → orchestrator decision 17 + HANDOFF
   "Brand palette" table; Android package id `com.anacast.app` confirmed → decision 18. Recorded in G14.json open_issues too.
 - Outcome: (pending)
+- 11:52 ET founder: "Make a placeholder privacy policy, I'll have my lawyers write the policy and exchange it before go-live"
+  → `docs/legal/privacy-policy.md` written (placeholder draft from PLAN/DESIGN, ~1,050 words, no real contact details);
+  orchestrator decision 19; G14.json open_issue for 6.3a/6.6; HANDOFF bullet.

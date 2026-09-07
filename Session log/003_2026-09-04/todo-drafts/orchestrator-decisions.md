@@ -121,3 +121,11 @@ and reviser must follow them; they override the skeleton where they differ. Do n
 18. **Android package id confirmed: `com.anacast.app`** (founder, 2026-09-07, "com.anacast.app is fine"). Decision 5's
     comment about `com.Anacast.app` becomes history; prompts use the lowercase id everywhere (app.config.ts, Firebase,
     Play Console, assetlinks) with no case caveat.
+
+19. **Placeholder privacy policy (founder, 2026-09-07: "Make a placeholder privacy policy, I'll have my lawyers write the
+    policy and exchange it before go-live").** The placeholder lives at `docs/legal/privacy-policy.md` (written from
+    PLAN/DESIGN, placeholders in angle brackets, *For counsel* notes, draft banner). Step 6.3a copies that file into
+    `apps/web/src/content/legal.ts` verbatim (draft banner on, "Placeholder" wording allowed only inside the banner)
+    instead of writing its own privacy text; 6.3a still drafts the short terms of service. Step 6.6 replaces both with
+    the lawyer-approved text before go-live and removes the banner. Keep the deletion/deactivation wording of section 5
+    in sync with decision 15 whenever that changes.

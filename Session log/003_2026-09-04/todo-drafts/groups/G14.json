@@ -453,6 +453,7 @@
   "Lock-screen 'Now Playing' metadata on iOS depends on the installed `expo-audio` API (G11's 4.2b already allowed 'pending expo-audio API' as a deviation); 6.4 keeps that allowance and forbids `react-native-track-player`. If the founder considers lock-screen title/artist essential, a native player package would be a separate step with its own `npx expo install`.",
   "Store assets (512×512 icon without alpha, 1024×500 feature graphic, iOS 1024×1024 opaque icon, screenshots) depend on the brand colours that HANDOFF still lists as open (item 2 of 'Still open for the founder'); 6.5/6.4 tell the agent to keep Expo's template icon and add a HANDOFF to-do rather than invent a brand.",
   "ORCHESTRATOR DECISION 17 (2026-09-07): brand palette decided (Prussian #00072d, Deep Navy #001c55, Imperial #0a2472, Bright Marine #0e6ba8, Icy #a6e1fa) — the store-asset open issue in 6.4/6.5 is now resolvable: icons, feature graphic and splash use the token file; critics should flag any remaining 'brand colours still open' wording.",
-  "ORCHESTRATOR DECISION 18 (2026-09-07): Android package id confirmed lowercase com.anacast.app — drop every 'including case if the founder confirmed com.Anacast.app' caveat in 6.5 and 6.4."
+  "ORCHESTRATOR DECISION 18 (2026-09-07): Android package id confirmed lowercase com.anacast.app — drop every 'including case if the founder confirmed com.Anacast.app' caveat in 6.5 and 6.4.",
+  "ORCHESTRATOR DECISION 19 (2026-09-07): placeholder privacy policy exists at docs/legal/privacy-policy.md — 6.3a must copy it into legal.ts instead of drafting its own; 6.6 swaps in the lawyer-approved text before go-live. Reviser: update 6.3a Build item 6 and 6.6 Inputs accordingly."
  ]
 }
