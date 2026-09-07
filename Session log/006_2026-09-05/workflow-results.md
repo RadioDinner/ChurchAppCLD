@@ -90,3 +90,11 @@ G10 3.7, 3.8, 3.9, 3.10 · G11 4.1–4.5 · G12 5.1–5.3 · G13 5.4–5.7 · G1
 - args: {"groups": ["G12"]} (no group file existed → full draft; steps 5.1, 5.2, 5.3).
 - Outcome: (pending)
 - 08:09 ET: drafter done; critics running.
+- Outcome: completed, 0 failures. G12: 55 findings (2 blockers — `listHouseholds` vs 1.7a's `searchHouseholds`; a
+  non-existent `ctx.userId` on OrgContext), 55 applied (2 in variant form, reasons recorded); validator 0 errors,
+  0 warnings. Drafter split 5.1 → 5.1a/5.1b and 5.3 → 5.3a/5.3b; reviser split 5.2 → 5.2a (browsing) + 5.2b (household
+  self-service). Dependencies changed: 5.1a → [3.2b, 3.8], 5.3a → [5.1b, 3.8]. 8 open_issues (assembler repointing
+  for G13/G14; `ca_events_insert` leader branch to confirm with G2/G3), proposed 5.8 (full 2228-word prompt,
+  `9996_directory_events_fixes.sql`). Full result in `todo-drafts/reviews/G12.result.json`.
+- Usage: agent_count 5, agents_done 5, agents_error 0, **subagent_tokens 1,171,467**, tool_uses 170, duration 3,072,483 ms (~51 min).
+- **G12 total sub-agent tokens: 1,171,467.**

@@ -1,0 +1,82 @@
+{
+ "run_id": "wf_6fc75791-433",
+ "runs": [
+  {
+   "task": "wwbm69dbq",
+   "args": {
+    "groups": [
+     "G12"
+    ]
+   },
+   "outcome": "completed",
+   "subagent_tokens": 1171467,
+   "tool_uses": 170,
+   "duration_ms": 3072483
+  }
+ ],
+ "subagent_tokens_total": 1171467,
+ "logs": [
+  "G12: 55 findings (2 blockers)"
+ ],
+ "result": [
+  {
+   "group": "G12",
+   "drafted": [
+    {
+     "id": "5.1a",
+     "title": "Directory admin (web) — households: list, search, create/edit, photo, privacy toggles, head of house, leader notes",
+     "actor": "agent",
+     "prompt_words": 2682
+    },
+    {
+     "id": "5.1b",
+     "title": "Directory admin (web) — persons: create/edit/delete, congregation status, contacts, photo, account linking, person leader notes",
+     "actor": "agent",
+     "prompt_words": 2193
+    },
+    {
+     "id": "5.2",
+     "title": "Mobile directory & household self-service",
+     "actor": "agent",
+     "prompt_words": 2653
+    },
+    {
+     "id": "5.3a",
+     "title": "Calendars & events (web) — calendars CRUD, events list/create/edit/delete, pending approval queue with push",
+     "actor": "agent",
+     "prompt_words": 2260
+    },
+    {
+     "id": "5.3b",
+     "title": "Calendars & events (mobile) — events by calendar, detail, member submission, event push targets; Playwright and RLS coverage",
+     "actor": "agent",
+     "prompt_words": 2169
+    }
+   ],
+   "findings": 55,
+   "blockers": 2,
+   "applied": 55,
+   "rejected": [
+    {
+     "finding": "5.3a executability blocker — 'omit `submitted_by`; the trigger fills it with auth.uid()'",
+     "reason": "Applied in variant form: `createEventAction` now reads `userId` from `getAuthContext()` (2.1a) as both critics required, but passes `submitted_by: userId` explicitly instead of omitting it — harmless (the trigger coalesces to the same value, the policy's `submitted_by = auth.uid()` check passes) and easier to read than relying on trigger side effects. The blocker (`ctx.userId` does not exist on `OrgContext`) is fixed."
+    },
+    {
+     "finding": "5.3b executability major (sizing) — move the RLS additions into 5.3a and make the Playwright scenario a `5.3c` step",
+     "reason": "Took the critic's own stated minimum instead of a third split: 5.3b now prescribes the order RLS → mobile → Playwright with one commit per part so a failing toolchain never blocks the others. 5.3a is already an L session at ~3000 words, moving ~14 SQL assertions there would push it over the sizing guideline, and the RLS list must assert 5.3a's recorded findings, which only exist after 5.3a runs; a `5.3c` would add a fourth 1200-word prompt for one serial Playwright scenario. Recorded in 5.3b notes."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split 5.2 → 5.2a (mobile directory browsing, depends_on [5.1b, 4.3], M) + 5.2b (household self-service, privacy confirmation, photos, depends_on [5.2a], L) with full prompts (1976 / 2624 words). Orchestrator must repoint: G14 6.1 and G13 5.7 → `5.2b`; G13 5.5/5.6/5.7 → `5.1b`; G13 5.7 → `5.3b`. 5.3b references 5.2a's hooks only optionally (no dependency).",
+    "Dependencies changed per critics: 5.1a depends_on [3.2b, 3.8] and 5.3a depends_on [5.1b, 3.8] — both prompts need 3.5a `src/lib/dates.ts`, 3.6a dispatcher/`notificationTargetPath`/`PushStatusBadge`, 3.6b sweep, 3.7a/3.7b Playwright projects and 3.8 `docs/ACCEPTANCE_WEB.md`, none transitively included before.",
+    "Proposed 5.8 is now a full six-section prompt (2228 words, L) at `9996_directory_events_fixes.sql` (9997 reserved for 6.1) covering five gaps: atomic `set_head_of_house`, household-adult head designation, `events_require_approval` honoured, `calendars.members_can_submit`, and a leader branch in `ca_events_insert` (both the member toggle and the submit group). Orchestrator decides whether to adopt it or fold it into G13's 5.6/5.7 — the five gaps must travel with it.",
+    "For G2/G3: confirm the actual `ca_events_insert` text — DESIGN §6 has no leader branch; G3's 1.4 says it added `∨ announcements.create` to the `members_can_submit_events` half, but no reading admits a leader outside a calendar's submit group. 5.3a verifies and records; 5.3b asserts the real behaviour.",
+    "For G9: 3.6a's `loadNotificationRef` never states which audience group an `event` fans out to; it must be `calendars.view_audience_group_id`. 5.3a's agent adds the join if missing; G9's prompt would be clearer if it said so.",
+    "For G2: `delete_person` behaviour for a linked `user_id` under an admin and for the person's photo object is still unspecified; 5.1b reads the body and adapts.",
+    "5.1a's prompt is 3126 words (validator warns only above 3400); it absorbed the fellowship-row 404 guard, signed-URL batching, anniversary prefill and the 3.7/3.8 inputs. Acceptable for an L session but the longest in the group.",
+    "All cross-group names now match G2/G4/G5/G7/G9/G10/G11 exactly (`searchHouseholds`, `BUCKETS['directory-photos']`, `saveLeaderNotesSchema`, `personInKind`/`isMinor`/`isAdult`/`isYouth`, `queryKeys.calendars(orgId)`/`.events.list`, `getAuthContext().userId`, 1.3b error keys, slug-relative nav hrefs, no react-hook-form on mobile); the open_issues list records them for later revisers."
+   ]
+  }
+ ]
+}
