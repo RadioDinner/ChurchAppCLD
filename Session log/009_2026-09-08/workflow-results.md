@@ -89,5 +89,11 @@
 498,904 = **1,512,476 sub-agent tokens**. Session 009 total so far (bites 1–6): **2,041,122**.
 
 ## Next bites
-- Global audit (`workflow-global.js`), in bites: assemble → lenses (coverage, consistency, dependencies, founder) → fixers per group
-  (the script launches all lenses then all fixers; run with `rounds: 1` and pause between rounds).- Then `workflow-global.js` in bites.
+- Global audit (`workflow-global.js`) now has a bite mode (added 2026-09-08, no agents): `stage: "review"` runs a subset of the four
+  lenses (`lenses`) over the group files and saves `reviews/global.<lens>.r<round>.json`; the orchestrator assembles `docs/TODO.md`
+  locally first. `stage: "fix"` runs one fixer per listed group (`groups`), each reading the saved findings for its steps plus the
+  standing FIXER_WORKSHEET (decisions 20–24, 30, and G2's propagation list). Planned bites:
+  7. review, lenses ["coverage", "consistency"] (2 agents, high effort — expect ~600–800k)
+  8. review, lenses ["dependencies", "founder"] (2 agents)
+  9+. fix, groups in batches of 2–3 (G2/G3/G4 first — the schema propagation), then the rest
+  then re-assemble; a second review round only if blockers remain.- Then `workflow-global.js` in bites.

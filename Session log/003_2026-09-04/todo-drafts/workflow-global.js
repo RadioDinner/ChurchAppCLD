@@ -12,6 +12,10 @@ const REPO = '/home/user/ChurchAppCLD'
 const KIT = `${REPO}/Session log/003_2026-09-04/todo-drafts`
 const Q = (p) => `"${p}"`
 const MAX_ROUNDS = (args && args.rounds) || 2
+const STAGE = (args && args.stage) || 'all'          // 'all' | 'review' (lenses only, findings saved to reviews/global.<lens>.json) | 'fix' (fixers read the saved findings)
+const ONLY_LENSES = (args && args.lenses) || []        // review: subset of coverage, consistency, dependencies, founder
+const ONLY_GROUPS = (args && args.groups) || []        // fix: only these groups' fixers run
+const ROUND_TAG = (args && args.round) || 1            // fix/review: label for saved files (findings of round N are reviews/global.<lens>.rN.json)
 
 const COMMON = `Repository: ${REPO}. Drafting kit: ${Q(KIT)} (path contains a space — always quote it).
 Read first: ${Q(KIT + '/skeleton.md')} (brief, standing orders, founder decisions, prompt rules, fixed step list), ${Q(KIT + '/orchestrator-decisions.md')} (cross-group decisions that override the skeleton). The per-group sources are ${Q(KIT + '/groups/')}G1.json … G14.json; the assembled document is ${REPO}/docs/TODO.md. The plan is ${REPO}/docs/PLAN.md and ${REPO}/docs/DESIGN.md; live state is ${REPO}/HANDOFF.md.
@@ -66,6 +70,8 @@ print(len(ids),'steps'); print(ids)
 EOF
 and include that output.`
 
+const FIXER_WORKSHEET = `STANDING FIXER WORK (orchestrator decisions 20–24 and 30, and the G2 reviser's propagation list in ${Q(KIT + '/groups/G2.json')} open_issues) applies to your group even if no global finding names it: decision 20 (super-admin pass-through — G5 2.1a/2.1b/2.2b, G6 2.5, G10 3.7b), decision 21 (schema corrections now live in 9999 via G2 1.2/1.3a/1.3b — G3 1.4a–1.5 grants/tests/shim, G4 1.6/1.7 errors and RPC wrappers, G8 3.4b srv_load_unlocked_share_link, G9 3.5b/3.6a per-org claiming, G12 5.1a/5.2b/5.3 set_head_of_house and calendar_submissions_closed, G13 5.5 system groups, G14 6.3a case A; 3.10/3.5b "next free number below the reserved block"), decision 23 (5.7b/5.7c Playwright wording), decision 24 (2.6/3.9/3.10 call scripts/web/smoke-hosted.sh; 2.4 optional dry-run item; 6.3b monitoring row; 5.7a/5.7c 'proposed 5.9' → step 5.8; 6.7 'every file the ledger does not list'; 6.5 flips PLAY_LISTING.live), decision 30 (G2: trim repetition; split 1.2 only if still > ~4500 words). Read the relevant decision text before editing; apply what touches your group's steps; list what you applied in the summary.`
+
 const groupOf = (id) => {
   const m = String(id).match(/^(\d+)\.(\d+)/)
   if (!m) return null
@@ -86,14 +92,32 @@ let majors = 1
 let last = null
 while (round < MAX_ROUNDS && (blockers > 0 || (round === 0) || majors > 3)) {
   round++
+  if (STAGE === 'fix') {
+    // Bite mode: fixers only. Each fixer reads the findings a previous 'review' bite saved (no fs access in the script itself).
+    if (!ONLY_GROUPS.length) throw new Error('stage "fix" needs args.groups (e.g. ["G2","G3"])')
+    const savedFiles = GLOBAL_LENSES.map(l => Q(`${KIT}/reviews/global.${l.key}.r${ROUND_TAG}.json`)).join(', ')
+    const RANGES = 'G1 = 0.1, 1.1; G2 = 1.2–1.3x; G3 = 1.4x–1.5; G4 = 1.6x–1.7x; G5 = 2.1x–2.2x; G6 = 2.3–2.7; G7 = 3.1–3.2x; G8 = 3.3x–3.4x; G9 = 3.5x–3.6x; G10 = 3.7x–3.10; G11 = 4.x; G12 = 5.1x–5.3x; G13 = 5.4x–5.9; G14 = 6.x'
+    phase('Fix')
+    const fixed = await parallel(ONLY_GROUPS.map(g => () =>
+      agent(`You are the fixer for group ${g} of docs/TODO.md (file ${Q(KIT + '/groups/' + g + '.json')}), global round ${ROUND_TAG}. ${COMMON}
+
+${FIXER_WORKSHEET}
+
+The global reviewers' findings are saved in these JSON files (each has a "findings" array; a missing file means that lens did not run): ${savedFiles}. Read them all and select every finding whose "step" belongs to your group (${RANGES}); a finding with step "NEW" belongs to the group whose milestone the proposed id falls in. Apply every blocker and major finding and cheap minor ones by editing the JSON in place (valid JSON; do not shorten prompts except to remove repetition; keep the opening line and the six sections). Where a finding asks for a NEW step, add it to this group's "steps" with the next free id in the milestone and full content (prompt >= 1200 words for agent steps), or to proposed_additional_steps if it is genuinely optional — say which. Where a finding asks for a name change that other groups also use, change it here and list the other step ids in your summary's rejected/notes so the orchestrator can propagate. Reject findings that contradict PLAN/DESIGN, founder decisions or orchestrator decisions, with the reason. Write the file back after each step you finish (valid JSON each time). Run the validator on your file until 0 errors. Return the structured summary only.`,
+        { label: `fix:${g}:r${ROUND_TAG}`, phase: 'Fix', schema: FIX_SUMMARY, effort: 'high' })
+    ))
+    return { stage: 'fix', round: ROUND_TAG, groups: ONLY_GROUPS, fixed: fixed.filter(Boolean) }
+  }
   phase('Assemble')
-  const rep = await agent(`${COMMON}\n\n${ASSEMBLE}\nReturn the validator summary line, the assembler output line, any warnings verbatim, and the step listing.`,
+  const rep = STAGE === 'review' ? 'assembled by the orchestrator before launch (bite mode)' : await agent(`${COMMON}\n\n${ASSEMBLE}\nReturn the validator summary line, the assembler output line, any warnings verbatim, and the step listing.`,
     { label: `assemble:r${round}`, phase: 'Assemble', effort: 'low' })
   log(`assemble r${round}: ${String(rep).slice(0, 400)}`)
 
   phase('Global review')
-  const gl = await parallel(GLOBAL_LENSES.map(l => () =>
-    agent(`You are a global reviewer of the assembled docs/TODO.md for ChurchAppCLD (round ${round} of ${MAX_ROUNDS}). ${COMMON}
+  const lensesNow = GLOBAL_LENSES.filter(l => !ONLY_LENSES.length || ONLY_LENSES.includes(l.key))
+  const gl = await parallel(lensesNow.map(l => () =>
+    agent(`You are a global reviewer of the assembled docs/TODO.md for ChurchAppCLD (round ${STAGE === 'review' ? ROUND_TAG : round} of ${MAX_ROUNDS}). ${COMMON}
+Before returning, save your findings as JSON ({"findings": [...]}) to ${Q(KIT + '/reviews/global.' + l.key + '.r' + (STAGE === 'review' ? ROUND_TAG : round) + '.json')} so they survive an interruption.
 Findings must name the step id so the fixer can find the group. Use grep/python over the group files rather than reading everything linearly when that is faster, but read every prompt you judge.
 
 ${l.prompt}
@@ -101,11 +125,12 @@ ${l.prompt}
 Findings only, each with step id, severity (blocker = a following agent would build the wrong thing or be unable to proceed; major = real gap or inconsistency; minor = polish), quote (or MISSING), problem and a directly applicable fix. Complete list, not a sample; do not report things that are already right.`,
       { label: `global:${l.key}:r${round}`, phase: 'Global review', schema: FINDINGS, effort: 'high' })
   ))
-  const gfind = gl.filter(Boolean).flatMap((c, i) => c.findings.map(f => ({ lens: GLOBAL_LENSES[i].key, ...f })))
+  const gfind = gl.flatMap((c, i) => c ? c.findings.map(f => ({ lens: lensesNow[i].key, ...f })) : [])
   blockers = gfind.filter(f => f.severity === 'blocker').length
   majors = gfind.filter(f => f.severity === 'major').length
   log(`global r${round}: ${gfind.length} findings, ${blockers} blockers, ${majors} major`)
   last = { round, findings: gfind.length, blockers, majors, sample: gfind.slice(0, 40).map(f => `${f.severity} ${f.step} [${f.lens}] ${f.problem}`) }
+  if (STAGE === 'review') return { stage: 'review', round: ROUND_TAG, lenses: lensesNow.map(l => l.key), findings: gfind.length, blockers, majors, byLens: Object.fromEntries(lensesNow.map((l, i) => [l.key, gl[i] ? gl[i].findings.length : 'FAILED'])), sample: gfind.slice(0, 60).map(f => `${f.severity} ${f.step} [${f.lens}] ${f.problem}`) }
   if (!gfind.length) break
 
   const byGroup = {}
@@ -123,6 +148,8 @@ Findings only, each with step id, severity (blocker = a following agent would bu
   phase('Fix')
   const fixed = await parallel(Object.entries(byGroup).map(([g, fs]) => () =>
     agent(`You are the fixer for group ${g} of docs/TODO.md (file ${Q(KIT + '/groups/' + g + '.json')}), round ${round}. ${COMMON}
+
+${FIXER_WORKSHEET}
 
 Global reviewers found these problems in your group's steps (JSON):
 ${JSON.stringify(fs, null, 1)}
