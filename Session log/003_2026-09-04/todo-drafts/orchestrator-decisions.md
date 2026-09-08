@@ -208,3 +208,11 @@ marked **fixer**. The founder may veto any of them.
     field (adopted as …, rejected because …, folded into 9999); the assembler prints it in the appendix. Adopted
     steps without prompts stay in `proposed_additional_steps` under their final ids until a drafting bite writes
     them (`workflow-groups.js` `stage: draft, steps: [...]`); `workflow-groups.js` group entries list them.
+
+30. **G2 prompt lengths after revision (2026-09-08, session 009).** The G2 reviser folded the decision-15/21 schema work into 1.2
+    (5415 words), 1.3a (4564) and 1.3b (4708). Decision 26 is extended to 1.3a and 1.3b as written. 1.2 is the one candidate for
+    a split: the global fixer for G2 first removes repetition without cutting content; if 1.2 still exceeds ~4500 words it
+    splits into 1.2a (harness, shim, scripts, sections 0–2) and 1.2b (sections 3–4, seed of the section skeleton) per
+    decision 13, repointing 1.3a's `depends_on`. The head-of-house rule is settled as the reviser applied it: the column
+    guard stays strict; the only way to move the head is the atomic `set_head_of_house(hh, new_head, previous_head_role)`
+    RPC (admitted through `app.can_edit_household`, running under the `app.trusted_rpc` flag), which satisfies decision 6.

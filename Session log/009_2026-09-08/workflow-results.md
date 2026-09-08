@@ -74,7 +74,20 @@
 - args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}
 - Two revisers in parallel reading the saved `reviews/G{1,2}.{fidelity,executability,completeness}.json` (G1 30 findings; G2 42
   findings incl. the 1.3a head-of-house guard blocker and the decision-15/21 schema work).
-- Outcome: (pending)
+- Run: wf_0ef847b7-81f (task wxokr1zif). Outcome: completed, 0 failures. G1: 30 applied, 0 rejected, validator 0 errors
+  (1.1 now 2587 words; CI contract fixed: postgres:16 service, PG_SUPER_URL / DATABASE_URL names). G2: 41 applied, 1 rejected with
+  reason (kept the strict head-of-house column guard; the atomic `set_head_of_house` RPC is the only way to move the head — recorded
+  as decision 30); validator 0 errors, 3 warnings (1.2 = 5415, 1.3a = 4564, 1.3b = 4708 words — decision 30 extends decision 26 to
+  1.3a/1.3b and lets the global fixer split 1.2 if trimming is not enough). Both `reviews/G{1,2}.result.json` saved.
+  The decision-15/21 schema is now in 9999 via 1.2/1.3a/1.3b (archival columns + RPCs, `srv_claim_notifications(org_id, max_rows)`,
+  `srv_load_unlocked_share_link`, `set_head_of_house`, system-group guard, `calendars.members_can_submit`, `cancelled_at`, …).
+  The G2 reviser left a precise propagation list for G3, G4, G8, G9, G12, G13 and G14 in G2.json open_issues — that is the global
+  fixers' worksheet.
+- Usage: agent_count 2, **subagent_tokens 498,904**, tool_uses 64, duration 1134 s (~19 min). Fallback send_later deleted.
+
+**G1 and G2 critiqued and revised. All 14 groups are now drafted, critiqued and revised.** Bites 4–6 total: 312,663 + 700,909 +
+498,904 = **1,512,476 sub-agent tokens**. Session 009 total so far (bites 1–6): **2,041,122**.
 
 ## Next bites
-- Then `workflow-global.js` in bites.
+- Global audit (`workflow-global.js`), in bites: assemble → lenses (coverage, consistency, dependencies, founder) → fixers per group
+  (the script launches all lenses then all fixers; run with `rounds: 1` and pause between rounds).- Then `workflow-global.js` in bites.
