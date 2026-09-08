@@ -62,7 +62,13 @@
 ## Bite 5 — critique G1 + G2, executability + completeness lenses — launched 2026-09-08 America/New_York (founder: "next bite")
 - args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "critique", "lenses": ["executability", "completeness"]}
 - Four critics (two per group, 2 concurrent); findings saved to `reviews/G{1,2}.{executability,completeness}.json`.
-- Outcome: (pending)
+- Run: wf_c94ea60c-71c (task ww547psn4). Outcome: completed, 0 failures. G1: executability 12 (4 major, 8 minor), completeness 7
+  (all minor). G2: executability 21 (**1 blocker**, 10 major, 10 minor), completeness 8 (4 major, 4 minor). The blocker is in 1.3a:
+  the head-of-house guard trigger rejects two flows the same group specifies (`accept_invitation` inserting a `head` person as a
+  non-admin caller, and `srv_attach_user` running as service_role with a null `auth.uid()`); the critic's fix is to skip the guard
+  when `auth.uid()` is null or a trusted-RPC setting is on.
+  Three-lens totals: G1 30 findings / 0 blockers; G2 42 findings / 1 blocker.
+- Usage: agent_count 4, **subagent_tokens 700,909**, tool_uses 95, duration 817 s (~14 min). Fallback send_later deleted.
 
 ## Next bites
 - Bite 6: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}.
