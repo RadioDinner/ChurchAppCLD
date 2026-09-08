@@ -47,5 +47,12 @@
 
 **Drafting complete.** Bites 1–3 total: 149,887 + 217,218 + 161,541 = **528,646 sub-agent tokens** (3 agents, ~29 min of agent time).
 
+## Bite 4 — critique G1 + G2, fidelity lens — launched 2026-09-08 America/New_York (founder: "lets go")
+- args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "critique", "lenses": ["fidelity"]}
+- Two critics in parallel (one per group); findings saved to `reviews/G1.fidelity.json` and `reviews/G2.fidelity.json`.
+- Outcome: (pending)
+
 ## Next bites
-- Then: critique + revise G1 and G2; then `workflow-global.js`.
+- Bite 5: same groups, lenses ["executability", "completeness"] (4 critics).
+- Bite 6: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}.
+- Then `workflow-global.js` in bites.
