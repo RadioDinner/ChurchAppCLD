@@ -15,7 +15,12 @@
 - Fixer notes for the global round (from the drafter): 2.6, 3.9 and 3.10 should call `scripts/web/smoke-hosted.sh <URL> --checkpoint B`
   instead of hand-typed curl lists; 3.9's checklist flips `SMOKE_CHECKPOINT` to `B`; 2.6/3.8 say `docs/DEPLOY.md` may already exist.
 
+## Bite 2 — draft steps 5.8 + 5.9 (G13) — launched 2026-09-08 America/New_York (founder: "next bite")
+- args: {"groups": ["G13"], "stage": "draft", "steps": ["5.8", "5.9"]}
+- Briefs: orchestrator decision 24 (5.8 web join landing `/join/[code]` + QR + App Link, agent M; 5.9 FOUNDER Checkpoint D incl.
+  paste of `9998_join_codes.sql` + ledger, founder M, depends_on 5.7c and 5.8).
+- Outcome: (pending)
+
 ## Next bites
-- Bite 2: {"groups": ["G13"], "stage": "draft", "steps": ["5.8", "5.9"]}
 - Bite 3: {"groups": ["G14"], "stage": "draft", "steps": ["6.7", "6.8"]}
 - Then: critique + revise G1 and G2; then `workflow-global.js`.
