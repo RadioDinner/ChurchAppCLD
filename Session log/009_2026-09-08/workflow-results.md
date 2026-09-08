@@ -29,6 +29,13 @@
   possible follow-up. Fixer notes: 5.7a/5.7c mentions of 'proposed 5.9' → step 5.8; 6.7's 'normally still to paste' → 'every file
   the ledger does not list'; 6.5 flips `PLAY_LISTING.live`; 5.9 item 19 needs a non-member test account (`+test` alias).
 
+## Bite 3 — draft steps 6.7 + 6.8 (G14) — launched 2026-09-08 America/New_York (founder: "next bite")
+- args: {"groups": ["G14"], "stage": "draft", "steps": ["6.7", "6.8"]}
+- Briefs: orchestrator decision 24 (6.7 FOUNDER paste `9997_surveys_head_of_house.sql` and, case B, `9996_account_archival.sql`
+  + ledger, depends_on 6.1a/6.3a, 6.4 and 6.5 depend on it; 6.8 FOUNDER+AGENT production release — Play closed test → production,
+  App Store review, 14-day closed-test rule; depends_on 6.4/6.5/6.6/6.7). Bite 2's fixer note: 6.7 should say "paste every file the
+  ledger does not list".
+- Outcome: (pending)
+
 ## Next bites
-- Bite 3: {"groups": ["G14"], "stage": "draft", "steps": ["6.7", "6.8"]}
 - Then: critique + revise G1 and G2; then `workflow-global.js`.
