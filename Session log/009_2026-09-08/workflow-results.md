@@ -70,6 +70,11 @@
   Three-lens totals: G1 30 findings / 0 blockers; G2 42 findings / 1 blocker.
 - Usage: agent_count 4, **subagent_tokens 700,909**, tool_uses 95, duration 817 s (~14 min). Fallback send_later deleted.
 
+## Bite 6 — revise G1 + G2 — launched 2026-09-08 America/New_York (founder: "next bite")
+- args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}
+- Two revisers in parallel reading the saved `reviews/G{1,2}.{fidelity,executability,completeness}.json` (G1 30 findings; G2 42
+  findings incl. the 1.3a head-of-house guard blocker and the decision-15/21 schema work).
+- Outcome: (pending)
+
 ## Next bites
-- Bite 6: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}.
 - Then `workflow-global.js` in bites.
