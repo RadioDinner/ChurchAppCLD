@@ -226,3 +226,11 @@ marked **fixer**. The founder may veto any of them.
     LLC" or "CodeFuse Solutions"; `<LEGAL_ENTITY_NAME>` and the other 6.6 placeholders stay until the founder picks one. (c) The
     permission-mapping question was re-asked with the table from DESIGN §5 because `docs/RLS.md` does not exist yet (step 1.5
     writes it); answer pending.
+
+32. **Founder answers, 2026-09-08 (final).** (a) **30-day deletion grace confirmed** (decision 15 stands; the self-restore-on-sign-in
+    default stands unless the founder says otherwise). (b) **Brand palette token roles confirmed** as suggested in decision 17
+    (`primary` Imperial Blue, `primaryDark` Deep Navy, `ink` Prussian Blue, `accent` Bright Marine, `tint` Icy Blue) — prompts may
+    drop the "founder may veto" caveat. (c) **Do not merge to `main` until the founder says so**; all TODO.md work stays on
+    `claude/project-status-todo-plan-leghlm`. (d) **Stale branches deleted** (`claude/plan-todo-prompts-ia7gkd`, fully merged;
+    `claude/plan-todo-prompts-w3madd`, record-only — its session-002 prompt history preserved in the repo if it differed). The
+    founder asked not to be asked these again; the permission-mapping yes/no (decision 31c) is the only question still open.

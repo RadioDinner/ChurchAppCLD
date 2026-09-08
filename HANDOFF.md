@@ -83,6 +83,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - Surveys (Phase 3): the head of house answers per-person surveys for household members without accounts.
 - App name Anacast, Android package id **`com.anacast.app`** (lowercase confirmed by the founder 2026-09-07).
 - Supabase Free plan to start (50 MB upload cap), Vercel Pro at launch.
+- Merging: the TODO.md branch merges to `main` only when the founder says so (2026-09-08).
 - Account archival (2026-09-07): the self-service action is **Deactivate**, which archives the account so the super admin
   can restore it later; real **Delete account** stays available in-app and on the web because Google Play requires it,
   with a 30-day grace during which the user or the super admin can cancel (orchestrator decision 15 in the TODO kit).
@@ -114,19 +115,16 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 
 ## Still open for the founder
 
-1. ~~Production domain~~ — **answered 2026-09-08: none yet; Vercel's generated domain until the features work** (decision 31).
-   Re-open when a real domain is bought (App Links, store privacy URL and Supabase redirects must then be updated).
-2. Explicit yes/no on the permission mapping (DESIGN §5 table; `docs/RLS.md` is written by step 1.5, so it does not exist yet).
-3. Legal entity for the privacy policy and terms (step 6.6) — **2026-09-08: not decided; candidates Elevare Holdings LLC or
-   CodeFuse Solutions.** Placeholders stay until chosen; postal address, governing state and privacy contact email also needed.
-4. Confirm the 30-day deletion grace and the self-restore-on-sign-in default in orchestrator decision 15.
-5. Confirm the token roles suggested for the brand palette (below), or assign your own.
-6. Merge to `main` as soon as `docs/TODO.md` is generated, or after founder review?
-7. Delete the stale remote branches `claude/plan-todo-prompts-ia7gkd` (merged) and `claude/plan-todo-prompts-w3madd` (record-only)?
+1. Explicit yes/no on the permission mapping (DESIGN §5 table, repeated in chat 2026-09-08; `docs/RLS.md` is written by step 1.5).
+
+Answered 2026-09-08 (do not re-ask; orchestrator decisions 31–32): no production domain yet (Vercel's generated domain until the
+features work); legal entity undecided (Elevare Holdings LLC or CodeFuse Solutions — placeholders stay); 30-day deletion grace and
+self-restore default confirmed; brand palette token roles confirmed as below; **do not merge to `main` until the founder says so**;
+stale branches deleted.
 
 ## Brand palette (founder, 2026-09-07)
 
-| Name | Hex | Suggested token (founder may change) |
+| Name | Hex | Token role (confirmed by the founder 2026-09-08) |
 |---|---|---|
 | Prussian Blue | `#00072d` | `ink` — body text on light surfaces, darkest dark-mode surface, splash |
 | Deep Navy | `#001c55` | `primaryDark` — headers, pressed states, dark-mode surfaces |
