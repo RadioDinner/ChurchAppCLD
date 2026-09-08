@@ -114,12 +114,15 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 
 ## Still open for the founder
 
-1. Production domain (affects deep links, invite emails, share URLs, the privacy-policy URL).
-2. Explicit yes/no on the permission mapping (answer 4 ships the default).
-3. Legal entity name, postal address, governing state and privacy contact email for the privacy policy and terms
-   (step 6.6; needed before the App Store and Play listings).
+1. ~~Production domain~~ — **answered 2026-09-08: none yet; Vercel's generated domain until the features work** (decision 31).
+   Re-open when a real domain is bought (App Links, store privacy URL and Supabase redirects must then be updated).
+2. Explicit yes/no on the permission mapping (DESIGN §5 table; `docs/RLS.md` is written by step 1.5, so it does not exist yet).
+3. Legal entity for the privacy policy and terms (step 6.6) — **2026-09-08: not decided; candidates Elevare Holdings LLC or
+   CodeFuse Solutions.** Placeholders stay until chosen; postal address, governing state and privacy contact email also needed.
 4. Confirm the 30-day deletion grace and the self-restore-on-sign-in default in orchestrator decision 15.
 5. Confirm the token roles suggested for the brand palette (below), or assign your own.
+6. Merge to `main` as soon as `docs/TODO.md` is generated, or after founder review?
+7. Delete the stale remote branches `claude/plan-todo-prompts-ia7gkd` (merged) and `claude/plan-todo-prompts-w3madd` (record-only)?
 
 ## Brand palette (founder, 2026-09-07)
 

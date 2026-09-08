@@ -216,3 +216,13 @@ marked **fixer**. The founder may veto any of them.
     decision 13, repointing 1.3a's `depends_on`. The head-of-house rule is settled as the reviser applied it: the column
     guard stays strict; the only way to move the head is the atomic `set_head_of_house(hh, new_head, previous_head_role)`
     RPC (admitted through `app.can_edit_household`, running under the `app.trusted_rpc` flag), which satisfies decision 6.
+
+31. **Founder answers, 2026-09-08 (session 009 wrap).** (a) **Production domain: none yet** — the web app lives on Vercel's
+    generated `*.vercel.app` domains until the features work. Prompts keep `<DOMAIN>` / `NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_WEB_URL`
+    as the only source of the URL; 2.5 records the Vercel URL in HANDOFF; 5.7a's Android App Links, 5.8's `/join/*` links, 6.6's
+    privacy-policy URL and the store listings (6.4/6.5) use whatever URL HANDOFF holds at the time and note that changing the domain
+    later means re-verifying `assetlinks.json`, re-issuing the store privacy URL and updating the Supabase Auth redirect list — the
+    global fixer adds that sentence where a step bakes the URL in. (b) **Legal entity: not decided** — candidates "Elevare Holdings
+    LLC" or "CodeFuse Solutions"; `<LEGAL_ENTITY_NAME>` and the other 6.6 placeholders stay until the founder picks one. (c) The
+    permission-mapping question was re-asked with the table from DESIGN §5 because `docs/RLS.md` does not exist yet (step 1.5
+    writes it); answer pending.

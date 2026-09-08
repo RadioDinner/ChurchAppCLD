@@ -20,3 +20,7 @@ next bite
 how many more bites
 --- 2026-09-08 16:06 ---
 Wrap this session and I'll pick up bite 7 in the next
+--- 2026-09-08 16:10 ---
+1. Production domain will live on vercel random domains until we get the features working.
+2. docs/RLS.md is 404. Can't read it
+3. No legal entity yet. PRobably Elevare Holdings LLC or CodeFuse Solutions
