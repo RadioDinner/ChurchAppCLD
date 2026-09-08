@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-07, session 008 (founder decisions: account archival, privacy-policy step 6.6, brand palette, package id)._
+_Last updated: 2026-09-08, session 009 (status pass on the TODO.md build; no kit or group files changed)._
 
 ## What this is
 
@@ -17,12 +17,12 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - [x] Session conventions (`CLAUDE.md`, `new_session_instructions.md`, `Session log/`) and the approved plan (`docs/PLAN.md`, `docs/DESIGN.md`)
 - [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch
   `claude/project-status-todo-plan-leghlm` (nothing on `main`). Kit: `Session log/003_2026-09-04/todo-drafts/` (skeleton,
-  orchestrator-decisions 1–19, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-07 evening:
-  G1–G12 and **G14** drafted, critiqued and revised (G1, G2 never critiqued); **G13** (5.4–5.7) in progress in session 006
-  (single-agent bites after a usage-limit stop); `workflow-global.js` (assemble → global review → fixers) not run;
-  `docs/TODO.md` not yet generated. G14 was run in 8 single-agent bites (session 008, 1.90 M sub-agent tokens) and added
-  step 6.6 (privacy policy), split 6.3 into 6.3a/6.3b/6.3c, and proposes 6.1d, 6.1p, 6.7, 6.8. Resume notes: session 003
-  `session_log.md` "How to resume" and session 008 `workflow-results.md`.
+  orchestrator-decisions 1–19, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-08 (session 009):
+  **all 14 groups drafted, 71 steps, validator 0 errors / 6 warnings**; G3–G14 critiqued and revised; **G1 and G2 never
+  critiqued**. Not done: G1+G2 critique/revise, the orchestrator decision memo (16 proposed steps, 2 stale `depends_on`,
+  4 cross-group contradictions, 5 over-length prompts, 246 open_issues), `workflow-global.js` (assemble → 4 global lenses →
+  fixers, must also push decision-15 archival schema into G2/G3), generating `docs/TODO.md` (dry-run assembles to ~273k
+  words), the HANDOFF update, and the founder's word on merging to `main`. Details: session 009 `session_log.md`.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`
