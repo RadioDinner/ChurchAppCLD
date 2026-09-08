@@ -5,8 +5,20 @@ Branch: `claude/project-status-todo-plan-leghlm` (harness-assigned). The local c
 Nothing merged to `main`.
 
 ## Shipped
-- HANDOFF.md: the `docs/TODO.md` State line refreshed to the real state (all 14 groups drafted; G1/G2 uncritiqued; global
-  audit and assembly not run). Session folder 009 with prompt history and this log.
+- `3fd2ef5` HANDOFF.md: the `docs/TODO.md` State line refreshed to the real state. Session folder 009 with prompt history.
+- (second commit) **Orchestrator decision memo, decisions 20–29** appended to `todo-drafts/orchestrator-decisions.md`, and the
+  numbering fixes applied directly to the group JSON files (no prompt rewrites beyond name substitutions):
+  - 1.6a `1.4` → `1.4c`; 3.1 `2.2` → `2.2b`; 3.7a += `2.7`; 6.4/6.5 += `6.7`.
+  - Migrations: worked example `9998_storage_limit.sql` → `9995_storage_limit.sql` (1.4a, 1.5, 2.4, 5.6a); 9998/9997/9996 reserved.
+  - RLS tests: 6.3a's `11_account_deletion.sql` → `13_account_deletion.sql` (6.3a, 6.3b, 6.2a, 5.7c).
+  - Playwright: `directory.spec.ts`/`events.spec.ts` → `*.smoke.spec.ts` (G12, 5.7b, 5.7c); `e2e/smoke/legal.spec.ts` →
+    `e2e/legal.smoke.spec.ts` (6.6); full specs `03-phase2` (5.7c), `04-directory-import` (5.7b), `05-surveys` (6.1b).
+  - Proposals: G1's redundant 6.5 dropped; every remaining proposal has a `decision` field; renumbered 5.9→5.8, 5.10→5.9,
+    6.1p→6.7, ops view 6.7→`6.x` (rejected); 4.6 promoted into G11 steps (validator ok) → 72 steps.
+  - Kit scripts: `workflow-groups.js` group entries list 2.7, 4.6, 5.8, 5.9, 6.7, 6.8; `assemble.py` prints the decision per
+    proposal; `validate.py` no longer warns about 4.4's intentional `com.churchappcld` grep.
+  - Validator: 0 errors, 5 warnings (accepted long prompts, decision 26). Assembler: 72 steps; unknown deps only 2.7 and 6.7
+    (adopted, not yet drafted).
 
 ## Status found (2026-09-08 07:35 ET)
 - `docs/TODO.md` does not exist. `python3 validate.py groups/G*.json` → 0 errors, 6 warnings. 71 steps across G1–G14.
@@ -45,4 +57,16 @@ Production domain; explicit yes/no on the permission mapping; legal entity name/
   (two session-002 record commits, nothing else) are stale and can be deleted once the founder agrees.
 
 ## Directional decisions
-- None this session (status question only).
+- Founder (07:5x ET): "Give me the founder questions here in chat first … then go through the orchestrator decision memo and fix
+  the numbering." The seven founder questions were listed in chat (domain, permission mapping, legal entity, deletion defaults,
+  palette roles, merge timing, stale-branch deletion); answers pending.
+- Orchestrator (me), decisions 20–29 — founder may veto: super-admin pass-through wins (20); every schema correction found while
+  drafting goes into the unfrozen 9999 via fixers, later numbers 9995↓ (21); RLS files 10–13 (22); `<feature>.smoke.spec.ts`
+  + numbered full specs (23); proposals: adopt 2.7, 4.6, 5.8, 5.9, 6.7, 6.8, reject the rest (24); stale deps (25); long prompts
+  accepted (26); 4.4 grep intentional (27); `sharp` allowed (28); `decision` field bookkeeping (29).
+
+## Next bites (in order)
+1. Draft 2.7, 5.8, 5.9, 6.7, 6.8 (`workflow-groups.js` `stage: draft`, `steps: [...]`; briefs = decision 24).
+2. Critique + revise G1 and G2 (bites).
+3. `workflow-global.js` in bites; fixer list in decisions 20–24.
+4. Assemble `docs/TODO.md`; HANDOFF; founder's word on `main`.

@@ -161,9 +161,10 @@ for ms, (title, blurb) in MILESTONES.items():
 if proposed or open_issues:
     w('## Appendix: proposals and open issues from drafting\n')
     if proposed:
-        w('### Proposed additional steps not (yet) adopted\n')
+        w('### Proposed additional steps and the orchestrator decision on each\n')
         for p in proposed:
-            w(f"- **{p.get('id','?')} {p.get('title','')}** ({p.get('_group')}): {p.get('reason','')}")
+            dec = f" — **{p['decision']}**" if p.get('decision') else ''
+            w(f"- **{p.get('id','?')} {p.get('title','')}** ({p.get('_group')}){dec}: {p.get('reason','')}")
         w('')
     if open_issues:
         w('### Open issues noted by drafters\n')

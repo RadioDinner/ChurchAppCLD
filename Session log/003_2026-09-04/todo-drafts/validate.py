@@ -55,7 +55,7 @@ for path in sys.argv[1:]:
             err(f'{path} {sid}: model name in prompt: {m}')
         if re.search(r'(?i)supabase db (push|reset)', p) and not re.search(r'(?i)(never|do not|don.t)[^.\n]{0,40}supabase db (push|reset)', p): err(f'{path} {sid}: mentions supabase db push/reset without forbidding it')
         if re.search(r'(?i)pro recommended', p + (s.get('founder_checklist') or '')): err(f'{path} {sid}: says "Pro recommended" (Supabase is Free)')
-        if re.search(r'churchapp\b', p, re.I) and 'com.churchappcld' in p: warn(f'{path} {sid}: mentions the old com.churchappcld placeholder')
+        if re.search(r'churchapp\b', p, re.I) and 'com.churchappcld' in p and 'git grep' not in p: warn(f'{path} {sid}: mentions the old com.churchappcld placeholder')
     for p in data.get('proposed_additional_steps') or []:
         if not p.get('id') or not p.get('reason'): err(f'{path}: proposed step needs id and reason')
 for w in warns: print('WARN', w)

@@ -64,37 +64,7 @@
       "notes": "Deliberate deviation: `vercel.json` goes to `apps/web/vercel.json` (DESIGN §2 draws it at the root) because Vercel reads it from the project's Root Directory, which will be `apps/web`; step 2.5 (G6) must import the project with Root Directory `apps/web`, and step 2.1 (G5) must set `outputFileTracingRoot` to the monorepo root. Apps get README placeholders only — creating `apps/mobile/package.json` here would require hand-pinning Expo versions, which the standing orders forbid (this is what the reverted session-001 scaffold did). CI uses the directory filter `pnpm --filter ./apps/web build` so the web package name chosen in 2.1 does not matter (the skeleton's `pnpm --filter web build` implies the package is named `web`). DESIGN §3's `@types/react ~19.1` does not match React 19.2.3; the prompt tells the agent to use the 19.2 line and record it. The `db:*` root scripts point at files created in 1.2 and will fail until then — intended. Step is small enough for one session (about 40 tiny files); no split needed."
     }
   ],
-  "proposed_additional_steps": [
-    {
-      "id": "6.5",
-      "title": "Google Play Console: internal testing upload and store listing",
-      "actor": "founder+agent",
-      "milestone": "M6",
-      "depends_on": [
-        "6.3",
-        "4.5"
-      ],
-      "goal": "The Android app reaches real members without sideloading: a Google Play Console developer account exists, a production `.aab` built with `eas build -p android --profile production` is uploaded to the Internal testing track, the Data Safety form (from the worksheet written in 6.3) and privacy-policy URL are filled in, and a tester list receives the Play link. The agent's part is `eas submit` configuration and fixing any Play pre-launch report findings.",
-      "prompt": "You are working in the ChurchAppCLD repository. CLAUDE.md loads `new_session_instructions.md` and `HANDOFF.md` automatically — follow the session-start checklist (new-session.sh, prompt_history.txt). Work on `main` unless I have named another branch in this session. This is step 6.5 \"Google Play Console: internal testing upload and store listing\" of `docs/TODO.md`; read that step's 'Done when' list first. Read `docs/PLAN.md` §9 and `docs/DESIGN.md` §10, §11 Phase 3 and `docs/MOBILE_BUILD.md` before writing code. Build ONLY this step; do not start the next one.\n\n## Goal\nAdd the `production` submit configuration to `apps/mobile/eas.json` (`submit.production.android` with `serviceAccountKeyPath` read from an EAS secret, `track: internal`), document the Play Console flow in `docs/MOBILE_BUILD.md` (developer account, app creation with the package id from `app.config.ts`, Data Safety answers copied from `docs/PLAY_DATA_SAFETY.md` written in 6.3, privacy-policy URL `NEXT_PUBLIC_APP_URL/privacy`, internal testers list), and fix any pre-launch-report finding the founder pastes.\n\n## Constraints\nMobile versions only via `npx expo install`; never commit the Play service-account JSON (gitignore it); `android.package` cannot change once uploaded.\n\n## Verify\n`npx expo-doctor` clean; `npx eas-cli build -p android --profile production --non-interactive` succeeds (founder runs it); `docs/MOBILE_BUILD.md` has the Play section.\n\n## Finish\nUpdate HANDOFF.md (mobile section, founder to-dos), tick 6.5 in `docs/TODO.md`, `session_log.md`, commit `docs(mobile): Play Console internal testing flow and eas submit config`, push.",
-      "founder_checklist": "1. play.google.com/console → create a developer account (US$25 one-time; identity verification may take several days — start early).\n2. Create app → name `Anacast` → default language → app or game → free → declarations.\n3. Set up app → Privacy policy URL `<NEXT_PUBLIC_APP_URL>/privacy`; App access; Ads (none); Content rating questionnaire; Target audience (not designed for children); Data safety — copy answers from `docs/PLAY_DATA_SAFETY.md`.\n4. Play Console → Setup → API access → create a service account with Release manager role → download its JSON key → `eas secret:create --scope project --name GOOGLE_PLAY_SERVICE_ACCOUNT --type file --value ./play-service-account.json` (never commit the file).\n5. `npx eas-cli build -p android --profile production` then `npx eas-cli submit -p android --profile production` (first upload may need to be done manually through the Console UI).\n6. Testing → Internal testing → create email list of testers → copy the opt-in link → share with the church.\n7. Record the Play app id, track and date in HANDOFF.md.",
-      "helper_prompt": "",
-      "done_when": [
-        "A Google Play developer account exists and identity verification is complete.",
-        "An Anacast app exists in Play Console with the package id from apps/mobile/app.config.ts, privacy-policy URL and Data Safety form completed.",
-        "A production .aab appears on the Internal testing track and at least one tester installed it from the Play opt-in link.",
-        "apps/mobile/eas.json has a submit.production.android section and docs/MOBILE_BUILD.md documents the Play flow; no service-account key is in git."
-      ],
-      "commit_message": "docs(mobile): Play Console internal testing flow and eas submit config",
-      "reads": [
-        "docs/PLAN.md §9",
-        "docs/DESIGN.md §10, §11 Phase 3 acceptance ('Play internal-testing build')",
-        "docs/MOBILE_BUILD.md (from 4.4)"
-      ],
-      "estimated_session": "S",
-      "notes": "Proposed because DESIGN §11 Phase 3 acceptance lists a 'Play internal-testing build' and HANDOFF's account-deletion flow is a Play requirement, but no skeleton step ever uploads to Play — 4.5 stops at a sideloaded APK and 6.3 only writes the Data Safety worksheet. Suggested group: G14.",
-      "reason": "Play Store distribution is implied by the plan (Play Data Safety worksheet, account-deletion requirement, 'Play internal-testing build' acceptance) but no step performs the upload; without it members must sideload forever."
-    }
-  ],
+  "proposed_additional_steps": [],
   "open_issues": [
     "Vercel layout decision made in 1.1: Root Directory `apps/web` and `vercel.json` at `apps/web/vercel.json` (DESIGN §2 draws it at the repo root). G5 (2.1: `outputFileTracingRoot` = monorepo root) and G6 (2.5: import with Root Directory `apps/web`) must use the same choice; the orchestrator should propagate it or overrule it before the drafts are merged.",
     "Skeleton verification commands say `pnpm --filter web build`, which only works if G5 names the apps/web package `web`. 1.1's CI uses the directory filter `pnpm --filter ./apps/web build` to be name-agnostic; G5/G10 should either name the package `web` or switch to the directory filter.",

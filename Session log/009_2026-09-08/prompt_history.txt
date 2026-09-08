@@ -1,2 +1,4 @@
 --- 2026-09-08 07:35 ---
 Ok, I want to do a high level pass of open items of building the TODO.md. Is there anything outstanding?
+--- 2026-09-08 07:42 ---
+Give me the founder questions here in chat first, so I can start answering those. After you list the founder questions, go through the orchestrator decision memo and fix the numbering

@@ -129,3 +129,82 @@ and reviser must follow them; they override the skeleton where they differ. Do n
     instead of writing its own privacy text; 6.3a still drafts the short terms of service. Step 6.6 replaces both with
     the lawyer-approved text before go-live and removes the banner. Keep the deletion/deactivation wording of section 5
     in sync with decision 15 whenever that changes.
+
+## Added 2026-09-08 (session 009, orchestrator decision memo before the global review)
+
+These settle the cross-group items collected in the group files' `open_issues` and `proposed_additional_steps`
+after all fourteen groups were drafted. Numbering fixes were applied directly to the group JSON files on
+2026-09-08 (see session 009 `session_log.md`); prompt-level consequences are the global fixers' work and are
+marked **fixer**. The founder may veto any of them.
+
+20. **Super admin access to `/o/<slug>/*`: the pass-through rule wins.** G7's 3.1 stands: `requireOrgMember(slug)`
+    admits an `active` membership OR a super admin with `membership_status = null` (RLS already accepts super-admin
+    writes), with the "Viewing as super admin" strip. The founder's Checkpoint B objective ("trial the finished web app
+    as the super admin") requires it. **Fixer:** G5 2.1a drops the `notFound()` rule and the comment pointing at
+    proposed 3.11; 2.1b/2.2b drop the invite-yourself workaround from the founder to-dos; G6 2.5's checklist stops
+    inviting the founder into the first church; G10 3.7b may sign in as the super admin for `/o/*` checks. Mobile is
+    unchanged: the app is for members, so the founder still trials it as a member (4.1b hint, 4.5 item 2). Proposals
+    G5 3.11 and G10 3.11 are rejected as absorbed.
+21. **Migration numbers.** `9999_init.sql` is unfrozen until step 2.4 pastes it, so every schema correction discovered
+    while drafting goes into 9999 through the G2/G3 fixers, not into a later migration: decision-15 archival columns
+    and RPCs (6.3a's names); G9's three notification fixes (`srv_claim_notifications(org_id, max_rows)`,
+    `app.on_content_publish` moving `scheduled_for` when `publish_at` changes, `ca_notifications_select` also for
+    `bulletins.upload` where `kind = 'bulletin'`); G12's five directory/events gaps (atomic `set_head_of_house`,
+    household-adult head designation, `events_require_approval` honoured, `calendars.members_can_submit`, leader
+    branch in `ca_events_insert`) — the rejected 5.8 prompt is the specification; G13's `app.guard_system_audience_groups`
+    trigger and the explicit `my_context()` / pending-membership behaviour; G8's cookie-verified share-link load as a
+    service RPC (`srv_load_unlocked_share_link(link_id)` — name flagged) so 3.4b stops re-validating in TypeScript;
+    `bulletins.publish_at` / `documents.publish_at` explicitly nullable; `documents.description`; FK actions on
+    `announcements.document_id` / `audience_group_id`. **Reserved after the paste:** `9998_join_codes.sql` (5.6a),
+    `9997_surveys_head_of_house.sql` (6.1a), `9996_account_archival.sql` (6.3a, case B only). Anything else that lands
+    after the paste (a 3.10 round, the 3.5b `publish_at` fallback, 5.7c's optional indexes, the Pro bucket-limit raise)
+    takes the next free number **from 9995 downward** and never 9998/9997/9996. The docs' worked example is renamed
+    `9995_storage_limit.sql` (applied in 1.4a, 1.5, 2.4, 5.6a). **Fixer:** 3.10 and 3.5b say "next free number below
+    the reserved block"; docs/MIGRATIONS.md (1.5) carries the reservation table; 5.6a/6.1a lose the "if 9998 is taken,
+    shift" contingencies.
+22. **RLS test files:** `10_surveys_head_of_house.sql` (6.1a), `11_join_codes.sql` (5.6a), `12_directory_matrix_phase2.sql`
+    (5.7c), `13_account_deletion.sql` (6.3a — renamed from `11_`; applied in 6.3a, 6.3b, 6.2a, 5.7c). Later files take
+    14 upward. Every migration step appends its own `\i` line to `08_rerunnable.sql` and extends `09_grants.sql`.
+23. **Playwright layout.** Feature smoke specs are `apps/web/e2e/<feature>.smoke.spec.ts`, collected by 3.7a's
+    `testMatch: /smoke\.spec\.ts/` — applied: `directory.smoke.spec.ts`, `events.smoke.spec.ts` (G12 and 5.7b/5.7c),
+    `legal.smoke.spec.ts` (6.6, moved out of `e2e/smoke/`), alongside G13's `documents/groups/join/app-links.smoke.spec.ts`.
+    Full specs are `apps/web/e2e/full/NN-<name>.spec.ts`: `01-acceptance`, `02-security` (3.7b), `03-phase2` (5.7c),
+    `04-directory-import` (5.7b, optional), `05-surveys` (6.1b) — applied. 5.7c's widening of `testMatch` stays as a
+    safety net. **Fixer:** simplify 5.7b's "if listed / if NOT listed" conditional and 5.7c's wording.
+24. **Proposed steps — disposition (numbering fixed in the JSON files).**
+    - Dropped: G1's 6.5 (already a real step in G14).
+    - **Adopted, prompts still to draft** (the paragraphs here are the briefs, as decision 16 did for 6.6):
+      **2.7** "Hosted smoke test script for the deployed web app" (agent, S, after 2.5; merges G6 2.7 and G10 3.12:
+      `scripts/web/smoke-hosted.sh <URL>` — status codes, redirects, security headers, secret-leak grep, expected
+      503/404s — plus a GitHub Actions job on `workflow_dispatch` and `deployment_status` that runs it against
+      production; 2.6, 3.7a, 3.9 and 3.10 reuse it; 3.7a depends on it).
+      **5.8** "Web join landing page `/join/[code]`, QR code on the printable sheet, `/join/*` Android App Link"
+      (agent, M, after 5.6b, 5.6c, 5.7a; renumbered from G13's 5.9).
+      **5.9** "FOUNDER Checkpoint D — Phase 2 trial" (founder, M, after 5.7c and 5.8; renumbered from G13's 5.10; the
+      checklist starts with pasting `9998_join_codes.sql` and recording it in the ledger, then the new preview APK with
+      App Links, assetlinks fingerprints in Vercel, Phase 2 web acceptance and the Android device checklist).
+      **6.7** "FOUNDER — paste the Phase 3 migrations and record the ledger" (founder, S, after 6.1a and 6.3a;
+      renumbered from G14's 6.1p; `9997_surveys_head_of_house.sql` and, in 6.3a's case B, `9996_account_archival.sql`;
+      6.4 and 6.5 depend on it so store builds run against the hosted schema).
+      **6.8** "Production release: Play closed test → production, App Store review submission" (founder+agent, M,
+      after 6.4, 6.5, 6.6, 6.7; includes Google's 14-day closed-test rule for new personal accounts).
+    - **Adopted and promoted now:** **4.6** "Mobile post-Checkpoint-C polish round (reusable template)" (G11's full
+      prompt validated; moved into `steps`).
+    - **Rejected:** G2 1.8 (folded into 2.4 as an optional dry-run item, **fixer**; 9999 is frozen only after a
+      successful paste and ledger entry); G5/G10 3.11 (decision 20); G8 3.11, G9 3.12, G12 5.8 (decision 21);
+      G14 6.1d (mobile is the Phase 3 responder); G14 6.7 super admin ops view (post-launch; **fixer** adds a cron
+      health / failed pushes / storage backlog row to 6.3b's monitoring runbook; its id is freed for the paste step).
+25. **Stale dependencies fixed:** 1.6a `1.4` → `1.4c`; 3.1 `2.2` → `2.2b`. The assembler's only remaining unknown
+    dependencies are the adopted-but-undrafted steps 2.7 (from 3.7a) and 6.7 (from 6.4, 6.5); they clear when those
+    steps are drafted.
+26. **Over-length prompts accepted as written:** 1.2 (4040 words), 1.4a (4465), 1.5 (4141), 2.3 (3851), 5.6a (3974)
+    and 6.3a (3392). They are SQL- or checklist-heavy steps where precision beats brevity; the fixers may remove
+    repetition but must not cut content. No further splits.
+27. **4.4's `com.churchappcld` mention is intentional** (a consistency grep that removes the old placeholder); the
+    validator no longer warns when the mention sits inside a `git grep` command.
+28. **`sharp` is allowed as a root devDependency** for store-asset generation (6.4/6.5), invoked from a Node script
+    under `scripts/assets/`; the agent falls back to committing SVG sources if the install fails.
+29. **Record-keeping for proposals.** Every remaining entry in `proposed_additional_steps` carries a `decision`
+    field (adopted as …, rejected because …, folded into 9999); the assembler prints it in the appendix. Adopted
+    steps without prompts stay in `proposed_additional_steps` under their final ids until a drafting bite writes
+    them (`workflow-groups.js` `stage: draft, steps: [...]`); `workflow-groups.js` group entries list them.

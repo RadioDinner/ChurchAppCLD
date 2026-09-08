@@ -124,7 +124,8 @@
       ],
       "estimated_session": "S",
       "notes": "Cheap insurance: DESIGN §13 risk 13 admits the shim proves only SQL/RLS/grants. Suggested group: G3 (after 1.5) or as part of 2.4's founder checklist.",
-      "reason": "The local shim cannot reproduce Supabase's role privileges, auth/storage table ownership or bucket columns; discovering those differences during the real production paste (step 2.4) would freeze a broken 9999_init.sql or force an awkward first 9998 fix-up."
+      "reason": "The local shim cannot reproduce Supabase's role privileges, auth/storage table ownership or bucket columns; discovering those differences during the real production paste (step 2.4) would freeze a broken 9999_init.sql or force an awkward first 9998 fix-up.",
+      "decision": "REJECTED as a step (orchestrator decision 24, 2026-09-08): folded into 2.4 — the global fixer adds an optional \"dry run on a throwaway Free project\" item to the 2.4 checklist and states that 9999 is frozen only after a successful paste and ledger entry."
     }
   ],
   "open_issues": [

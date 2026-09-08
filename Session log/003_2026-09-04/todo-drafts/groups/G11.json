@@ -231,9 +231,7 @@
       ],
       "estimated_session": "M",
       "notes": "Founder-only step with an agent helper for triage; the helper follows the 2.6/3.10 pattern (paste observations → fix or instruct). Prerequisites that are easy to miss and therefore repeated at the top: the `{{ .Token }}` edit in BOTH the Magic Link and the Confirm signup templates (2.4 made the second optional; a brand-new invited account receives Confirm signup), the founder being an active member of the first church — via Invite + accept in the browser, because his super-admin email already has an auth account and `createUserDirect` would fail — and the Supabase Free project not being paused. `eas init` on a dynamic config may exit asking the founder to add `extra.eas.projectId` himself; the checklist says that is expected and routes the id through `apps/mobile/.env`. Contingency if EAS rejects the `EAS_` prefix: `ANACAST_EAS_PROJECT_ID` (mirrors 4.4). `eas init` cannot write into the dynamic `app.config.ts`, so the project id travels through `EAS_PROJECT_ID` (local `.env` + EAS environment variable). The Firebase Android package name must match `android.package` exactly — if the founder confirmed `com.Anacast.app` in 0.1, that is the value to type. Costs: EAS free tier builds queue slowly (10–25 min); Firebase and FCM are free. Verification of pushes requires the web dispatcher to be live on Vercel with `EXPO_ACCESS_TOKEN` optional (3.6a). Play Store upload is not part of this step (6.5)."
-    }
-  ],
-  "proposed_additional_steps": [
+    },
     {
       "id": "4.6",
       "title": "Mobile post-Checkpoint-C polish round (reusable template)",
@@ -261,10 +259,10 @@
         "apps/mobile/src/features/{auth,org,feed,bulletins,sermons,push}/*, src/lib/{push,push-capability,deep-links,signed-url,links}.ts (4.1a–4.3); apps/web/src/lib/push/dispatch.ts (3.6a); packages/domain/src/media-links.ts and urls.ts (1.6a/1.6b)"
       ],
       "estimated_session": "M",
-      "notes": "Mirrors 3.10 for the web and is written to the same shape (Inputs name the exact files per area; Build fixes the triage classes, one commit per observation group, regression-test-first for pure functions, symmetrical shared-package changes; Verify repeats the standing commands plus the 4.1b–4.3 guard greps; Finish names the HANDOFF sections). Optional — skip if Checkpoint C passes cleanly. Expanded after critique from a short template to a full agent prompt (orchestrator decision 9 floor).",
-      "reason": "The skeleton gives the web a fix/polish round (3.10) after its checkpoint but the mobile milestone has none; a first Android trial on a real phone always surfaces copy, layout and playback quirks that do not fit the 4.5 helper's 'triage failures' scope."
+      "notes": "Mirrors 3.10 for the web and is written to the same shape (Inputs name the exact files per area; Build fixes the triage classes, one commit per observation group, regression-test-first for pure functions, symmetrical shared-package changes; Verify repeats the standing commands plus the 4.1b–4.3 guard greps; Finish names the HANDOFF sections). Optional — skip if Checkpoint C passes cleanly. Expanded after critique from a short template to a full agent prompt (orchestrator decision 9 floor). Adopted from the G11 drafter's proposal on 2026-09-08 (orchestrator decision 24). Reason for proposing: The skeleton gives the web a fix/polish round (3.10) after its checkpoint but the mobile milestone has none; a first Android trial on a real phone always surfaces copy, layout and playback quirks that do not fit the 4.5 helper's 'triage failures' scope."
     }
   ],
+  "proposed_additional_steps": [],
   "open_issues": [
     "Splits (orchestrator decision 13): skeleton step 4.1 became 4.1a (Expo scaffold, config, providers, placeholder routes) + 4.1b (auth screens, invite deep link, org gate/switcher); skeleton step 4.2 became 4.2a (feed, announcement detail, bulletins + Android PDF, signed-URL hook) + 4.2b (sermons list + SermonPlayer strategies). Chain: 4.1a → 4.1b → 4.2a → 4.2b → 4.3 → 4.4 → 4.5 (→ optional 4.6). Other groups that say `depends_on: 4.1` (G13 5.6), `4.2` (G13 5.4), `4.3` (G12 5.2, G14 6.3) should be repointed to 4.1b / 4.2b / 4.3 at assembly.",
     "Cross-group dependency ids used here follow the other drafts' splits: 4.1a depends on 1.7b (G4) and 2.1a (G5 — the web `brand.ts`/`@theme` approach only); 4.1b on 4.1a and 2.1b (G5 — invite page / `inviteDeepLink`); 4.2a on 3.5b (G9); 4.2b on 3.4b (G8); 4.3 on 3.6b (G9). The assembler should confirm those ids are final.",

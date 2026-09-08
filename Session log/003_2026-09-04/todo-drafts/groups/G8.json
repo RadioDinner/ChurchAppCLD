@@ -167,7 +167,8 @@
       ],
       "estimated_session": "M",
       "notes": "STUB — expand at assembly if adopted (the prompt is ~450 words, below the 1200-word rule; the orchestrator decides whether the step exists at all). Optional hardening: the 3.4b TypeScript fallback is correct but duplicates SQL logic. Best scheduled after 2.4 so the founder pastes it as the first post-freeze migration and the paste procedure gets exercised before Phase 2. File number: written as `<NNNN>` because the skeleton fixes `9998_join_codes.sql` (5.6) and `9997_surveys_head_of_house.sql` (6.1); if this step is adopted before 5.6 it takes 9998 and those two shift down by one (5.6 → 9997, 6.1 → 9996), otherwise the orchestrator assigns the next free number. Id collision: G5 also proposes a '3.11' (lifting the super-admin 404 in `requireOrgMember`) — the orchestrator must renumber one of them. Suggested group: G10 or G13.",
-      "reason": "DESIGN §7 keys the unlock cookie by link id and implies the page can render an unlocked sermon from the cookie alone, but `srv_resolve_share_link` only returns the `ok` payload with the password; 3.4 bridges the gap in TypeScript, which is duplicated policy logic that a later migration should own."
+      "reason": "DESIGN §7 keys the unlock cookie by link id and implies the page can render an unlocked sermon from the cookie alone, but `srv_resolve_share_link` only returns the `ok` payload with the password; 3.4 bridges the gap in TypeScript, which is duplicated policy logic that a later migration should own.",
+      "decision": "REJECTED as a step (orchestrator decision 21, 2026-09-08): 9999_init.sql is unfrozen, so the global fixer gives 1.3b a service RPC for cookie-verified share-link loads and 3.4b calls it instead of re-validating in TypeScript. No later migration."
     }
   ],
   "open_issues": [
