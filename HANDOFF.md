@@ -18,13 +18,12 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
 - [ ] `docs/TODO.md` — step-by-step build list with one prompt per step. **In progress** on branch
   `claude/project-status-todo-plan-leghlm` (nothing on `main`). Kit: `Session log/003_2026-09-04/todo-drafts/` (skeleton,
   orchestrator-decisions 1–29, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-08 (session 009):
-  all 14 groups drafted, **72 steps** (4.6 promoted), validator 0 errors / 5 accepted warnings; G3–G14 critiqued and revised;
+  all 14 groups drafted, **77 steps** (4.6 promoted; 2.7, 5.8, 5.9, 6.7, 6.8 drafted in bites 1–3), validator 0 errors / 5 accepted warnings, assembler reports no unknown dependency; G3–G14 critiqued and revised;
   **G1 and G2 never critiqued**. The orchestrator decision memo (decisions 20–29) is written and its numbering fixes are applied:
   stale `depends_on`, migration reservations (9998/9997/9996; worked example `9995_storage_limit.sql`), RLS test files 10–13,
-  Playwright spec names, every proposal decided. **Still to do:** draft the five adopted steps 2.7, 5.8, 5.9, 6.7, 6.8 (briefs in
-  decision 24); critique + revise G1 and G2; `workflow-global.js` (assemble → 4 global lenses → fixers; the fixer list is in
+  Playwright spec names, every proposal decided. **Still to do:** critique + revise G1 and G2; `workflow-global.js` (assemble → 4 global lenses → fixers; the fixer list is in
   decisions 20–24, incl. pushing the decision-15 archival schema and the folded 9999 corrections into G2/G3); generate
-  `docs/TODO.md` (dry run ≈ 283k words); HANDOFF update; founder's word on merging to `main`. Details: session 009 `session_log.md`.
+  `docs/TODO.md` (dry run ≈ 304k words); HANDOFF update; founder's word on merging to `main`. Details: session 009 `session_log.md`.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
 - [ ] `@church/domain`, `@church/db`, `@church/supabase-client`

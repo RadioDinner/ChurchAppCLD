@@ -35,7 +35,17 @@
   + ledger, depends_on 6.1a/6.3a, 6.4 and 6.5 depend on it; 6.8 FOUNDER+AGENT production release — Play closed test → production,
   App Store review, 14-day closed-test rule; depends_on 6.4/6.5/6.6/6.7). Bite 2's fixer note: 6.7 should say "paste every file the
   ledger does not list".
-- Outcome: (pending)
+- Run: wf_8ad6021c-76a (task wlcp34na6). Outcome: completed, 0 failures. 6.7 written (founder, S, 1146-word checklist, 6 done_when);
+  6.8 written (founder+agent, M, 2615-word agent prompt + 2281-word checklist, 6 done_when). Sketches removed; 6.1d and 6.x stay as
+  rejected proposals. Orchestrator added 5.9 to 6.7's depends_on (descending paste order), per the drafter's note.
+  Validator (all 14 groups): 0 errors, 5 accepted warnings. Assembler: **77 steps, no unknown dependencies**, ≈304k words.
+- Usage: agent_count 1, **subagent_tokens 161,541**, tool_uses 15, duration 597 s (~10 min). Fallback send_later deleted.
+- Fixer notes: 6.7's verification queries use the G14 default names for 6.1a/6.3a objects — regenerate if the G2/G3 fixers rename them;
+  6.8's store-policy facts (closed-test tester minimum 20→12, 14 days, review times) are unverified offline and the checklist tells the
+  founder to read the Console; store badge artwork not downloaded (brand terms); countries and manual-vs-automatic App Store release are
+  founder decisions recorded in HANDOFF 'Store releases'.
+
+**Drafting complete.** Bites 1–3 total: 149,887 + 217,218 + 161,541 = **528,646 sub-agent tokens** (3 agents, ~29 min of agent time).
 
 ## Next bites
 - Then: critique + revise G1 and G2; then `workflow-global.js`.
