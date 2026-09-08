@@ -59,7 +59,11 @@
 - Note: the G2 majors are exactly the fixer work decision 21 assigned to the global round; the G2 reviser (bite 6) will do that
   part early since the critics wrote it up concretely.
 
+## Bite 5 — critique G1 + G2, executability + completeness lenses — launched 2026-09-08 America/New_York (founder: "next bite")
+- args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "critique", "lenses": ["executability", "completeness"]}
+- Four critics (two per group, 2 concurrent); findings saved to `reviews/G{1,2}.{executability,completeness}.json`.
+- Outcome: (pending)
+
 ## Next bites
-- Bite 5: same groups, lenses ["executability", "completeness"] (4 critics).
 - Bite 6: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "revise"}.
 - Then `workflow-global.js` in bites.
