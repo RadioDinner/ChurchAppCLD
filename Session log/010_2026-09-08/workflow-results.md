@@ -7,3 +7,5 @@
 - args: {"stage": "review", "lenses": ["coverage", "consistency"], "round": 1}
 - Findings will be saved by the agents to `todo-drafts/reviews/global.coverage.r1.json` and `global.consistency.r1.json`.
 - Note: this session's clone started stale (at `ec5f2c6`); a redundant G7 draft was made before fetching and was discarded unpushed.
+- Run: wf_a73dcc25-014 (task whea21uik), launched 2026-09-08 ~16:20 America/New_York. Fallback send_later trig_01CZLEQr5Q5TKgrDexKVhKA5
+  fires at 21:10 UTC (17:10 ET) if the completion notification does not arrive.
