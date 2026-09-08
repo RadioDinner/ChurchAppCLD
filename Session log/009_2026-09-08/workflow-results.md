@@ -50,7 +50,14 @@
 ## Bite 4 — critique G1 + G2, fidelity lens — launched 2026-09-08 America/New_York (founder: "lets go")
 - args: {"groups": ["G1", "G2"], "skipDraft": ["G1", "G2"], "stage": "critique", "lenses": ["fidelity"]}
 - Two critics in parallel (one per group); findings saved to `reviews/G1.fidelity.json` and `reviews/G2.fidelity.json`.
-- Outcome: (pending)
+- Run: wf_5a645d88-337 (task wcqa7uj93). Outcome: completed, 0 failures. G1: 11 findings (4 major, 7 minor; 0.1 ×6, 1.1 ×5) —
+  0.1 still treats the package id as unconfirmed and the palette as neutral (decisions 17/18); 1.1 pins `@types/react ~19.1`
+  against the docs' `~19.2` and its CI workflow does not use `pnpm --filter web build`. G2: 13 findings (3 major, 10 minor;
+  1.2 ×2, 1.3a ×6, 1.3b ×5) — the three majors are the decision-15/21 schema corrections (archival columns, membership helpers
+  treating archived users as non-members, the changed deletion RPCs) not yet in 1.2/1.3a/1.3b. No blockers.
+- Usage: agent_count 2, **subagent_tokens 312,663**, tool_uses 41, duration 425 s (~7 min). Fallback send_later deleted.
+- Note: the G2 majors are exactly the fixer work decision 21 assigned to the global round; the G2 reviser (bite 6) will do that
+  part early since the critics wrote it up concretely.
 
 ## Next bites
 - Bite 5: same groups, lenses ["executability", "completeness"] (4 critics).
