@@ -234,3 +234,7 @@ marked **fixer**. The founder may veto any of them.
     `claude/project-status-todo-plan-leghlm`. (d) **Stale branches deleted** (`claude/plan-todo-prompts-ia7gkd`, fully merged;
     `claude/plan-todo-prompts-w3madd`, record-only — its session-002 prompt history preserved in the repo if it differed). The
     founder asked not to be asked these again; the permission-mapping yes/no (decision 31c) is the only question still open.
+
+33. **Permission mapping accepted (founder, 2026-09-08: "Good with permission toggles").** The DESIGN §5 capability → toggle table
+    ships as-is; `docs/RLS.md` (step 1.5) and the checkbox tooltips document it. HANDOFF founder-answer row 4 is now answered.
+    No founder questions remain open.

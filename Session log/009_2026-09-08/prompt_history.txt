@@ -31,3 +31,5 @@ Wrap this session and I'll pick up bite 7 in the next
 7. cleanup branches if safe
 
 Commit these to the repo so you stop asking
+--- 2026-09-08 16:12 ---
+Good with permission toggles

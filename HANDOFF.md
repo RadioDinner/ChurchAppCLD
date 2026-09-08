@@ -105,7 +105,7 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 | 1 | Family can hide from its **own congregation**? | **Yes** | `households.hide_from_congregation` gets a real UI toggle (household adults any direction; org admins only toward privacy). |
 | 2 | Fellowship viewers see phones/emails? | **Default** | Fellowship level sees everything the congregation sees minus birth year, anniversary year and leader notes. |
 | 3 | Youth 13+ in men's/women's; adults 18+? | **Each church sets its own youth age** | `youth_min_age` / `youth_max_age` / `adult_min_age` / `youth_excludes_married` / `adult_groups_include_youth` are editable per church in `/o/[slug]/settings` (defaults 13 / 25 / 18 / on / on). No schema change. |
-| 4 | Accept the permission mapping? | _(not answered)_ | Ship the mapping in `docs/RLS.md` as the default; extra toggles can be added later by a `9998_*` migration. |
+| 4 | Accept the permission mapping? | **Yes** (2026-09-08) | Ship the mapping in `docs/RLS.md`; extra toggles can be added later by a `9998_*` migration. |
 | 5 | Share links: stream only, min password 8, `sermons.upload` too? | **Downloads allowed when the church allows it** | New `organization_settings.sermon_share_allow_download` (default **false**) goes into `9999_init.sql` (not yet pasted anywhere). Share page shows a Download button for **uploaded** media only when the setting is on; external links keep "open at provider". Min password 8 and `sermons.link`/`sermons.upload` holders unchanged. |
 | 6 | Push on every bulletin upload? | **Yes** | `push_on_bulletin` default true, per-church toggle in settings. |
 | 7 | Billing | **$50 per month per church, flat**; usage-based plan later | One Stripe recurring Price (`STRIPE_PRICE_ID`); trial 30 days (`trial_ends_at`); only `suspended` blocks writes; `past_due` shows a banner only. |
@@ -115,12 +115,10 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 
 ## Still open for the founder
 
-1. Explicit yes/no on the permission mapping (DESIGN §5 table, repeated in chat 2026-09-08; `docs/RLS.md` is written by step 1.5).
-
-Answered 2026-09-08 (do not re-ask; orchestrator decisions 31–32): no production domain yet (Vercel's generated domain until the
-features work); legal entity undecided (Elevare Holdings LLC or CodeFuse Solutions — placeholders stay); 30-day deletion grace and
-self-restore default confirmed; brand palette token roles confirmed as below; **do not merge to `main` until the founder says so**;
-stale branches deleted.
+Nothing. All questions were answered by 2026-09-08 (orchestrator decisions 31–33): permission mapping accepted as in DESIGN §5;
+no production domain yet (Vercel's generated domain until the features work); legal entity undecided (Elevare Holdings LLC or
+CodeFuse Solutions — placeholders stay); 30-day deletion grace and self-restore default confirmed; brand palette token roles
+confirmed as below; **do not merge to `main` until the founder says so**; stale branches deleted. Do not re-ask these.
 
 ## Brand palette (founder, 2026-09-07)
 
