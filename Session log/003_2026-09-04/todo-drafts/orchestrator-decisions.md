@@ -231,8 +231,10 @@ marked **fixer**. The founder may veto any of them.
     default stands unless the founder says otherwise). (b) **Brand palette token roles confirmed** as suggested in decision 17
     (`primary` Imperial Blue, `primaryDark` Deep Navy, `ink` Prussian Blue, `accent` Bright Marine, `tint` Icy Blue) — prompts may
     drop the "founder may veto" caveat. (c) **Do not merge to `main` until the founder says so**; all TODO.md work stays on
-    `claude/project-status-todo-plan-leghlm`. (d) **Stale branches deleted** (`claude/plan-todo-prompts-ia7gkd`, fully merged;
-    `claude/plan-todo-prompts-w3madd`, record-only — its session-002 prompt history preserved in the repo if it differed). The
+    `claude/project-status-todo-plan-leghlm`. (d) **Stale branches: delete approved** (`claude/plan-todo-prompts-ia7gkd`, fully merged; `claude/plan-todo-prompts-w3madd`,
+    record-only — its session-002 prompt history is preserved at `Session log/002_2026-09-03/prompt_history.w3madd-branch.txt`).
+    The session's git proxy refuses branch deletion (`git push --delete` → "remote end hung up"), so the founder deletes them in
+    GitHub → Branches, or a later session with direct access does. The
     founder asked not to be asked these again; the permission-mapping yes/no (decision 31c) is the only question still open.
 
 33. **Permission mapping accepted (founder, 2026-09-08: "Good with permission toggles").** The DESIGN §5 capability → toggle table

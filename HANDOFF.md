@@ -118,7 +118,9 @@ The ten questions in `docs/PLAN.md` §13 were answered by the founder. Defaults 
 Nothing. All questions were answered by 2026-09-08 (orchestrator decisions 31–33): permission mapping accepted as in DESIGN §5;
 no production domain yet (Vercel's generated domain until the features work); legal entity undecided (Elevare Holdings LLC or
 CodeFuse Solutions — placeholders stay); 30-day deletion grace and self-restore default confirmed; brand palette token roles
-confirmed as below; **do not merge to `main` until the founder says so**; stale branches deleted. Do not re-ask these.
+confirmed as below; **do not merge to `main` until the founder says so**; deletion of the two stale `claude/plan-todo-prompts-*` branches is
+approved but blocked by the sandbox proxy — delete them in GitHub → Branches (both are safe: one fully merged, one record-only with its
+history preserved in `Session log/002_2026-09-03/`). Do not re-ask these.
 
 ## Brand palette (founder, 2026-09-07)
 
