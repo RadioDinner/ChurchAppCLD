@@ -19,7 +19,15 @@
 - args: {"groups": ["G13"], "stage": "draft", "steps": ["5.8", "5.9"]}
 - Briefs: orchestrator decision 24 (5.8 web join landing `/join/[code]` + QR + App Link, agent M; 5.9 FOUNDER Checkpoint D incl.
   paste of `9998_join_codes.sql` + ledger, founder M, depends_on 5.7c and 5.8).
-- Outcome: (pending)
+- Run: wf_21a029e0-ad1 (task w5qmwoshb). Outcome: completed, 0 failures. 5.8 written (agent, M, depends_on 5.6b/5.6c/5.7a,
+  3117 words, 5 done_when); 5.9 written (founder, M, depends_on 5.7c/5.8, 1622-word checklist, 5 done_when). Both sketches removed
+  from `proposed_additional_steps`; stale 'proposed 5.9/5.10' open_issues rewritten as RESOLVED. Validator 0 errors, 1 pre-existing
+  warning (5.6a). Assembler: 75 steps; only unknown dependency left is 6.7.
+- Usage: agent_count 1, **subagent_tokens 217,218**, tool_uses 25, duration 732 s (~12 min). Fallback send_later deleted.
+- Decisions the drafter left to the orchestrator/founder: 5.8 uses an in-repo QR encoder + `jsqr` test-only devDependency (alternative:
+  runtime `qrcode` library); `/join/[code]` shows no church name (anonymous RLS, no existence leak) — a rate-limited lookup is a
+  possible follow-up. Fixer notes: 5.7a/5.7c mentions of 'proposed 5.9' → step 5.8; 6.7's 'normally still to paste' → 'every file
+  the ledger does not list'; 6.5 flips `PLAY_LISTING.live`; 5.9 item 19 needs a non-member test account (`+test` alias).
 
 ## Next bites
 - Bite 3: {"groups": ["G14"], "stage": "draft", "steps": ["6.7", "6.8"]}
