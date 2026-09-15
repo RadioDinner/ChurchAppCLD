@@ -106,3 +106,16 @@
 ## Bite 11 — fixers G9, G10, G11, round 1 — launched 2026-09-15 America/New_York
 - args: {"stage": "fix", "groups": ["G9", "G10", "G11"], "round": 1}
 - Run: wf_c529101f-73a (task w10loqza0). Fallback send_later trig_01Qys327ARS54nBVEXn9mz3f (20:23 UTC).
+- Outcome: **completed, 0 failures.** G9: 10 applied (`srv_claim_notifications(org_id, max_rows)`, queued-at-once semantics for
+  future-dated rows, `ctx.org.org_id`, 9996 in the numbering aside). G10: 16 applied (3.7b treats the pass-through as settled; 3.8
+  DEPLOY.md "created by 2.6 or 2.7", share-page signed-URL wording, Supabase pause/restore symptoms; 3.9 custom-SMTP item + fallback,
+  `smoke-hosted.sh --checkpoint B`, `SMOKE_CHECKPOINT` → B; 3.10 "next free number below the reserved block"; 3.8 compressed to 3559
+  words). G11: 8 applied (palette in 4.1a theme/splash/adaptive icon; 4.5 item 1 only re-checks `{{ .Token }}`). All validator-clean.
+  Usage: agent_count 3, **subagent_tokens 584,135**, tool_uses 145, duration 879 s (~15 min). Fallback deleted.
+- Propagation the G10 fixer left for the orchestrator (cross-group, custom SMTP): 2.4 item 12 "pending: 3.9 item 5" (G6); 0.1 item 8.1
+  domain wording (G1 — in bite 12); 4.5 and 5.9 preconditions "Supabase custom SMTP is on (3.9 item 5)" (G11 done? — verify; G13 in bite 12);
+  6.5/6.8 tester notes (G14 in bite 12); 2.4 item 14 / 2.6 "Project paused" row: Supabase Restore only ~90 days after a pause (G6).
+  G6 items go into the final hand pass.
+
+## Bite 12 — fixers G12, G13, G14, G1, round 1 — launched 2026-09-15 America/New_York
+- args: {"stage": "fix", "groups": ["G12", "G13", "G14", "G1"], "round": 1}
