@@ -27,3 +27,7 @@
 - Groups with findings: G1 (1.1), G3 (1.4a, 1.4c, 1.5), G4 (1.7a), G5 (2.1a), G6 (2.4, 2.5, 2.7), G8 (3.4b), G9 (3.5b, 3.6a), G10 (3.7b,
   3.10), G11 (4.1a, 4.5), G12 (5.1a, 5.2b, 5.3a), G13 (5.5, 5.6a, 5.7a, 5.7c), G14 (6.1a, 6.2b, 6.3a, 6.3b, 6.4, 6.5, 6.6, 6.8). No
   findings for G2 or G7.
+
+## Bite 8 — global review, lenses dependencies + founder, round 1 — launched 2026-09-15 America/New_York (founder: "work through all the next bites until you run out of usage")
+- args: {"stage": "review", "lenses": ["dependencies", "founder"], "round": 1}
+- Founder pacing rule changed for this session: run bites back-to-back without waiting; stop only on the usage limit.
