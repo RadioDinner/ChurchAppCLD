@@ -32,3 +32,19 @@
 - args: {"stage": "review", "lenses": ["dependencies", "founder"], "round": 1}
 - Founder pacing rule changed for this session: run bites back-to-back without waiting; stop only on the usage limit.
 - Run: wf_facd0fa6-f9d (task wdf4nhu63). Fallback send_later trig_013nJBvgndMeBvieqTqzKz3T (18:27 UTC).
+- Outcome: **completed, 0 failures.** 89 findings — 10 blockers, 34 major, 45 minor. dependencies: 59 (7 / 18 / 34) →
+  `reviews/global.dependencies.r1.json`; founder: 30 (3 / 16 / 11) → `reviews/global.founder.r1.json`. Usage: agent_count 2,
+  **subagent_tokens 788,400**, tool_uses 82, duration 1056 s (~18 min). Fallback deleted.
+- Round-1 totals over the four lenses: **137 findings, 18 blockers, 60 major, 59 minor.** By group: G1 4, G3 10 (3 blockers), G4 8 (2),
+  G5 9 (2), G6 18, G7 1, G8 5 (1), G9 10 (2), G10 15 (2), G11 7, G12 9 (6 blockers), G13 11, G14 25, plus 5 "NEW" findings that target
+  the assembler header (`assemble.py` "How to use this list": routing table for 2.6/3.10, Checkpoint D, item 0 "merge the branch first",
+  package-id/palette wording) — orchestrator work, done by hand before the final assembly, not by a fixer. G2 has no findings but the
+  FIXER_WORKSHEET (decision 30: trim repetition) still applies.
+- Recurring themes: decision 20 (super-admin pass-through) not applied in 2.1a/2.1b/2.2b/2.5/3.7b; decision 21 schema not propagated to
+  G3/G4/G9/G12/G13/G14; `OrgContext` spelling `org_id` (2.1a) vs `orgId` (G7) with hedges in 8 later prompts; `queries/organizations.ts`
+  vs `orgs.ts` in 2.3; 1.7a mis-describes 1.5's typegen path (postgres-meta under Node, no Docker).
+
+## Bite 9 — fixers G2, G3, G4, round 1 — launched 2026-09-15 America/New_York
+- args: {"stage": "fix", "groups": ["G2", "G3", "G4"], "round": 1}
+- Plan for the remaining fixer bites: 10 = G5, G6, G7, G8; 11 = G9, G10, G11; 12 = G12, G13, G14, G1. Then validate + assemble, hand-fix
+  the assembler header for the 5 NEW findings, second review round only if blockers remain.
