@@ -54,3 +54,18 @@
   rule, situation → prompt routing table, Checkpoint D, and the "Decisions these prompts assume" block rewritten for decisions 15–21,
   31–33 (palette, package id, mapping accepted, no domain yet, Deactivate vs Delete, migration reservations). Preview assembled to the
   scratchpad only; `docs/TODO.md` is regenerated after the fixer bites.
+- Outcome: **completed, 0 failures.** G2: 4 applied, 1.2 split into **1.2a** (harness/shim/sections 0–2, M) and **1.2b** (sections 3–4, M)
+  per decision 30 (1.2 stayed > 4500 words after trimming); 1.3a now depends on 1.2b; no other group listed 1.2 in depends_on. G3: 10
+  applied + the full decision-21 propagation (grants/tests/docs for the archival and head-of-house RPCs, notifications bulletin branch,
+  events leader branch, system-group guard, MIGRATIONS.md reservation table, RLS tests 10–13); `service_role` update/delete policies
+  rejected because service_role bypasses RLS; new column-level `update` grant on `profiles`; 1.4c corrected (future-dated announcements
+  DO get a queued row). G4: 13 applied — 1.7a counts now derived from the migration (20 client / 10 srv / 30), wrappers for every new RPC,
+  Zod schemas placed in 1.6b. All three validator-clean. Usage: agent_count 3, **subagent_tokens 708,369**, tool_uses 101, duration
+  1244 s (~21 min). Fallback deleted.
+- Propagation notes the fixers left for bites 10–12: G6 2.3 → `queries/organizations.ts` / `listOrganizations(db)`; G8 3.4b →
+  `srvLoadUnlockedShareLink(svc, { link_id })` + `SHARE_LINK_LOAD_STATUSES`; G9 3.6a → `{ org_id, max_rows }` and "future-dated rows are
+  queued at once with scheduled_for = publish_at"; G12 5.1a/5.2b → `setHeadOfHouse(db, …)`; G14 6.3a → `archived` in `myContextSchema`,
+  `ACCOUNT_DELETION_GRACE_DAYS` in limits.ts; prose "step 1.2" mentions across groups may be repointed to 1.2a/1.2b.
+
+## Bite 10 — fixers G5, G6, G7, G8, round 1 — launched 2026-09-15 America/New_York
+- args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1}
