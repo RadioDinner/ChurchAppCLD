@@ -88,3 +88,5 @@
 
 ## Bite 10 relaunch — fixers G5, G6, G7, G8, round 1 — relaunched after the founder's usage reset
 - args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1} (fresh run, not resumed — the failed run had no cached results)
+- Run: wf_34585ef5-23b (task wt294j7fp). Fallback send_later trig_01EFfKSp3e4oZtBejteCqmhx (20:08 UTC). The earlier fallback
+  trig_015VRiXeZ6kN1GZ7CZAqaHTa had already fired (19:12 UTC) and found the failure recorded.
