@@ -85,3 +85,6 @@
 | 9 | 3 | 708,369 | G2/G3/G4 fixed |
 | 10 | 4 | 110,069 | usage limit |
 | **total** | | **2,584,350** | |
+
+## Bite 10 relaunch — fixers G5, G6, G7, G8, round 1 — relaunched after the founder's usage reset
+- args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1} (fresh run, not resumed — the failed run had no cached results)
