@@ -69,3 +69,4 @@
 
 ## Bite 10 — fixers G5, G6, G7, G8, round 1 — launched 2026-09-15 America/New_York
 - args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1}
+- Run: wf_963434d6-75e (task wd16zhx80). Fallback send_later trig_015VRiXeZ6kN1GZ7CZAqaHTa (19:12 UTC).
