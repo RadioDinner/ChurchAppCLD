@@ -48,3 +48,9 @@
 - args: {"stage": "fix", "groups": ["G2", "G3", "G4"], "round": 1}
 - Plan for the remaining fixer bites: 10 = G5, G6, G7, G8; 11 = G9, G10, G11; 12 = G12, G13, G14, G1. Then validate + assemble, hand-fix
   the assembler header for the 5 NEW findings, second review round only if blockers remain.
+- Run: wf_a6422e60-5ac (task wxhp46joc). Fallback send_later trig_01DFCagugQnJ9ALSXD3wHXhY (18:50 UTC).
+- While bite 9 ran: the 5 "NEW" findings (assembler header) applied by hand in `assemble.py` — item 0 (merge the branch first / name the
+  branch per session), template fill-in blocks, founder+agent three-pass rule, consoles list incl. Firebase/Play/Apple, bold no-secrets
+  rule, situation → prompt routing table, Checkpoint D, and the "Decisions these prompts assume" block rewritten for decisions 15–21,
+  31–33 (palette, package id, mapping accepted, no domain yet, Deactivate vs Delete, migration reservations). Preview assembled to the
+  scratchpad only; `docs/TODO.md` is regenerated after the fixer bites.

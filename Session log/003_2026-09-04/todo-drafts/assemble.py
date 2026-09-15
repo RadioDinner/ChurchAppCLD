@@ -69,28 +69,44 @@ actor_label = {'agent': 'Agent', 'founder': 'Founder', 'founder+agent': 'Founder
 out = []
 w = out.append
 w('# ChurchAppCLD build to-do list with a prompt for every step\n')
-w('_Generated from `docs/PLAN.md` and `docs/DESIGN.md`; skeleton and step 0.1/1.1 written in session 002 (2026-09-03), the remaining steps drafted, critiqued and revised in session 003 (2026-09-04). Source of truth for build order; tick the boxes as steps land._\n')
+w('_Generated from `docs/PLAN.md` and `docs/DESIGN.md`. Skeleton and steps 0.1/1.1 written in session 002 (2026-09-03); the remaining steps drafted, critiqued and revised in sessions 003–009 (2026-09-04 … 2026-09-08); founder decisions recorded through 2026-09-08; global review and fixes in session 010 (2026-09-15). Source of truth for build order; tick the boxes as steps land._\n')
 w('## How to use this list\n')
+w('0. **Before the first agent step**: this file and the kit live on the branch `claude/project-status-todo-plan-leghlm`, and nothing merges to `main` until you say so. When you are ready to build, tell a Claude Code session: "Merge `claude/project-status-todo-plan-leghlm` into `main` (merge commit, push) and record the merge date in HANDOFF.md." Until that merge, start every agent session with the line "Work on branch `claude/project-status-todo-plan-leghlm` for this session." — otherwise the agent looks for `docs/TODO.md` on `main`, where it does not exist.')
 w('1. Work top to bottom. Every step lists what it depends on; do not start a step before its dependencies are ticked.')
-w('2. **Agent steps**: open a fresh Claude Code session in this repository and paste the whole text inside the step\'s prompt box. Add one line at the top if the session must work on a branch other than `main`. The agent ticks its own checkbox in this file, updates `HANDOFF.md`, commits and pushes.')
-w('3. **Founder steps** are manual (Supabase dashboard, Vercel, Stripe, Expo). Follow the checklist, then tick the box yourself. Some founder steps end with a small helper prompt an agent can run to verify your work.')
-w('4. After a step fails or an agent reports a deviation, use the reusable fix prompt (step 3.10) with the observations pasted in. Do not skip verification steps.')
-w('5. Checkpoints: **A** (step 2.5) you are signed in on Vercel as super admin; **B** (step 3.9) the finished web app is trialled on Vercel; **C** (step 4.5) the Android preview build works. Everything after C completes Phases 2 and 3 of the plan.\n')
+w('2. **Agent steps**: open a fresh Claude Code session in this repository and paste the whole text inside the step\'s prompt box. The agent ticks its own checkbox in this file, updates `HANDOFF.md`, commits and pushes. Some prompts are templates with a fenced fill-in block — replace every `<…>` before pasting. A prompt may stop and ask you a question; answer it in that same session.')
+w('3. **Founder steps** are manual work in a browser console (Supabase, Vercel, Stripe, Expo/EAS, Firebase, Google Play Console, Apple Developer). Follow the numbered checklist, record what it tells you to record (HANDOFF ledger, env vars, password manager), then tick the box yourself. Some founder steps end with a small helper prompt an agent can run to verify your work.')
+w('4. **Founder + agent steps** (6.4, 6.5, 6.6, 6.8) run in three passes: paste the agent prompt (first pass), follow the founder checklist, then paste the same prompt again with the mode line the prompt names (for example `review`, `release`, or the results you collected) for the second pass.')
+w('5. **Never type a key, password, token or real email address into a Claude Code prompt or chat.** `prompt_history.txt` is committed verbatim. Keep secrets in your password manager and in Vercel/EAS environment settings; a URL is the only value you paste.')
+w('6. **When something goes wrong**, use the prompt that owns that situation:')
+w('   | Situation | Use |')
+w('   |---|---|')
+w('   | An agent step ends with failing checks or an unfinished step (any milestone) | Open a fresh session, paste the same prompt again, and add at the end: "Previous attempt ended with: <paste the agent\'s final message>. Continue from the current state of the branch; do not start over." |')
+w('   | Deployment, build, email or paused-Supabase-project problems after 2.5 | Step 2.6 (post-deploy triage) |')
+w('   | Web bugs or polish after Checkpoint B | Step 3.10 (fix/polish round) |')
+w('   | Android build or device problems | Step 4.5\'s helper prompt, then 4.6 |')
+w('   | Phase 2 trial problems | Step 5.9\'s helper prompt |')
+w('   | Store listing / TestFlight / release problems | The second passes of 6.4, 6.5 and 6.8 |')
+w('   After every step, read the agent\'s final message and the "Deviations from plan" section of `HANDOFF.md`. A question left there is yours to answer before the next step; a deviation you veto goes into the owning step\'s notes and that step is re-run. Do not skip verification steps.')
+w('7. Checkpoints: **A** (step 2.5) you are signed in on Vercel as super admin; **B** (step 3.9) the finished web app is trialled on Vercel; **C** (step 4.5) the Android preview build works; **D** (step 5.9) the Phase 2 features (directory, calendars, documents, join codes) are trialled on web and Android. Everything after D completes Phase 3 (surveys, audit, account deletion, iOS, store release).\n')
 w('Sizes are one agent session each: S under an hour, M a few hours, L most of a session, XL a full long session (may need a follow-up session to finish verification).\n')
 w('## Decisions these prompts assume\n')
-w('Founder answers of 2026-09-03 (recorded in `HANDOFF.md`) and drafting decisions of 2026-09-04 (`Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md`). Change one of these and the affected prompts must change too.\n')
+w('Founder answers of 2026-09-03 … 2026-09-08 (recorded in `HANDOFF.md`) and orchestrator decisions 1–33 (`Session log/003_2026-09-04/todo-drafts/orchestrator-decisions.md`). Change one of these and the affected prompts must change too.\n')
 for line in [
-    'App display name **Anacast**; Android package id `com.anacast.app` (founder wrote `com.Anacast.app`; lowercase recommended and immutable after the first Play upload; confirm in step 0.1); deep-link scheme `anacast`; brand colours and production domain deferred (neutral theme, `NEXT_PUBLIC_APP_URL`).',
-    'Supabase **Free** plan (US East): 50 MB per upload (`NEXT_PUBLIC_MAX_UPLOAD_MB=50`, `sermon-media` bucket limit 50 MiB until Pro), project pauses after 7 idle days. Vercel **Pro** at launch (cron `*/5 * * * *`).',
+    'App display name **Anacast**; Android package id `com.anacast.app` (lowercase confirmed by the founder 2026-09-07; immutable after the first Play upload); deep-link scheme `anacast`; Expo slug `anacast`.',
+    'Brand palette (confirmed 2026-09-08): Prussian Blue `#00072d` = `ink`, Deep Navy `#001c55` = `primaryDark`, Imperial Blue `#0a2472` = `primary`, Bright Marine `#0e6ba8` = `accent`, Icy Blue `#a6e1fa` = `tint` (never as text on white). One token file per app; store assets use the same values.',
+    'No production domain yet: the web app runs on Vercel\'s generated URL via `NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_WEB_URL` until the features work. Changing the domain later means re-verifying `assetlinks.json` (5.7a), re-issuing the store privacy URL (6.6) and updating the Supabase Auth redirect list.',
+    'Supabase **Free** plan (US East): 50 MB per upload (`NEXT_PUBLIC_MAX_UPLOAD_MB=50`, `sermon-media` bucket limit 50 MiB until Pro), project pauses after 7 idle days (restore from the dashboard). Vercel **Pro** at launch (cron `*/5 * * * *`).',
     'Billing: flat **US$50 per church per month** via one Stripe Price (`STRIPE_PRICE_ID`); 30-day trial; only `suspended` blocks writes, `past_due` shows a banner.',
     'Families may hide from their own congregation (`hide_from_congregation` UI toggle) and from the fellowship; leaders may only make a family more private; fellowship viewers see everything the congregation sees minus birth year, anniversary year and leader notes.',
     'Each church sets its own youth/adult ages in settings (defaults 13 / 25 / 18; married excluded from youth; men\'s/women\'s include youth).',
     'Share links: password min 8, stream by default, **downloads allowed for uploaded media when `sermon_share_allow_download` is on**, available to `sermons.link` and `sermons.upload` holders.',
     'Push on every bulletin upload (per-church toggle, default on). Announcements & bulletins UI (3.5) ships before the push dispatcher (3.6): publishing queues notifications, 3.6 delivers them.',
-    'Head of house: at most one `household_role = head` per household (partial unique index in `9999_init.sql`); in Phase 3 the head answers per-person surveys for household members without accounts.',
-    'The 12-toggle permission mapping in `docs/RLS.md` ships as the default (not explicitly confirmed by the founder).',
+    'Head of house: at most one `household_role = head` per household (partial unique index); the head moves only through the atomic `set_head_of_house` RPC; in Phase 3 the head answers per-person surveys for household members without accounts.',
+    'The 12-toggle permission mapping in `docs/RLS.md` was **accepted by the founder on 2026-09-08**; extra toggles would be a later migration.',
+    'Super admins pass through to every church\'s `/o/<slug>/*` pages (a "Viewing as super admin" strip is shown); the founder never has to invite himself into a church.',
+    'Accounts: the self-service action is **Deactivate** (reversible archive, super admin can restore); a real **Delete account** exists on web and mobile because Google Play requires it, with a 30-day grace during which the user or the super admin can cancel. A placeholder privacy policy ships in `docs/legal/`; step 6.6 replaces it with the lawyers\' text before the store listings (legal entity still undecided).',
     'Monorepo: Vercel Root Directory `apps/web`, `apps/web/vercel.json`, package names `web` / `mobile` / `@church/*`; `@types/react` follows the 19.2 line.',
-    '`9999_init.sql` may still be edited until the founder pastes it into the hosted project (step 2.4); after that every change is a new `9998_*` file.',
+    'Migrations: `9999_init.sql` may still be edited until the founder pastes it into the hosted project (step 2.4); after that it is frozen. Reserved numbers: `9998_join_codes.sql` (5.6a), `9997_surveys_head_of_house.sql` (6.1a), `9996_account_archival.sql` (6.3a, case B); every other later migration takes the next free number counting down from 9995 (worked example `9995_storage_limit.sql`).',
 ]:
     w('- ' + line)
 w('')
