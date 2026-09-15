@@ -9,3 +9,7 @@
 - Note: this session's clone started stale (at `ec5f2c6`); a redundant G7 draft was made before fetching and was discarded unpushed.
 - Run: wf_a73dcc25-014 (task whea21uik), launched 2026-09-08 ~16:20 America/New_York. Fallback send_later trig_01CZLEQr5Q5TKgrDexKVhKA5
   fires at 21:10 UTC (17:10 ET) if the completion notification does not arrive.
+- Outcome of wf_a73dcc25-014: **failed** — both reviewers (`global:coverage:r1`, `global:consistency:r1`) hit the account usage
+  limit ("resets 11:10pm UTC") after ~9.6 min and 520,610 sub-agent tokens; no findings files were written. The fallback send_later
+  fired and was consumed. Nothing to record from the agents.
+- Relaunch (2026-09-15, founder: "usage limit reset, continue"): same args, resumed from wf_a73dcc25-014 so the two failed agents re-run.
