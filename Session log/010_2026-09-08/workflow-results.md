@@ -90,3 +90,18 @@
 - args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1} (fresh run, not resumed — the failed run had no cached results)
 - Run: wf_34585ef5-23b (task wt294j7fp). Fallback send_later trig_01EFfKSp3e4oZtBejteCqmhx (20:08 UTC). The earlier fallback
   trig_015VRiXeZ6kN1GZ7CZAqaHTa had already fired (19:12 UTC) and found the failure recorded.
+- Outcome: **completed, 0 failures.** G5: 10 applied (decision 20 pass-through in 2.1a incl. `require-org.test.ts`; palette tokens +
+  `BRAND_COLORS` in `src/lib/brand.ts`; `OrgContext.org.org_id` + `writable`; `AuthContext.archived`); 2.1a now 3710 words (accepted per
+  decision 26). G6: 18 applied (2.5 no self-invitation — second address; 2.6 calls `smoke-hosted.sh` when it exists, no hard dep on 2.7;
+  2.4 optional throwaway dry run). G7: 6 applied (`org.org_id` spelling, `writable`, decision 20 citations). G8: 7 applied (3.4b uses
+  `srvLoadUnlockedShareLink` + `SHARE_LINK_LOAD_STATUSES`, cookie `share_<linkId>`, `readUnlockCookie`). All validator-clean. Usage:
+  agent_count 4, **subagent_tokens 702,534**, tool_uses 100, duration 851 s (~14 min). Fallback deleted.
+- Propagation notes for bites 11–12: G9 3.5a, G12 5.1a/5.3a, G13 5.4a/5.5/5.6b/5.7b still carry the "orgId or org_id" hedge → `ctx.org.org_id`;
+  G10 3.7b (rule settled), 3.8 (`docs/DEPLOY.md` "created by 2.6 or 2.7"; share page mints signed URLs only after the RPCs return `ok`),
+  3.9/3.10 (`smoke-hosted.sh <URL> --checkpoint B`, `SMOKE_CHECKPOINT` → B, "Supabase project shows Active"), 3.7a (2.7 check ids, port
+  3100); G11 4.5 item 1 only re-checks `{{ .Token }}`; G13 5.8 / G10 3.7c may use `BRAND_COLORS`; G14 6.3a may use `getAuthContext().archived`.
+- Orchestrator item for the final pass: G8 flagged that `srv_load_unlocked_share_link` (1.3b) must not re-check `max_views` for the cookie
+  holder (a `max_views = 1` link would 404 on reload) — either 1.3b states the skip or 1.4b's test 04 asserts `ok` at `view_count = max_views`.
+
+## Bite 11 — fixers G9, G10, G11, round 1 — launched 2026-09-15 America/New_York
+- args: {"stage": "fix", "groups": ["G9", "G10", "G11"], "round": 1}
