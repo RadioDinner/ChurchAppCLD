@@ -143,3 +143,12 @@
 | 11 | G9, G10, G11 | 10 + 16 + 8 | 584,135 |
 | 12 | G12, G13, G14, G1 | 14 + 14 + 23 + 9 | 848,118 |
 | **total** | 14 groups | **162 applied** | **2,953,225** |
+
+## Final hand pass and assembly (2026-09-15, after bite 12)
+- Applied by hand (no agents): 1.3b `my_context()` lists pending memberships / `member_org_ids()` active only; 5.8 `PLAY_LISTING.live`
+  flipped by 6.8 (not 6.5); 6.4/6.5 decision-31a domain caveat; 3.6a event fan-out group = `calendars.view_audience_group_id`;
+  `assemble.py` prints each milestone in dependency (topological) order, stable by id, and "How to use" item 1 says so (6.3c before 6.3b,
+  6.6/6.7 before 6.4/6.5/6.8 — the G14 fixer's alternative to renumbering).
+- Validator over G1–G14: **0 errors, 18 warnings** (all long-prompt warnings accepted per decisions 26/30). `assemble.py` → `docs/TODO.md`:
+  **78 steps, 337,965 words**, no duplicate ids, no unknown dependencies. Committed on the branch.
+- Session 010 sub-agent total: 2,584,350 (bites 7–10 first attempts) + 702,534 + 584,135 + 848,118 = **4,719,137 tokens**.

@@ -1,4 +1,4 @@
-# Session 010 — 2026-09-08 → 2026-09-15 (bites 7–9 of the TODO.md global audit; bite 10 stopped by the usage limit)
+# Session 010 — 2026-09-08 → 2026-09-15 (TODO.md global audit: review bites 7–8, fixer bites 9–12, final assembly — docs/TODO.md done)
 
 Branch: `claude/project-status-todo-plan-leghlm`. Nothing merged to `main` (founder: wait until told).
 
@@ -12,7 +12,14 @@ Branch: `claude/project-status-todo-plan-leghlm`. Nothing merged to `main` (foun
   passes, consoles list, bold no-secrets rule, situation → prompt routing table, Checkpoint D, decisions block refreshed for 15–21/31–33).
 - `5f99aa2` **bite 9**: fixers G2 (1.2 → 1.2a + 1.2b; **78 steps** now), G3 (decision-21 propagation, grants/tests/docs), G4 (wrappers for
   every RPC, counts derived from the migration). Validator 0 errors / 10 accepted long-prompt warnings.
-- `348d6d2` bite 10 record; bite 10 itself failed on the usage limit (no files changed).
+- `348d6d2` bite 10 record; first attempt failed on the usage limit (no files changed); relaunched after the founder's reset.
+- `bce1fa7` **bite 10**: fixers G5 (pass-through + palette + `OrgContext` contract), G6 (no self-invitation, smoke script, dry run), G7, G8.
+- `3d92942` **bite 11**: fixers G9 (per-org claim, queued-at-once), G10 (3.7b/3.8/3.9/3.10 incl. custom SMTP), G11 (palette in mobile theme).
+- `567d239` hand pass: share-link load RPC skips `max_views` for cookie holders; "step 1.2" repointed in G3/G9.
+- `8d9a8e1` **bite 12**: fixers G12 (atomic `setHeadOfHouse`, `calendars.members_can_submit`), G13, G14 (super-admin "Start deletion",
+  monitoring row, listing flags flipped in 6.8), G1 (0.1 item 13 merge/branch rule). **162 findings applied in total, 0 validator errors.**
+- (this commit) final hand pass (5 propagations + topological print order in `assemble.py`), `docs/TODO.md` regenerated (78 steps,
+  ~338k words), HANDOFF State: TODO.md done.
 
 ## Directional decisions
 - Founder (2026-09-15): "work through all the next bites until you run out of usage" — back-to-back bites this session; the one-bite-then-
@@ -21,16 +28,12 @@ Branch: `claude/project-status-todo-plan-leghlm`. Nothing merged to `main` (foun
   and is regenerated after the fixer bites.
 - Redundant work discarded: this session's clone started at `ec5f2c6`; a G7 group draft made before fetching was thrown away unpushed.
 
-## How to resume (bite 10 onward)
-1. `git pull`; `scripts/session/new-session.sh`.
-2. **Bite 10**: Workflow `workflow-global.js` args `{"stage":"fix","groups":["G5","G6","G7","G8"],"round":1}` (4 agents, high effort,
-   ~250k each). Propagation notes for these groups are in `workflow-results.md` (bite 9 outcome) and in G4.json `open_issues`:
-   G6 2.3 → `queries/organizations.ts` / `listOrganizations(db)`; G8 3.4b → `srvLoadUnlockedShareLink` + `SHARE_LINK_LOAD_STATUSES`;
-   G5 2.1a/2.1b/2.2b decision 20 (super-admin pass-through) + palette (17); G7 3.1/3.2a/3.2b `OrgContext.org.org_id` spelling + `writable`.
-3. **Bite 11**: `{"stage":"fix","groups":["G9","G10","G11"],"round":1}`. **Bite 12**: `{"stage":"fix","groups":["G12","G13","G14","G1"],"round":1}`.
-4. `python3 validate.py groups/G*.json && python3 assemble.py /home/user/ChurchAppCLD/docs/TODO.md`; check `docs/TODO.md` header by
-   hand; repoint prose "step 1.2" mentions to 1.2a/1.2b where the fixers did not; second review round only if blockers remain.
-5. Update HANDOFF (State: TODO.md done), commit `docs: TODO.md — build order with a prompt per step`, push; ask the founder about `main`.
+## How to resume (TODO.md is done)
+1. Ask the founder whether to merge `claude/project-status-todo-plan-leghlm` into `main` (decision 32c: only when told). Until then every
+   build session starts with "Work on branch `claude/project-status-todo-plan-leghlm`" (TODO.md "How to use" item 0).
+2. Optional quality pass: second global review round — `workflow-global.js` `{"stage":"review","lenses":["coverage","consistency"],"round":2}`
+   then `["dependencies","founder"]`, then `stage: fix` per group with `"round": 2`. Round 1 left no known blockers; this is polish.
+3. Then the build begins at step 0.1 (founder) and 1.1 (agent) of `docs/TODO.md`.
 
 ## Things future sessions should know
 - Review lenses cost 230–400k tokens each; fixers ~235k per group. Four fixers in parallel plus the two earlier bites exhausted a full

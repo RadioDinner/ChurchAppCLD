@@ -64,6 +64,20 @@ for s in steps:
         if d not in ids:
             print(f"WARNING {s['id']} depends on unknown {d}", file=sys.stderr)
 
+
+def topo(ms_steps):
+    """Dependency order within a milestone (a step never prints before a step it depends on), stable by id."""
+    by_id = {s['id']: s for s in ms_steps}
+    done, out = set(), []
+    pending = sorted(ms_steps, key=lambda s: id_key(s['id']))
+    while pending:
+        ready = [s for s in pending if all(d in done or d not in by_id for d in (s.get('depends_on') or []))]
+        if not ready:  # cycle guard: fall back to id order for the rest
+            ready = [pending[0]]
+        nxt = ready[0]
+        out.append(nxt); done.add(nxt['id']); pending.remove(nxt)
+    return out
+
 actor_label = {'agent': 'Agent', 'founder': 'Founder', 'founder+agent': 'Founder + agent'}
 
 out = []
@@ -72,7 +86,7 @@ w('# ChurchAppCLD build to-do list with a prompt for every step\n')
 w('_Generated from `docs/PLAN.md` and `docs/DESIGN.md`. Skeleton and steps 0.1/1.1 written in session 002 (2026-09-03); the remaining steps drafted, critiqued and revised in sessions 003–009 (2026-09-04 … 2026-09-08); founder decisions recorded through 2026-09-08; global review and fixes in session 010 (2026-09-15). Source of truth for build order; tick the boxes as steps land._\n')
 w('## How to use this list\n')
 w('0. **Before the first agent step**: this file and the kit live on the branch `claude/project-status-todo-plan-leghlm`, and nothing merges to `main` until you say so. When you are ready to build, tell a Claude Code session: "Merge `claude/project-status-todo-plan-leghlm` into `main` (merge commit, push) and record the merge date in HANDOFF.md." Until that merge, start every agent session with the line "Work on branch `claude/project-status-todo-plan-leghlm` for this session." — otherwise the agent looks for `docs/TODO.md` on `main`, where it does not exist.')
-w('1. Work top to bottom. Every step lists what it depends on; do not start a step before its dependencies are ticked.')
+w('1. Work top to bottom. Within each milestone the steps are printed in dependency order (a step never appears before a step it depends on; ties keep id order), so ids can look out of sequence — for example 6.6 and 6.7 print before 6.4 and 6.5. Every step lists what it depends on; do not start a step before its dependencies are ticked.')
 w('2. **Agent steps**: open a fresh Claude Code session in this repository and paste the whole text inside the step\'s prompt box. The agent ticks its own checkbox in this file, updates `HANDOFF.md`, commits and pushes. Some prompts are templates with a fenced fill-in block — replace every `<…>` before pasting. A prompt may stop and ask you a question; answer it in that same session.')
 w('3. **Founder steps** are manual work in a browser console (Supabase, Vercel, Stripe, Expo/EAS, Firebase, Google Play Console, Apple Developer). Follow the numbered checklist, record what it tells you to record (HANDOFF ledger, env vars, password manager), then tick the box yourself. Some founder steps end with a small helper prompt an agent can run to verify your work.')
 w('4. **Founder + agent steps** (6.4, 6.5, 6.6, 6.8) run in three passes: paste the agent prompt (first pass), follow the founder checklist, then paste the same prompt again with the mode line the prompt names (for example `review`, `release`, or the results you collected) for the second pass.')
@@ -114,7 +128,7 @@ w('')
 # master checklist
 w('## Master checklist\n')
 for ms, (title, blurb) in MILESTONES.items():
-    ms_steps = [s for s in steps if milestone_of(s) == ms]
+    ms_steps = topo([s for s in steps if milestone_of(s) == ms])
     if not ms_steps:
         continue
     w(f'### {ms} — {title}\n')
@@ -131,7 +145,7 @@ for ms, (title, blurb) in MILESTONES.items():
 w('---\n')
 w('## Steps and prompts\n')
 for ms, (title, blurb) in MILESTONES.items():
-    ms_steps = [s for s in steps if milestone_of(s) == ms]
+    ms_steps = topo([s for s in steps if milestone_of(s) == ms])
     if not ms_steps:
         continue
     w(f'## {ms} — {title}\n')
