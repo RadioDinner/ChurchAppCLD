@@ -13,3 +13,17 @@
   limit ("resets 11:10pm UTC") after ~9.6 min and 520,610 sub-agent tokens; no findings files were written. The fallback send_later
   fired and was consumed. Nothing to record from the agents.
 - Relaunch (2026-09-15, founder: "usage limit reset, continue"): same args, resumed from wf_a73dcc25-014 so the two failed agents re-run.
+- Relaunch outcome (task w430ofq9x, run wf_a73dcc25-014, 2026-09-15): **completed, 0 failures.** 48 findings — 8 blockers, 26 major,
+  14 minor. coverage: 26 (3 blockers / 15 major / 8 minor) → `reviews/global.coverage.r1.json`; consistency: 22 (5 / 11 / 6) →
+  `reviews/global.consistency.r1.json`. Usage: agent_count 2, **subagent_tokens 456,902**, tool_uses 90, duration 796 s (~13 min).
+  Fallback send_later trig_01Pkcbph8rd1o6AmypG5tiBq deleted.
+- Theme of the blockers: the decision-15/21/30 schema that G2's revision put into 9999 (20 client + 10 srv RPCs incl.
+  `set_head_of_house`, `deactivate_account`, `restore_my_account`, `srv_load_unlocked_share_link`, `srv_archive_account`,
+  `srv_restore_account`; `srv_claim_notifications(org_id, max_rows)`) has not yet been propagated to G3 (1.4a grants/09_grants, 1.4c),
+  G4 (1.7a wrappers pinned at 17/7/24), G9 (3.6a one-arg claim), G12 (5.1a/5.2b two-call head-of-house instead of the atomic RPC).
+  This is exactly the FIXER_WORKSHEET's propagation list — the fixer bites 9–12 will apply it. Majors cluster on decisions 17 (palette in
+  2.1a/4.1a), 20 (super-admin pass-through in 2.1a/2.5/3.7b), 21 (migration reservation table in 1.5; 3.4b/3.5b/3.10/5.3a/5.5), 15 (6.3a
+  super-admin "start deletion"), 24 (6.3b monitoring row, 2.4 dry-run item).
+- Groups with findings: G1 (1.1), G3 (1.4a, 1.4c, 1.5), G4 (1.7a), G5 (2.1a), G6 (2.4, 2.5, 2.7), G8 (3.4b), G9 (3.5b, 3.6a), G10 (3.7b,
+  3.10), G11 (4.1a, 4.5), G12 (5.1a, 5.2b, 5.3a), G13 (5.5, 5.6a, 5.7a, 5.7c), G14 (6.1a, 6.2b, 6.3a, 6.3b, 6.4, 6.5, 6.6, 6.8). No
+  findings for G2 or G7.

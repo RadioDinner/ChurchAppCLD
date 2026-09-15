@@ -1,0 +1,212 @@
+{
+ "findings": [
+  {
+   "step": "1.7a",
+   "severity": "blocker",
+   "category": "stale-rpc-inventory",
+   "quote": "a typed wrapper for each of the 17 client RPCs and 7 `srv_*` RPCs \u2026 `grep -c \"create or replace function public.srv_\" supabase/migrations/9999_init.sql` \u2192 `7` and `grep -c \"^export async function srv\" packages/db/src/rpc.ts` \u2192 `7`; `grep -c \"^export async function\" packages/db/src/rpc.ts` \u2192 `24`",
+   "problem": "1.3b (decisions 15/21/30) now creates 20 client RPCs (adds `set_head_of_house`, `deactivate_account`, `restore_my_account`) and 10 `srv_*` RPCs (adds `srv_load_unlocked_share_link`, `srv_archive_account`, `srv_restore_account`). 1.7a's Build, Verify and Done-when all pin 17/7/24, so the agent either fails its own checks or ships wrappers that 3.4b, 5.1a, 5.2b, 6.1a and 6.3a need but cannot import.",
+   "fix": "Change every count to 20 client / 10 `srv_*` / 30 total (`\u2192 10`, `\u2192 30`), list the six new wrappers by name with their SQL parameter names (`set_head_of_house(hh, new_head, previous_head_role)`, `deactivate_account()`, `restore_my_account()`, `srv_load_unlocked_share_link(link_id)`, `srv_archive_account(user_id, reason)`, `srv_restore_account(user_id)`), and derive the expected numbers from `grep -c` over `9999_init.sql` rather than literals so the type test `RPC_NAMES` stays the source of truth."
+  },
+  {
+   "step": "1.4a",
+   "severity": "blocker",
+   "category": "stale-rpc-inventory",
+   "quote": "section (9) revokes PUBLIC execute and grants exactly the 17 client RPCs and the policy/view helpers to `authenticated` and the 7 `srv_*` RPCs to `service_role` \u2026 `has_function_privilege('authenticated', p.oid, 'execute')\"` \u2192 `17`",
+   "problem": "The grant matrix and the `09_grants.sql` expectation are written for the pre-decision-15/21 function set. With 1.3b's 20 + 10 functions the decision-15/21/30 RPCs (`set_head_of_house`, `deactivate_account`, `restore_my_account`, `srv_load_unlocked_share_link`, `srv_archive_account`, `srv_restore_account`) would be left with PUBLIC revoked and never re-granted, so 5.1a/5.2b/6.3a/3.4b calls fail with 42501, and 09_grants asserts the wrong number.",
+   "fix": "Replace 17/7 with 20/10 everywhere (Inputs line about 1.3b, Build section (9), Verify psql counts, Done-when) and enumerate the three new client and three new `srv_*` grants explicitly; make `09_grants.sql` compare `has_function_privilege` against a literal list copied from 1.3b's section (5c) header so any future drift fails the test."
+  },
+  {
+   "step": "1.4a",
+   "severity": "major",
+   "category": "missing-decision-21-policy",
+   "quote": "MISSING (no `ca_notifications_select` wording; the prompt only says a_manager sees A's `notifications`)",
+   "problem": "Decision 21 folds G9's fix into 9999: `ca_notifications_select` must also admit `bulletins.upload` holders for rows where `kind = 'bulletin'`. 1.4a's catalogue does not mention it, and 3.5b/3.6a are still written around the old rule (\"a `bulletins.upload`-only leader is not admitted by the `notifications` select policy\").",
+   "fix": "In Build section (8) add the row: `ca_notifications_select` = `announcements.*` manager OR (`kind = 'bulletin'` AND `bulletins.upload`), with a 07_storage_billing_audit / 06 assertion that a bulletins.upload-only leader sees bulletin notifications and no announcement ones. Then the fixer relaxes 3.5b's PushStatusBadge visibility note and 3.6a's Retry/select comments (see their findings)."
+  },
+  {
+   "step": "1.5",
+   "severity": "major",
+   "category": "missing-reservation-table",
+   "quote": "MISSING (docs/MIGRATIONS.md is described as 'explain the migration rules'; no reservation table)",
+   "problem": "Decision 21 assigns 1.5's `docs/MIGRATIONS.md` the reservation table (9998 join codes, 9997 surveys head-of-house, 9996 account archival case B; everything else from 9995 downward, worked example `9995_storage_limit.sql`). 3.10, 3.5b, 5.6a, 6.1a and 6.3a are told to consult that table; without it they collide on 9998.",
+   "fix": "Add to Build: a 'Reserved numbers' table in `docs/MIGRATIONS.md` with the three reserved files and owning steps, the rule 'anything else takes the next free number from 9995 downward and never 9998/9997/9996', and the enum two-paste rule; add a Done-when line that the table exists and names `9995_storage_limit.sql` as the worked example."
+  },
+  {
+   "step": "3.4b",
+   "severity": "major",
+   "category": "decision-21-not-applied",
+   "quote": "cookie-verified visits are served through an additive `getShareLinkForCookieVisit` query re-validated in TypeScript \u2026 (candidate `srv_load_share_link` for a later migration \u2014 proposed step 3.11)",
+   "problem": "Decision 21 rejected proposal 3.11 and put `srv_load_unlocked_share_link(link_id)` into 9999 via 1.3b so 3.4b stops re-validating in TypeScript. The prompt still builds the TypeScript re-check, a `@church/db` query and tests for it, and records a deviation pointing at a rejected step.",
+   "fix": "Rewrite Build item 2's cookie branch: valid cookie \u2192 `srvLoadUnlockedShareLink(svc, { link_id })` (1.7a wrapper) which re-runs revoked/expired/sharing-disabled/unpublished checks in SQL and returns the same payload shape as `ok`; drop `getShareLinkForCookieVisit`, `unlockedRowToResult` and their tests; change the HANDOFF deviation and notes to 'cookie visits load through `srv_load_unlocked_share_link` (decision 21)'; keep the grant-redemption GET."
+  },
+  {
+   "step": "3.6a",
+   "severity": "major",
+   "category": "stale-rpc-signature",
+   "quote": "`srv_claim_notifications(max_rows)` claims `queued` rows with `scheduled_for <= now()` \u2026 `dispatchQueued` has no org option because `srv_claim_notifications(max_rows)` has none (proposed 3.12)",
+   "problem": "1.3b (decision 21) defines `srv_claim_notifications(org_id uuid, max_rows int)`; proposal 3.12 is rejected as folded into 9999. 3.6a's 'Database semantics you rely on', `dispatchQueued` signature and notes describe the old one-argument RPC, so the synchronous after-publish dispatch would claim other churches' rows and the wrapper call would not type-check.",
+   "fix": "State the real signature `(org_id, max_rows)`; give `dispatchQueued` an `orgId?: string` option that `afterContentPublish` passes (the publishing org) and the cron leaves null; assert in `dispatch.test.ts` that the after-publish call passes the org id; delete the 'proposed 3.12' sentence and the 'no org option' rationale; also drop the 'a `bulletins.upload`-only leader cannot select `notifications`' justification once 1.4a's `ca_notifications_select` fix lands (Retry may then use the user client for bulletin rows)."
+  },
+  {
+   "step": "3.5b",
+   "severity": "minor",
+   "category": "stale-policy-note",
+   "quote": "`PushStatusBadge` (visible to announcement managers \u2014 the only role RLS lets read `notifications`; a `bulletins.upload`-only leader sees \"Push status is shown to announcement managers\")",
+   "problem": "Decision 21 widens `ca_notifications_select` to `bulletins.upload` for `kind = 'bulletin'` (1.4a finding), so the badge should show for bulletin uploaders too; the current fallback copy would hide information the DB now grants.",
+   "fix": "Change the visibility rule to 'announcement managers or `bulletins.upload` holders (bulletin rows only)' and drop the fallback text; keep the HANDOFF note for 3.6a about `ref_id = bulletins.id`."
+  },
+  {
+   "step": "3.5b",
+   "severity": "minor",
+   "category": "migration-number-wording",
+   "quote": "write a re-runnable migration containing `alter table public.bulletins alter column publish_at drop not null` as the next free descending number recorded in the HANDOFF \u2026 and 9997 for surveys \u2014 ask me if the ledger does not say which number is free",
+   "problem": "Decision 21 makes `bulletins.publish_at` explicitly nullable in 9999 (1.2) and says a post-paste fallback takes 'the next free number below the reserved block (9995 downward), never 9998/9997/9996'. The prompt still hedges and does not name 9996 or the 9995-downward rule.",
+   "fix": "Replace the sentence with: 'If `publish_at` is still `not null` (it should not be \u2014 1.2 made it nullable per decision 21), ship the fix as the next free number below the reserved block 9998/9997/9996, i.e. from 9995 downward per docs/MIGRATIONS.md, and record it in the ledger.'"
+  },
+  {
+   "step": "3.10",
+   "severity": "major",
+   "category": "migration-number-collision",
+   "quote": "Any schema, policy, RPC or trigger change is a NEW file `supabase/migrations/<next descending number>_<topic>.sql` (check the folder: the lowest number is the newest; if `9998_*` exists use `9997_*`, and so on)",
+   "problem": "A 3.10 round runs before 5.6a/6.1a/6.3a, so this rule would take 9998 (reserved for join codes) or 9997 (surveys). Decision 21 requires 3.10 to say 'next free number below the reserved block'.",
+   "fix": "Rewrite: 'a NEW file numbered from 9995 downward \u2014 9998, 9997 and 9996 are reserved for steps 5.6a, 6.1a and 6.3a (docs/MIGRATIONS.md reservation table); pick the highest unused number \u2264 9995 and record it in the HANDOFF ledger'."
+  },
+  {
+   "step": "2.1a",
+   "severity": "major",
+   "category": "decision-20-not-applied",
+   "quote": "`requireOrgMember(slug)` \u2192 `OrgContext = {\u2026}` \u2026 404s non-active",
+   "problem": "Decision 20 settles super-admin pass-through: `requireOrgMember` admits an `active` membership OR a super admin with `membershipStatus = null` and renders a 'Viewing as super admin' strip; 3.7b still reports that 2.1a returns `notFound()` for a super admin and points at rejected proposal 3.11. Without the fix the founder cannot trial `/o/*` at Checkpoint B.",
+   "fix": "In Build (require-org.ts): 'admit when membership is `active`, or when `isSuperAdmin` (then `membershipStatus = null`, `permissions = []`, `writable` from org status); expose `viewingAsSuperAdmin` for the strip 3.1 renders; `notFound()` only for a non-member non-super user or an unknown slug'. Delete any comment referencing proposed 3.11; add a Done-when line and a unit test for the super-admin branch."
+  },
+  {
+   "step": "2.5",
+   "severity": "major",
+   "category": "decision-20-not-applied",
+   "quote": "4. **Admins** tab \u2192 \"Invite\" \u2192 `<FOUNDER_EMAIL>`, all 12 permissions ticked \u2192 Create. \u2026 open it in the same browser (you are signed in) \u2192 `/invite/<token>` \u2192 Accept \u2192 you are redirected to `/o`, which now lists the church",
+   "problem": "Decision 20 says 2.5's checklist stops inviting the founder into the first church because the super admin reaches `/o/<slug>/*` directly. The current step makes the founder a member (which also distorts later membership/directory tests) and describes Checkpoint A around that workaround.",
+   "fix": "Replace item 4 with: 'Open `/o/<slug>/dashboard` directly as the super admin \u2014 the \"Viewing as super admin\" strip appears (decision 20); creating the first real church admin is the next item, using a separate test email or the Create-account dialog'. Adjust the Done-when and the helper prompt accordingly."
+  },
+  {
+   "step": "3.7b",
+   "severity": "major",
+   "category": "decision-20-not-applied",
+   "quote": "the rule for super admins on `/o/<slug>/*` is NOT settled \u2014 2.1a's `requireOrgMember` returns `notFound()` for a super admin without an active membership (comment points at proposed 3.1[1])",
+   "problem": "The rule is settled by decision 20; the full E2E should sign in as the super admin for `/o/*` checks and assert the 'Viewing as super admin' strip, not treat it as open.",
+   "fix": "Rewrite the Inputs bullet: 'Super admins pass `requireOrgMember` with `membershipStatus = null` (decision 20); `01-acceptance` may perform the org-admin steps as the super admin and asserts the strip; `02-security` asserts a non-member non-super user gets 404'."
+  },
+  {
+   "step": "2.1a",
+   "severity": "major",
+   "category": "decision-17-not-applied",
+   "quote": "ONE `@theme` block holding the neutral colour tokens (orchestrator decision 5: brand colours are open \u2014 a single token file, neutral default; changing colours late\u2026",
+   "problem": "Decisions 17 and 32b fix the palette and token roles: `ink` #00072d, `primaryDark` #001c55, `primary` #0a2472, `accent` #0e6ba8, `tint` #a6e1fa, with the contrast rules (Icy never as text on white; Marine only large text on Prussian). 2.1a still ships a neutral theme.",
+   "fix": "Replace the neutral-token sentence with the five tokens and roles from decision 17 (hex values, contrast notes as comments, framework defaults for error/success/warning), keep the single-file rule, and add a Done-when line that `globals.css` (or `src/theme.ts`) contains exactly those five hex values."
+  },
+  {
+   "step": "4.1a",
+   "severity": "major",
+   "category": "decision-17-not-applied",
+   "quote": "the neutral `src/theme.ts` token file \u2026 `src/theme/tokens.ts` \u2026 `{ \u2026, text, muted, danger }` (neutral hex defaults)",
+   "problem": "Decision 17 (confirmed 32b) says the mobile `theme.ts` carries the five-blue palette and is also used for the splash `backgroundColor` and the adaptive-icon background. 4.1a still builds neutral defaults.",
+   "fix": "Put the five tokens (ink/primaryDark/primary/accent/tint with hex) into `src/theme/tokens.ts`, map `paperTheme.colors.primary` to `primary`, set `splash.backgroundColor` and `android.adaptiveIcon.backgroundColor` in `app.config.ts` to `ink`/`primary` from the same file, note the contrast rules, and assert the hex values in Done-when."
+  },
+  {
+   "step": "5.1a",
+   "severity": "blocker",
+   "category": "decision-21-not-applied",
+   "quote": "Head of house is implemented as two `save_person` calls (demote then promote) because no `set_head_of_house` RPC exists; the atomic RPC is proposed as step 5.8 \u2026 leave a `TODO(5.8): replace with the atomic set_head_of_house RPC`",
+   "problem": "Decisions 21/30 put the atomic `set_head_of_house(hh, new_head, previous_head_role)` RPC into 9999 (1.3b), and the column guard stays strict \u2014 two `save_person` calls will be rejected by `guard_persons_columns` / the partial unique index, so the agent would build a flow that fails at runtime and reference a rejected step.",
+   "fix": "Rewrite the head-of-house item: call `setHeadOfHouse(client, { hh, new_head, previous_head_role })` from `@church/db`; map `duplicate`/`not_household_editor` errors; remove every `TODO(5.8)` and 'proposed 5.8' sentence from Build, Notes and HANDOFF text; add a Done-when line that head changes go through the RPC only."
+  },
+  {
+   "step": "5.2b",
+   "severity": "major",
+   "category": "decision-21-not-applied",
+   "quote": "(household adults may set head \u2026 through an atomic `set_head_of_house` RPC) is proposed step 5.8 \u2014 leave a `TODO(5.8): replace with the atomic set_head_of_house RPC` \u2026 handled defensively and recorded for the proposed 5.8 migration",
+   "problem": "Same as 5.1a: the RPC exists in 9999 and admits household adults through `app.can_edit_household` (decision 30). The mobile prompt still tells the agent to work around a missing RPC.",
+   "fix": "Call `setHeadOfHouse` from the HeadOfHouse picker, remove the TODO/proposed-5.8 wording and the 'defensive' fallback, and make the Done-when assert that a household adult can move the head in one call."
+  },
+  {
+   "step": "5.3a",
+   "severity": "major",
+   "category": "decision-21-not-applied",
+   "quote": "leaders are subject to the submit policy until a migration adds a leader branch \u2014 proposed step 5.8 \u2026 (a per-calendar leaders-only switch is proposed for step 5.8)",
+   "problem": "Decision 21 folded the rejected 5.8 migration into 9999: `calendars.members_can_submit` exists (1.2), `force_event_pending` honours `events_require_approval` (1.3a) and `ca_events_insert` has the `\u2228 announcements.create` leader branch (1.4a). The prompt still documents these as gaps and does not expose `calendars.members_can_submit` in the calendar form.",
+   "fix": "Delete the two 'proposed 5.8' passages; add `members_can_submit` to the calendar create/edit form and to `calendarSchema`; state that leaders with `announcements.create` insert `approved` events directly (trigger) and that `events_require_approval = false` auto-approves member submissions; add Playwright/RLS Done-when lines for both."
+  },
+  {
+   "step": "5.5",
+   "severity": "major",
+   "category": "decision-21-not-applied",
+   "quote": "System groups are protected only in the UI/actions \u2014 the schema lets the manager pair update/delete any `audience_groups` row (DESIGN \u00a76)",
+   "problem": "Decision 21 adds `app.guard_system_audience_groups` to 9999 (1.3a) so the six system rows cannot be renamed, re-kinded or deleted at the DB level. 5.5 should rely on and surface that guard, not describe the schema as unprotected.",
+   "fix": "Replace the sentence with: 'System groups are protected by `app.guard_system_audience_groups` (1.3a); the UI hides rename/delete for them and maps the trigger's error key to a toast'; add a Vitest/Playwright assertion that deleting a system group surfaces that error."
+  },
+  {
+   "step": "6.3a",
+   "severity": "major",
+   "category": "decision-15-gap",
+   "quote": "MISSING (no path for a super admin to start a deletion request on a user's behalf)",
+   "problem": "Decision 15: 'Super admins can also start a deletion request for a user who asks by email (same row, same grace)'. 6.3a builds super-admin restore and cancel in `/admin/users` but no 'Start deletion' action, so the Play-required web path is incomplete for users who cannot sign in.",
+   "fix": "Add to Build: an `/admin/users` row action 'Start deletion request' (Server Action \u2192 service client \u2192 insert `account_deletion_requests` with `scheduled_for = now() + 30 days` and `srv_archive_account(user_id, 'deletion_request')`), audited, with a confirm dialog and a Done-when line; add the case to `13_account_deletion.sql` (row exists, user is non-member, processed only after `scheduled_for`)."
+  },
+  {
+   "step": "6.3a",
+   "severity": "minor",
+   "category": "test-harness-wiring",
+   "quote": "**Case B \u2014 9999 IS pasted:** ship the same objects in the next free descending migration named by the ledger (`9996_account_archival.sql` if free \u2026)",
+   "problem": "Decision 22: every migration step appends its own `\\i` line to `08_rerunnable.sql` and extends `09_grants.sql`. 6.3a extends 09_grants but does not mention `08_rerunnable.sql` for case B, so re-runnability of 9996 is never asserted.",
+   "fix": "Add to case B: 'append `\\i ../../migrations/9996_account_archival.sql` (relative form used by 08) to `08_rerunnable.sql` and re-run the object-count assertion'."
+  },
+  {
+   "step": "6.3b",
+   "severity": "major",
+   "category": "decision-24-gap",
+   "quote": "MISSING (runbook has no cron health / failed pushes / storage-deletion backlog row)",
+   "problem": "Decision 24 rejected the super-admin operations view and told the fixer to add 'a cron health / failed pushes / storage backlog row to 6.3b's monitoring runbook'. Nothing in the plan otherwise covers how the founder notices a stuck cron, `failed` notifications or a growing `storage_deletions` queue.",
+   "fix": "Add a runbook section 'Operational health' with three rows: cron health (last `/api/cron/tick` 200 in Vercel logs; alert if > 30 min), failed pushes (`select count(*) from notifications where status = 'failed'` and the 6.2b delivery page), storage-deletion backlog (`select count(*) from storage_deletions where processed_at is null and attempts >= 10`), each with the SQL/click-path and the remedy; list it in Done-when."
+  },
+  {
+   "step": "2.4",
+   "severity": "minor",
+   "category": "decision-24-gap",
+   "quote": "MISSING (helper has a pre-paste object-count mode but no throwaway-project dry run)",
+   "problem": "Decision 24 folds rejected 1.8 into 2.4 as an optional item: paste `9999_init.sql` into a throwaway Supabase project first to catch hosted-only errors before the real paste freezes the file.",
+   "fix": "Add an optional checklist item before the real paste: 'Optional dry run \u2014 create a second Free project, paste 9999 twice, run the helper's post-paste counts, then delete the project; record the result in HANDOFF'."
+  },
+  {
+   "step": "5.6a",
+   "severity": "minor",
+   "category": "stale-contingency",
+   "quote": "If `9998` is already taken (orchestrator decision 21 reserves 9998 for this step, so this should not happen \u2014 the HANDOFF ledger decides), name this file with the next free number",
+   "problem": "Decision 24 says 5.6a and 6.1a lose the 'if 9998 is taken, shift' contingencies; the surviving sentence still invites the agent to pick another number.",
+   "fix": "Replace with: 'This file is `9998_join_codes.sql` (reserved by decision 21); if the ledger shows 9998 already pasted with different content, stop and ask.' Apply the same to Done-when."
+  },
+  {
+   "step": "6.1a",
+   "severity": "minor",
+   "category": "stale-contingency",
+   "quote": "9997 was reserved for surveys by 3.5b/3.6a/5.8; if the ledger shows 9997 taken, use the next free lower number and record it.",
+   "problem": "Same as 5.6a: decision 24 removes the shift contingency; the reservation comes from decision 21, not from 3.5b/3.6a/5.8.",
+   "fix": "Replace with: 'This file is `9997_surveys_head_of_house.sql` (reserved by decision 21); if the ledger shows it pasted with other content, stop and ask.'"
+  },
+  {
+   "step": "5.7a",
+   "severity": "minor",
+   "category": "decision-31-gap",
+   "quote": "MISSING (no sentence about re-verifying `assetlinks.json` when the domain changes)",
+   "problem": "Decision 31a: where a step bakes the URL in (5.7a App Links, 5.8 `/join/*`, 6.6 privacy URL, 6.4/6.5 listings), the fixer adds that changing the domain later means re-verifying `assetlinks.json`, re-issuing the store privacy URL and updating the Supabase Auth redirect list. None of these prompts has it.",
+   "fix": "Add to 5.7a's docs item (and mirror in 5.8, 6.6, 6.4, 6.5): 'The app currently uses the Vercel URL from HANDOFF; if the founder later adds a custom domain, `assetlinks.json` must be re-verified on the new host, the store privacy-policy URL re-issued and the Supabase Auth redirect list updated \u2014 record this in docs/MOBILE_BUILD.md.'"
+  },
+  {
+   "step": "6.6",
+   "severity": "minor",
+   "category": "decision-31-gap",
+   "quote": "MISSING (privacy URL baked from HANDOFF with no domain-change note)",
+   "problem": "Same as 5.7a: 6.6 publishes `https://<DOMAIN>/privacy` to the stores without the decision-31 caveat.",
+   "fix": "Add one sentence to the founder checklist and the agent Build: 'If the domain changes after submission, re-issue the privacy URL in Play Console and App Store Connect and update the Supabase Auth redirect list; record the date in HANDOFF.'"
+  }
+ ]
+}
