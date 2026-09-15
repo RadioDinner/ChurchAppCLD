@@ -70,3 +70,18 @@
 ## Bite 10 — fixers G5, G6, G7, G8, round 1 — launched 2026-09-15 America/New_York
 - args: {"stage": "fix", "groups": ["G5", "G6", "G7", "G8"], "round": 1}
 - Run: wf_963434d6-75e (task wd16zhx80). Fallback send_later trig_015VRiXeZ6kN1GZ7CZAqaHTa (19:12 UTC).
+- Outcome: **failed on the usage limit** — all four fixers (G5, G6, G7, G8) died within 33 s ("resets 7:10pm UTC"); 110,069 tokens spent,
+  no group file modified (git status clean). Founder's instruction for this session was "work through all the next bites until you run
+  out of usage" — this is that point. **Resume bite 10 with the same args** (`{"stage":"fix","groups":["G5","G6","G7","G8"],"round":1}`),
+  then bite 11 (G9, G10, G11), bite 12 (G12, G13, G14, G1). The fallback send_later trig_015VRiXeZ6kN1GZ7CZAqaHTa (19:12 UTC) could not be
+  deleted (MCP server disconnected at the time); when it fires it should find this record and do nothing.
+
+## Session 010 usage summary (sub-agent tokens)
+| bite | agents | tokens | result |
+|---|---|---|---|
+| 7 (first try, 09-08) | 2 | 520,610 | usage limit |
+| 7 (relaunch) | 2 | 456,902 | 48 findings |
+| 8 | 2 | 788,400 | 89 findings |
+| 9 | 3 | 708,369 | G2/G3/G4 fixed |
+| 10 | 4 | 110,069 | usage limit |
+| **total** | | **2,584,350** | |

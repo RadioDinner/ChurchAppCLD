@@ -1,6 +1,6 @@
 # HANDOFF — live project state (update every session)
 
-_Last updated: 2026-09-08, session 009 wrap (decisions 20–30; steps 2.7/5.8/5.9/6.7/6.8 drafted; G1/G2 critiqued and revised; global audit next — resume steps in session 009 `session_log.md`)._
+_Last updated: 2026-09-15, session 010 (global review bites 7–8 done: 137 findings saved; fixers bite 9 done for G2/G3/G4 — 1.2 split into 1.2a/1.2b, 78 steps; bite 10 for G5–G8 stopped by the usage limit — resume steps in session 010 `session_log.md`)._
 
 ## What this is
 
@@ -20,8 +20,7 @@ Expo SDK 57 (EAS Build), Supabase (Postgres + Auth + Storage), Stripe.
   orchestrator-decisions 1–30, validate.py, assemble.py, workflow-groups.js, workflow-global.js). As of 2026-09-08 (session 009):
   all 14 groups drafted, **77 steps** (4.6 promoted; 2.7, 5.8, 5.9, 6.7, 6.8 drafted in bites 1–3), validator 0 errors / 5 accepted warnings, assembler reports no unknown dependency; **every group critiqued and revised** (G1/G2 done in session 009 bites 4–6; the decision-15/21 schema is now in G2's 9999 prompts). The orchestrator decision memo (decisions 20–30) is written and its numbering fixes are applied:
   stale `depends_on`, migration reservations (9998/9997/9996; worked example `9995_storage_limit.sql`), RLS test files 10–13,
-  Playwright spec names, every proposal decided. **Still to do:** `workflow-global.js` in bite mode (bite 7 = review lenses coverage + consistency; then dependencies + founder; then fixers
-  per group with the FIXER_WORKSHEET from decisions 20–24/30 — exact args in session 009 `session_log.md` "How to resume"); generate
+  Playwright spec names, every proposal decided. **Session 010 (2026-09-15):** global review round 1 complete (bites 7–8: 137 findings, 18 blockers, saved in `todo-drafts/reviews/global.*.r1.json`); assembler header rewritten; fixers applied to G2/G3/G4 (bite 9; 1.2 → 1.2a + 1.2b, **78 steps**). **Still to do:** fixer bites 10 (G5–G8), 11 (G9–G11), 12 (G12–G14, G1) — exact args in session 010 `session_log.md` "How to resume"; generate
   `docs/TODO.md` (dry run ≈ 312k words); HANDOFF update; founder's word on merging to `main`. Details: session 009 `session_log.md`.
 - [ ] Monorepo scaffold (not started; a premature scaffold was reverted in session 001)
 - [ ] `supabase/migrations/9999_init.sql` + local shim + RLS tests
