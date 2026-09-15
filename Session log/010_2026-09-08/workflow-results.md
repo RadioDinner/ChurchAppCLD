@@ -122,3 +122,24 @@
 - Run: wf_9ccf97de-df7 (task w2gxbo2gk). Fallback send_later trig_01LoKuJVt5tj5jyiQogySUQN (20:38 UTC).
 - Checked while bite 12 runs: the G6 items from bite 11's propagation list (2.4 "custom SMTP pending (3.9)", 2.4/2.6 "one-click Restore
   only ~90 days after a pause") were already applied by the G6 fixer in bite 10 — no hand fix needed.
+- Outcome: **completed, 0 failures.** G12: 14 applied (atomic `setHeadOfHouse` in 5.1a/5.2b, `calendars.members_can_submit` exposed in
+  5.3a, RLS assertions in 5.3b; rejected proposal 5.8's record kept as history). G13: 14 applied (`ctx.org.org_id`, decision-31a domain
+  caveat in 5.7a/5.8/5.9, 5.6a numbering contingency removed, `phase2.smoke.spec.ts`). G14: 23 applied (6.3a super-admin "Start deletion",
+  6.3b monitoring row, 6.7 "every file the ledger does not list", 6.8 flips `PLAY_LISTING.live`/`APP_STORE_LISTING.live` while 6.5 leaves
+  it false — deliberate deviation from decision 24's literal phrasing, store URLs now read from the listing flags; renumbering of 6.3b/6.4–6.7
+  rejected in favour of a topological print order in assemble.py). G1: 9 applied (0.1 item 13 merge/branch rule, settled palette/domain
+  wording, 1.1 branch check). All validator-clean. Usage: agent_count 4, **subagent_tokens 848,118**, tool_uses 123, duration 1257 s (~21 min).
+  Fallback deleted.
+- Left for the orchestrator's final hand pass (this session): (a) assemble.py prints each milestone in dependency (topological) order,
+  stable by id, and "How to use" says so; (b) G2 1.3b: state that `my_context()` lists pending memberships while `app.member_org_ids()`
+  counts only active ones (then 5.6a's fallback is dead code); (c) G13 5.8 code comment "step 6.5 flips this" → 6.8; (d) G14 6.4/6.5/6.6
+  decision-31a domain-change sentence; (e) G9 3.6a `loadNotificationRef` names the event fan-out group (`calendars.view_audience_group_id`).
+
+## Round-1 fixer totals
+| bite | groups | applied | tokens |
+|---|---|---|---|
+| 9 | G2, G3, G4 | 4 + 10 + 13 | 708,369 |
+| 10 | G5, G6, G7, G8 | 10 + 18 + 6 + 7 | 702,534 (+110,069 lost to the limit) |
+| 11 | G9, G10, G11 | 10 + 16 + 8 | 584,135 |
+| 12 | G12, G13, G14, G1 | 14 + 14 + 23 + 9 | 848,118 |
+| **total** | 14 groups | **162 applied** | **2,953,225** |
