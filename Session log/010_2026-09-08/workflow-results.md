@@ -119,3 +119,6 @@
 
 ## Bite 12 — fixers G12, G13, G14, G1, round 1 — launched 2026-09-15 America/New_York
 - args: {"stage": "fix", "groups": ["G12", "G13", "G14", "G1"], "round": 1}
+- Run: wf_9ccf97de-df7 (task w2gxbo2gk). Fallback send_later trig_01LoKuJVt5tj5jyiQogySUQN (20:38 UTC).
+- Checked while bite 12 runs: the G6 items from bite 11's propagation list (2.4 "custom SMTP pending (3.9)", 2.4/2.6 "one-click Restore
+  only ~90 days after a pause") were already applied by the G6 fixer in bite 10 — no hand fix needed.
