@@ -1,0 +1,166 @@
+{
+  "group": "G14",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "6.3a",
+      "severity": "blocker",
+      "category": "orchestrator-decision",
+      "quote": "`apps/web/src/content/legal.ts` exporting `LEGAL = { entityName: '<LEGAL_ENTITY_NAME>', … }` … plus `privacySections` and `termsSections` … Privacy policy sections, each stating only what the schema really stores",
+      "problem": "Orchestrator decision 19 (open_issues item 33 records it but the prompt was not revised): the placeholder privacy policy already exists at `docs/legal/privacy-policy.md` (11 sections, `<EFFECTIVE_DATE>`/`<LEGAL_ENTITY_NAME>`/`<POSTAL_ADDRESS>`/`<FOUNDER_EMAIL>` placeholders, 'For counsel' notes, draft banner). Build 6 still tells the agent to author its own privacy text from the schema, which would produce a second, diverging draft that the lawyer will not see.",
+      "fix": "Rewrite Build 6's privacy part to: 'Copy `docs/legal/privacy-policy.md` into `privacySections` verbatim — one `{ id, heading, paragraphs }` per `## n.` heading, the `**Effective date**`/`**Who we are**` lines feed `LEGAL.effectiveDate`/`entityName`/`postalAddress`/`contactEmail`; keep every `<…>` placeholder and the *For counsel* notes out of the rendered page (strip lines starting with `For counsel:` into a `counselNotes` array shown only inside the draft banner); the word \"Placeholder\" may appear only inside the banner text; do not add, remove or reword sentences — 6.6 replaces the text with the lawyer-approved version.' Keep the terms of service as the agent-drafted list. Change done_when item 5 to 'the privacy sections equal the section text of `docs/legal/privacy-policy.md` (unit test: source-text comparison)'. Add to Inputs: '`docs/legal/privacy-policy.md` (orchestrator decision 19) — the privacy source of truth until 6.6'. Add to Verify: `diff <(node -e \"…print joined paragraphs…\") <(sed …)` or a Vitest that reads the markdown file."
+    },
+    {
+      "step": "6.3a",
+      "severity": "blocker",
+      "category": "orchestrator-decision",
+      "quote": "Any signed-in person can request account deletion on the web at `/account/delete` … and in the Anacast app from the More tab",
+      "problem": "Decision 15 assigns 6.3a the UI, cron proof and docs for BOTH account paths, but the prompt builds only Delete and none of these deliverables: (a) web `/account` Deactivate action and mobile More-tab Deactivate row calling `deactivate_account()`; (b) the 'Restore my account' flow when an archived user signs in (web `landingFor`/`proxy.ts` and mobile `(app)/_layout` currently send them to no-church) and the 'Keep my account' cancel flow during the 30-day window; (c) super-admin controls in `/admin` (users list → Archived → Restore; cancel a pending deletion; start a deletion request for a user who asked by email) via `srv_archive_account`/`srv_restore_account` through Server Actions with the service client; (d) `11_account_deletion.sql` assertions that an archived user is treated as a non-member (no org reads, absent from `srv_audience_user_ids`, hidden from `directory_persons`, `push_devices` deleted at archive time), that `srv_process_account_deletions()` skips rows with `scheduled_for > now()` and processes them after, and that restore brings memberships/permissions back; (e) `ACCOUNT_DELETION_GRACE_DAYS = 30` as a documented constant; (f) the two-case schema statement (9999 unpasted → fixers put schema in 1.2–1.4; pasted → 6.3a ships the next free `999x_*` migration); (g) `docs/ACCEPTANCE_WEB.md` 'Deactivate / restore' and 'Cancel deletion' scripts and a `docs/MOBILE_BUILD.md` 'Device checklist: account' section (6.4/6.5 device lists already expect 'Deactivate and Delete rows on More'). The fidelity review flags the wording; this entry lists the missing deliverables so the reviser can add them.",
+      "fix": "Add Build items: '4b. Web Deactivate: `/account` shows the Deactivate card (copy from decision 15), Server Action `deactivateAccountAction()` → `deactivate_account()` (user client) → sign out → `/account/deactivated`; when an archived user signs in, `landingFor(ctx)` routes to `/account/restore` (\"Restore my account\" → `restore_my_account()` or whatever the G2/G3 fixers named it — read HANDOFF Decisions) and a pending-deletion user sees \"Keep my account\" which deletes the request row and restores.' '4c. Super admin: `/admin/users` (or the churches → Admins tab, read 2.2's layout) lists archived accounts with Restore, pending deletion requests with `scheduled_for` and Cancel, and a \"Start deletion request\" action; Server Actions after `requireSuperAdmin()` call `srv_archive_account`/`srv_restore_account`/`srv_…` with the service client (add to the service-client whitelist in docs/RLS.md).' '5b. Mobile: Deactivate row on More next to Delete; `(app)/_layout` membership check → archived session shows `app/account/restore.tsx`.' Extend Build 1's SQL test with the (d) assertions and Build 2 with 'a request whose `scheduled_for` is in the future is not processed'. Add `ACCOUNT_DELETION_GRACE_DAYS = 30` to `packages/domain/src/limits.ts` (JSDoc: recommended default, founder may change). Add the two-case paragraph to Inputs/Constraints. Add the acceptance-script and device-checklist items to Build 8. Update done_when/Finish (feature-table row 'Account deactivation + deletion (Play requirement)')."
+    },
+    {
+      "step": "6.3a",
+      "severity": "major",
+      "category": "acceptance-criteria",
+      "quote": "add a case that the final phase calls `srv_process_account_deletions` on the service client once per tick and reports its integer result",
+      "problem": "DESIGN §11 Phase 3 acceptance lists 'cron idempotent under concurrent invocation' and DESIGN §8 says the tick is 'Idempotent under concurrency'. No G14 step proves it: 6.3a only checks the phase is called and returns 0 on a second sequential run; 6.3b only tags failures. Two overlapping Vercel cron/publish invocations double-sending pushes or double-processing deletions would go unnoticed.",
+      "fix": "Add to 6.3a Build 2: 'Concurrency proof (DESIGN §11 acceptance): (a) `apps/web/src/lib/cron/tick.concurrency.test.ts` — run `runTick` twice concurrently (`Promise.all`) against a mocked service client whose `srv_claim_notifications` hands each queued row to exactly one caller and whose `srv_process_account_deletions` returns 1 then 0; assert every notification is dispatched once and `processed` counts sum to 1; (b) SQL: in `11_account_deletion.sql` assert `srv_process_account_deletions` marks rows with a single `update … where processed_at is null and scheduled_for <= now() returning …` (or `for update skip locked`) by inspecting `pg_get_functiondef`, and add the same `for update skip locked` assertion for `srv_claim_notifications` (it is 3.6a's guarantee); record the result in `docs/CHECKLIST_SECURITY.md` row \"cron idempotent under concurrency\" (new row) and HANDOFF.' Add a done_when line for it."
+    },
+    {
+      "step": "6.3a",
+      "severity": "minor",
+      "category": "verification",
+      "quote": "Manual (local dev server + local DB + seed): sign in as a seeded member → `/account/delete`",
+      "problem": "6.2a/6.2b state (correctly, per DESIGN §12/§13 risk 13) that the local harness is plain Postgres without Auth/PostgREST, so the Next app cannot sign anyone in locally; this manual check is unrunnable and the cron curl needs a hosted user. The verification for the whole web/mobile flow is therefore missing.",
+      "fix": "Replace the manual paragraph with the 6.2a wording: 'Manual against the founder's hosted project (`apps/web/.env.local`): create a throwaway member, sign in, `/account/delete` → `/account/deleted`; SQL Editor `select user_id, scheduled_for, processed_at from public.account_deletion_requests` → one pending row 30 days out; …; without hosted access write the script into `session_log.md` for the founder.' Also add `/account` to `PROTECTED_PATHS` and `/account/deleted` to `PUBLIC_PATHS` in the smoke suite (only `/account/delete` is listed)."
+    },
+    {
+      "step": "6.1a",
+      "severity": "major",
+      "category": "founder-step-missing",
+      "quote": "The founder must paste 9997 into the hosted project before 6.1b/6.1c can be trialled on Vercel/Android — the prompt adds that to-do.",
+      "problem": "PLAN §12 'Manual (founder)' and the ledger rule make every migration a founder paste, but the group has no founder checklist for `9998_join_codes.sql` (5.6) / `9997_surveys_head_of_house.sql`, and neither 6.4 nor 6.5's 'Before you start' lists check the HANDOFF ledger, so the store builds could be tested against a hosted DB without the survey RPCs (open_issues item 4 admits the gap but leaves it to the assembler).",
+      "fix": "Add a `proposed_additional_steps` entry `6.1p` (FOUNDER, depends_on `6.1a`, before 6.1b's hosted trial): checklist '1. HANDOFF ledger shows `9999_init.sql` pasted. 2. Supabase → SQL Editor → paste `supabase/migrations/9998_join_codes.sql` if it exists → Run → then `9997_surveys_head_of_house.sql` → Run (each is re-runnable; a second run is harmless). 3. Optional: paste `supabase/tests/rls/10_surveys_head_of_house.sql` verbatim → Run → no error. 4. Ledger rows `9998 … | <date> | founder`, `9997 … | <date> | founder`.' Done when: ledger rows exist and `select proname from pg_proc where proname = 'submit_survey_response_for'` returns 1 row in the SQL Editor. Also add to 6.4 and 6.5 checklists item 1: 'HANDOFF \"Applied migrations\" lists every file under `supabase/migrations/` as pasted'."
+    },
+    {
+      "step": "6.1a",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "the target has `user_id is null`, `deceased_on is null`, `congregation_status in ('member','attendee')` and is not the caller",
+      "problem": "Under orchestrator decision 15 an archived account keeps `persons.user_id` set but 'behaves like a disabled membership everywhere'. With this predicate a family member whose account was deactivated (or is in the 30-day deletion window) can neither answer (archived) nor be answered for (`person_has_account`), and the same applies to a person whose only membership is `disabled`.",
+      "fix": "Change the predicate to: 'the target has no *usable* account — `user_id is null`, or the linked user is archived per decision 15's archival columns (read the real column/helper the G2/G3 fixers added, e.g. `app.is_archived(user_id)`), or has no `active` membership in the org'. Add two rows to the `10_surveys_head_of_house.sql` fixture (child with an archived account → proxy allowed; spouse with a disabled membership → proxy allowed) and a `detail` value `person_has_account` only when the account is active. Mention the reading in `docs/RLS.md`."
+    },
+    {
+      "step": "6.1b",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "`setSurveyStatus(db, id, 'open', { opens_at: opens_at ?? now })`, then — exactly as 3.5a's publish actions do — call the 3.6a dispatcher",
+      "problem": "A survey opened with a future `opens_at` is hidden by RLS until the window starts, yet the prompt never says what the push does: whether `on_content_publish` sets `notifications.scheduled_for = opens_at` (so the push waits) or `now()` (members get a push for a survey they cannot open), how the list labels it, and that editing `opens_at` after opening has the same 'push does not move' gap 6.2b fixes for announcements.",
+      "fix": "Add to Build 5/8: 'Read `app.on_content_publish` for the survey branch: if it sets `scheduled_for = opens_at`, show the list badge \"Scheduled — opens <date>\" (reuse 6.2b's `pushStatusLabel` extension if present, else add it additively) and disable editing `opens_at` once open unless you also move the queued push through 6.2b's `rescheduleQueuedNotification` (import it if 6.2b ran; otherwise refuse the edit with \"Reopen as a new survey\"); if it sets `scheduled_for = now()`, force `opens_at <= now` in `openSurvey` (field error \"Open the survey when it should start\") so a push never announces an invisible survey.' Add a Vitest case and a done_when clause."
+    },
+    {
+      "step": "6.1b",
+      "severity": "minor",
+      "category": "test-coverage",
+      "quote": "Playwright `smoke.spec.ts`: `/o/<slug>/surveys`, `/surveys/new` redirect unauthenticated to `/login?next=`",
+      "problem": "The results page and the CSV Route Handler — the two surfaces that expose member answers — are not in the smoke redirect list, although PLAN §12 asks that unauth redirects be covered for pages that render data.",
+      "fix": "Extend the smoke list to `/o/any/surveys/<uuid>` and `/o/any/surveys/<uuid>/export` (redirect to `/login?next=…`, no CSV body) and, in the full E2E, assert the plain member gets 403 JSON from the export route."
+    },
+    {
+      "step": "6.2a",
+      "severity": "minor",
+      "category": "orchestrator-decision",
+      "quote": "`AUDIT_ACTIONS = ['INSERT','UPDATE','DELETE','invitation_permissions_dropped','org_without_manager']`",
+      "problem": "Decision 15 adds account archive/restore/deletion-request actions (`deactivate_account`, `srv_archive_account`, `srv_restore_account`, super-admin cancel) that operate on a per-user table not in the DESIGN §4.2 audited list. If the G2/G3 fixers audit them with new synthetic actions or a new table, the hard-coded `AUDITED_TABLES`/`AUDIT_ACTIONS` lists, labels and `filters.ts` validation would silently drop those rows from `/admin/audit` — the only place the super admin could see who archived whom.",
+      "fix": "Add to Build 1: 'Derive `AUDITED_TABLES`/`AUDIT_ACTIONS` from the real triggers and `raise`/insert sites in `9999_init.sql` (grep `audit_log`): include any account-archival table/actions decision 15 introduced (label them \"Account archived\", \"Account restored\", \"Deletion requested\", \"Deletion cancelled\") and a `Platform`-scoped row link to the `/admin` users list; if the fixers did not audit archive/restore, record it under HANDOFF \"Open questions\" as a gap for the next migration.' Add a Vitest assertion that every distinct `table_name`/`action` written by the SQL test fixtures (`07_…` part (d), `11_account_deletion.sql`) is present in the two lists."
+    },
+    {
+      "step": "6.2a",
+      "severity": "minor",
+      "category": "test-coverage",
+      "quote": "`/o/<slug>/audit` as the plain member → 403",
+      "problem": "The full E2E proves the org-page guard but never that a church admin (not super) is refused on `/admin/audit` and `/admin/audit/export`, which is the cross-tenant boundary this page introduces.",
+      "fix": "Add to Build 8's full E2E: 'as the provisioned church admin open `/admin/audit` and `/admin/audit/export` → 403 (or the `requireSuperAdmin` redirect 2.1 chose) and no other church's rows'."
+    },
+    {
+      "step": "6.3b",
+      "severity": "minor",
+      "category": "coverage-gap",
+      "quote": "wrap the `(app)/_layout` tree in a small `ErrorBoundary` component",
+      "problem": "6.3a puts the account screens at the root (`app/account/delete.tsx`, outside `(app)`) and decision 15 adds a restore screen there; the `(auth)` stack (sign-in, OTP, invite) is also outside `(app)`. A crash on those screens is never captured.",
+      "fix": "Change to: 'wrap the root `Stack` in `app/_layout.tsx` (below the providers, above the routes) with `ErrorBoundary` so `(auth)`, `(app)` and the root `account/*` screens are all covered; keep a second boundary inside `(app)/_layout` only if you need the org-aware reload'. Update done_when item 3 accordingly."
+    },
+    {
+      "step": "6.3b",
+      "severity": "minor",
+      "category": "orchestrator-decision",
+      "quote": "`SEC-12` `account_deletion_requests` has no delete policy",
+      "problem": "Beyond the fidelity note, the audit misses the decision-15 invariants that matter for security: an archived user must not pass the `app.*` membership helpers, must be absent from `srv_audience_user_ids`, and must have no `push_devices` rows. None of the twelve checks or the checklist rows covers archived accounts.",
+      "fix": "Add `SEC-13`: 'for a fixture user with `archived_at` set (insert inside the audit transaction and roll back): `app.is_org_member`/`app.my_org_ids`-style helpers return false/empty, `srv_audience_user_ids` excludes the user, `directory_persons` hides the person, and `select count(*) from push_devices where user_id = …` is 0' — take the helper names from `docs/RLS.md`. Add a checklist row 'archived accounts are non-members (SEC-13)'. Renumber the done_when count to thirteen."
+    },
+    {
+      "step": "6.4",
+      "severity": "major",
+      "category": "orchestrator-decision",
+      "quote": "Add `ios.icon` if the project has a separate iOS icon (Apple requires an opaque 1024×1024 PNG without alpha — if `assets/icon.png` has transparency, flatten a copy … or record a founder to-do)",
+      "problem": "Orchestrator decision 17 settled the brand palette and says store assets in 6.4/6.5 use the token file (`apps/mobile/src/theme.ts`, Prussian Blue splash, adaptive-icon background). 6.4 never mentions the palette, `theme.ts`, the splash `backgroundColor`, or the App Store screenshots/1024×1024 icon colours, so the iOS assets and App Store Connect listing (screenshots are mandatory for TestFlight external testers and the later review) are left undefined.",
+      "fix": "Add Build item 1b: 'Store assets from the palette (decision 17): generate `assets/icon-ios.png` (1024×1024, opaque) by flattening `assets/icon.png` onto `theme.colors.ink` (Prussian Blue `#00072d`) with a Node script using only installed deps (e.g. `sharp` if present in the workspace, else `expo-image-utils`-free PNG via `pngjs` — if neither exists, write the exact `magick`/`sips`-free instructions for the founder); confirm `splash.backgroundColor` and `android.adaptiveIcon.backgroundColor` read the token file; list in `docs/APP_STORE_PRIVACY.md` → \"Assets\" the required screenshot sets (6.7\" and 6.5\" iPhone, ≥ 3 each) and which screens to capture (Home, Sermon playing, Announcement, Bulletin, Directory, Survey).' Add to the founder checklist item 6b: 'App Store Connect → Version → upload the screenshots and the 1024×1024 icon is taken from the build'. Replace every 'founder to-do' about icon colours with the palette."
+    },
+    {
+      "step": "6.4",
+      "severity": "minor",
+      "category": "orchestrator-decision",
+      "quote": "Keep `ios.bundleIdentifier` equal to `android.package` (`com.anacast.app`, or the spelling HANDOFF records — bundle ids are case-sensitive and immutable",
+      "problem": "Decision 18 confirms the lowercase id and orders prompts to use it 'with no case caveat'. The spelling hedge remains in Build 1 and the checklist item 2 ('normally `com.anacast.app`').",
+      "fix": "Replace with: 'Keep `ios.bundleIdentifier` = `android.package` = `com.anacast.app` (orchestrator decision 18; immutable once App Store Connect has the record)'. Checklist item 2: 'both print `com.anacast.app`'."
+    },
+    {
+      "step": "6.4",
+      "severity": "minor",
+      "category": "coverage-gap",
+      "quote": "**E. Device checklist (iPhone with the TestFlight app from the App Store)**",
+      "problem": "The iOS device list repeats only the Phase 1 checks plus a directory photo; the Phase 2/3 screens that have iOS-specific risks (date input on the survey responder — 6.1c's masked date field, event submission, join-code entry, the Deactivate/Restore flow from decision 15, Universal Link `https://<DOMAIN>/invite/<token>` opening the app) are never exercised on iOS, so the second pass cannot triage them.",
+      "fix": "Add checklist items: '19b. If surveys (6.1c) exist: open a survey push → answer a `date` and a `multi_choice` question → \"Answer saved\"; as head of house answer for a child. 19c. If events (5.3b) exist: submit an event → pending. 19d. Tap an invite link `https://<DOMAIN>/invite/<token>` from Mail → opens in Anacast (Universal Links; falls back to Safari when `APPLE_TEAM_ID` is unset). 19e. Deactivate a throwaway account → signed out → sign in again → \"Restore my account\" works.' Mirror them in `docs/MOBILE_BUILD.md` iOS section."
+    },
+    {
+      "step": "6.5",
+      "severity": "major",
+      "category": "orchestrator-decision",
+      "quote": "if only Expo's template icon exists, keep it and add a HANDOFF to-do \"replace the template icon before public release — brand colours still open\"",
+      "problem": "Decision 17 (2026-09-07) fixed the five-blue palette and says the 512×512 icon, 1024×500 feature graphic and splash for 6.5 use the token file. The prompt (Build 2, Build 3 asset spec, notes) still treats colours as open and ships a template icon to the Play Console, where the icon and feature graphic are mandatory for any listing.",
+      "fix": "Build 2: 'Icon and splash: `assets/icon.png`, `assets/adaptive-icon.png` (foreground on `theme.colors.primary` Imperial Blue background) and `splash.backgroundColor` = `theme.colors.ink` (Prussian Blue) — regenerate the PNGs from the token values with a small Node script using installed deps, commit them, and record in HANDOFF that the glyph is a neutral \"A\" monogram the founder may replace'. Build 3 asset spec: 'derive the 512×512 icon from `assets/icon.png` (flattened, no alpha) and the 1024×500 feature graphic as Imperial Blue field with the Anacast wordmark in white (contrast 13.9); screenshots use the app's real theme'. Delete the 'brand colours still open' sentences in Build 2 and notes; open_issues item 30 becomes resolved."
+    },
+    {
+      "step": "6.5",
+      "severity": "major",
+      "category": "orchestrator-decision",
+      "quote": "`android.package` cannot change once an `.aab` has been uploaded — if HANDOFF shows the founder confirmed `com.Anacast.app`, that spelling is the one to keep everywhere (Firebase app, Play app, `app.config.ts`). Do not \"fix\" the case.",
+      "problem": "Decision 18 confirms `com.anacast.app` and instructs drafters to 'drop every including-case caveat in 6.5' (open_issues item 32 repeats the order). The caveat still appears in Inputs, Constraints and notes, and would make the agent honour a superseded spelling if an old HANDOFF line remains.",
+      "fix": "Inputs: '`android.package` = `com.anacast.app` (orchestrator decision 18; immutable after the first Play upload — Firebase app, Play app and `app.config.ts` must all say this)'. Constraints: 'Never change `android.package`.' Remove the `com.Anacast.app` sentence from notes and the 'including the case…' clause in open_issues item 25."
+    },
+    {
+      "step": "6.5",
+      "severity": "minor",
+      "category": "coverage-gap",
+      "quote": "run the 4.5 Checkpoint C device list once more (OTP sign-in, a push from a web announcement, background audio, bulletin PDF, Deactivate and Delete rows present on More)",
+      "problem": "The Play internal build is the first production-profile build (`environment: production`, `.aab`, Play App Signing); Phase 2/3 features that depend on production env or native config (App Links `assetlinks.json` with the *upload-key* SHA-256 now differing from the preview keystore's, directory photo picker permissions, survey push target) are not on the device list, so a broken App Link fingerprint would surface only in production.",
+      "fix": "Add to checklist item 17 and `docs/MOBILE_BUILD.md`: 'If 5.7 built App Links: after Play App Signing, copy the **App signing key certificate** SHA-256 from Play Console → Setup → App integrity and give it to the agent (it must be added to `/.well-known/assetlinks.json` next to the upload-key fingerprint); then tap `https://<DOMAIN>/invite/<token>` → opens in Anacast. If surveys (6.1c) exist: answer one from a push. If the directory (5.2b) exists: pick a household photo → permission prompt.' Add a Build 7 triage line for the App Links fingerprint."
+    },
+    {
+      "step": "6.6",
+      "severity": "major",
+      "category": "orchestrator-decision",
+      "quote": "Step 6.3a produced: `apps/web/src/content/legal.ts` exporting `LEGAL = { … }`, `LEGAL_IS_DRAFT = true`, `privacySections` and `termsSections`",
+      "problem": "Decision 19 (open_issues item 33: 'Reviser: update … 6.6 Inputs accordingly') makes `docs/legal/privacy-policy.md` the draft the lawyer starts from and the file 6.3a copied into `legal.ts`; 6.6's Inputs, checklist B.3 ('open … legal.ts') and Build 1 never mention the markdown file, its *For counsel* notes, or what happens to it after go-live, so the founder may hand the lawyer the rendered page without the counsel notes and the stale placeholder stays in the repo looking authoritative.",
+      "fix": "Inputs: add '`docs/legal/privacy-policy.md` — the placeholder privacy policy (orchestrator decision 19) that 6.3a copied verbatim into `legal.ts`; its *For counsel* notes explain each section's factual basis'. Checklist B.3: 'Send your lawyer `docs/legal/privacy-policy.md` (it contains *For counsel* notes) and the 6.3a terms draft from `legal.ts`; the rendered pages are at `https://<VERCEL_URL>/privacy` and `/terms`.' Build 1: after the approved text lands, 'replace `docs/legal/privacy-policy.md` with a two-line stub pointing at `docs/legal/privacy-approved.md` and `legal.ts` (or delete it) so no placeholder text remains in the repo; add `docs/legal/privacy-approved.md`/`terms-approved.md` to the grep in Verify (`grep -rn \"<[A-Z_]\\+>\" docs/legal` → nothing)'. Add a done_when clause."
+    },
+    {
+      "step": "6.6",
+      "severity": "minor",
+      "category": "coverage-gap",
+      "quote": "Web: the public footer (create `apps/web/src/components/SiteFooter.tsx` if no footer component exists yet …) shows \"Privacy Policy\" → `/privacy` and \"Terms of Service\" → `/terms`",
+      "problem": "Decision 16 requires the live URLs to be linked from the mobile sign-in, More tab and web footer (covered), but the share page `/s/[token]` — the one page anonymous members of the public reach, with `noindex`/no-referrer headers — and the invite email (3.2's Resend template) are not mentioned; both are places a privacy link is conventionally expected and the share page collects hashed IPs described in the policy.",
+      "fix": "Add to Build 4: 'Also add a one-line footer with the two links to `app/(public)/s/[token]/page.tsx` (keep its `X-Frame-Options`/`noindex`/no-referrer headers unchanged) and to the invitation email template in `src/lib/email/resend.ts` (plain links to `${NEXT_PUBLIC_APP_URL}/privacy` and `/terms`).' Extend `legal.spec.ts` with the `/s/unknown` 404 page still rendering the footer links (or note that the 404 view has none)."
+    }
+  ]
+}

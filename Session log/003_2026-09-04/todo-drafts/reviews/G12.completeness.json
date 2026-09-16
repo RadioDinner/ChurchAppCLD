@@ -1,0 +1,70 @@
+{
+  "group": "G12",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "5.3a",
+      "severity": "major",
+      "category": "edge-case-omitted",
+      "quote": "insert = member ∧ `members_can_submit_events` ∧ `user_in_group(submit group)` ∧ `submitted_by = auth.uid()` ∧ writable — the trigger `app.force_event_pending`",
+      "problem": "DESIGN §6 gives `ca_events_insert` no leader bypass: the same predicate applies to `announcements.create` holders. So a leader creating an event from `/events/new` is refused (42501) whenever `organization_settings.members_can_submit_events = false`, or whenever the leader is not in the target calendar's `submit_audience_group_id` (e.g. a male leader adding to the Women's calendar). The prompt's `createEventAction` assumes the insert always succeeds for holders and never tells the agent to verify or handle this; neither docs/RLS.md nor the proposed 5.8 mention it.",
+      "fix": "In Build item 5 add: \"Read `ca_events_insert` in `9999_init.sql`. Per DESIGN §6 it requires `members_can_submit_events` and `user_in_group(submit_audience_group_id)` for EVERY inserter, leaders included. If the migration has no `or app.has_perm('announcements.create')` branch: (a) on the Calendars page and the event form show a warning when `members_can_submit_events` is off ('Leaders cannot add events either while this is off — see Settings → Events') and when the actor is outside the chosen calendar's submit group; (b) map the 42501 to 'You are not allowed to add events to this calendar (check its \"Who can submit\" group and Settings → Events)'; (c) record in HANDOFF 'Deviations from plan' and docs/RLS.md known consequences that leaders are subject to the submit policy until a migration adds the leader branch.\" Add the same item to the proposed 5.8 goal/done_when (\"`ca_events_insert` admits `announcements.create` holders regardless of `members_can_submit_events` / submit group\") and to open_issues for G2/G13."
+    },
+    {
+      "step": "5.1a",
+      "severity": "major",
+      "category": "edge-case-omitted",
+      "quote": "`notFound()` when the view returns nothing (a household outside the org or invisible to the actor looks identical to a missing one — never leak existence)",
+      "problem": "`directory_households` is self-filtering across orgs, so a directory admin of church A can load a fellowship-visible household of church B at `view_level = 'fellowship'`. The household page then renders the edit form, photo, privacy and notes controls for another church's family; every write fails at the RPC but the page still exposes the editing surface and the masked values. 5.1b already adds the `view_level !== 'admin'` → 404 guard for persons; 5.1a omits it for households and the list can also surface such rows if `listHouseholds` is not org-filtered.",
+      "fix": "In Build item 4 append: \"Also call `notFound()` when the returned row's `view_level !== 'admin'` — a directory admin always gets `admin` for own-org households, so anything else is a fellowship row from another church that this page must never edit.\" In Build item 2 add \"`listHouseholds(orgId, …)` must filter `org_id = orgId` (the view also returns fellowship-visible households of other churches).\" Add a done_when bullet: \"Opening `/directory/households/<id>` for a household of another church in the same fellowship returns the 404 page.\""
+    },
+    {
+      "step": "5.1a",
+      "severity": "minor",
+      "category": "edge-case-omitted",
+      "quote": "anniversary (date input; stored as ISO date)",
+      "problem": "The `directory_households` view exposes `anniversary_display`, not `anniversary`, and `select anniversary from households` is 42501 for `authenticated`. The prompt never says how the edit form is prefilled, so an agent may try to read `anniversary` from the base table.",
+      "fix": "In Build item 4 (edit mode) add: \"Prefill `anniversary` from `anniversary_display`, which is the full `YYYY-MM-DD` at `admin` level; never read `anniversary` from `households`.\""
+    },
+    {
+      "step": "5.1b",
+      "severity": "minor",
+      "category": "test-coverage",
+      "quote": "Playwright smoke `apps/web/e2e/directory.spec.ts`: add unauth redirects for `/o/any/directory/persons/new?household=<uuid>` and `/o/any/directory/persons/<uuid>`.",
+      "problem": "PLAN §11 says \"add RLS tests for the directory matrix and Playwright coverage as UI lands\" and DESIGN §11 Phase 2 acceptance is \"full directory matrix in RLS tests + Playwright\". 5.1a makes the env-gated scenario optional (`test.fixme` fallback) and 5.1b adds only unauth redirects, so the whole directory UI can ship with zero functional Playwright coverage and no explicit hand-off to 5.7.",
+      "fix": "In 5.1b Build item 11 add: \"Extend `e2e/full/01-acceptance.spec.ts` (env-gated `full` project) with: create household → add an adult person → set status Member with `member_since` → Members badge shown → link to the E2E admin user → the Users grid shows the person → unlink → delete person. If the 3.7b harness cannot support it in one small addition, leave a `test.fixme` with these exact steps and write in HANDOFF that 5.7 owns the directory Playwright + RLS-matrix coverage.\" Mirror the last sentence in 5.1a Build item 11."
+    },
+    {
+      "step": "5.2",
+      "severity": "minor",
+      "category": "doc-name-drift",
+      "quote": "Deep-link paths `/directory/household/<id>` and `/directory/person/<id>` work through expo-router",
+      "problem": "DESIGN §10 lists Phase 2 mobile stacks as `events/*`, `directory/*`, `household/*`, `person/*`. The prompt folds `person/*` into `directory/person/[id]` without saying so; the agent reading DESIGN §10 first may create a separate `person/[id]` route, and the divergence is only recorded in open_issues, not in the prompt or HANDOFF.",
+      "fix": "In Build item 13 add: \"DESIGN §10 names a separate `person/*` stack; this step implements it as `directory/person/[id]` (one screen serves congregation and fellowship rows). Record that in HANDOFF 'Deviations from plan' so 5.6/6.1 reuse the same path.\""
+    },
+    {
+      "step": "5.2",
+      "severity": "minor",
+      "category": "docs-omitted",
+      "quote": "`docs/MOBILE_BUILD.md` — the new photo permissions strings.",
+      "problem": "PLAN §12 / DESIGN §12 keep the mobile device checklist in `docs/MOBILE_BUILD.md`. The prompt's Manual verify list (review banner → confirm → hidden from congregation → photo upload → fellowship tab) is never written into that checklist, so the founder's Checkpoint-C style device test has no directory items.",
+      "fix": "In Build item 14 change the MOBILE_BUILD.md bullet to: \"`docs/MOBILE_BUILD.md` — the new photo permission strings AND a 'Directory & My household' section in the device checklist containing the Manual verify steps below verbatim.\" Apply the same to 5.3b Build item 10 (\"calendar permission string AND a 'Calendar' device-checklist section with the Manual steps\")."
+    },
+    {
+      "step": "5.3a",
+      "severity": "minor",
+      "category": "docs-omitted",
+      "quote": "HANDOFF: 4.3 (mobile) hides the `events` notification preference and treats event pushes as `not_built` — 5.3b lifts both; write that in the 5.3b hand-off line.",
+      "problem": "The leader-insert restriction (finding 1), the null-submit-group semantics and the `events_require_approval` finding are all things later groups (G13 5.5 custom groups, 5.7 hardening, proposed 5.8) must know, but the Finish block only lists two of the three deviations and the feature-table wording in HANDOFF ('Calendars (All/Youth/Men/Women + custom), member submission') is not told to reflect that member submission works only from mobile after 5.3b.",
+      "fix": "In Finish replace the Deviations sentence with: \"'Deviations from plan': (1) null submit-group semantics, (2) the `events_require_approval` trigger finding, (3) whether `ca_events_insert` admits leaders when `members_can_submit_events` is off / outside the submit group; feature table Web UI → 'done (5.3a); member submission arrives with 5.3b (mobile)'.\""
+    },
+    {
+      "step": "5.8 (proposed)",
+      "severity": "minor",
+      "category": "incomplete-proposal",
+      "quote": "Sketch prompt (~450 words); needs a full 1200–3000-word prompt if adopted.",
+      "problem": "The proposal is honest about being a sketch, but if the orchestrator adopts it as written it lacks `## Inputs / prior state`, the 1200-word floor (decision 9), and omits the fourth DB gap the group's own steps expose (leaders blocked by `ca_events_insert`, finding 1). It also hard-codes `previous_head_role public.household_role` while 5.1a/5.2 only ever pass `spouse | other`.",
+      "fix": "Either expand the prompt to the full six-section format (Inputs: HANDOFF deviations from 5.1a/5.2/5.3a/5.3b, bodies of `save_person`, `app.force_event_pending`, `ca_events_insert`, `06_events_surveys.sql`, `03_directory_visibility.sql`; Build items per gap incl. a leader branch in `ca_events_insert`; Verify with the standing DB sequence + web build + mobile export; Finish with ledger row) or keep it a sketch but add the leader-insert gap to `goal`, `done_when` and `reason` so the orchestrator can fold it into 5.6/5.7 without losing it."
+    }
+  ]
+}

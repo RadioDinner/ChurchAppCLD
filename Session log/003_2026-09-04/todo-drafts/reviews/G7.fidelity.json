@@ -1,0 +1,70 @@
+{
+  "group": "G7",
+  "lens": "fidelity",
+  "findings": [
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "invented-column",
+      "quote": "`listLinkablePersons(orgId, search)` — `directory_persons` with `user_id is null` and `deceased_on is null`",
+      "problem": "DESIGN §4.4 defines `directory_persons` with columns id, org_id, household_id, first_name, last_name, preferred_name, sex, household_role, congregation_status, directory_listed, photo_path, email, mobile_phone, work_phone, deceased_on, marital_status, birthdate_visibility, birthdate, birthday_display, youth_override, member_since, view_level — there is NO `user_id` column, and G2 (1.3b) creates the view verbatim from that sketch. The same wrong assumption drives `listMemberships` ('the linked `directory_persons` row'), done_when 7 ('`listLinkablePersons` via `directory_persons`'), Inputs ('`persons`/`households` select through the `directory_persons` / `directory_households` views only') and Verify ('person still in `directory_persons` with `user_id null`'). As written the queries cannot be typed against database.types.ts.",
+      "fix": "Rewrite Build 1 so the user link comes from the base table: `persons.user_id` is on the client-readable surface (column-level grant excludes only `birthdate`/`anniversary`; select policy = exists in `directory_persons`, PLAN §5). `listMemberships`: select `persons(id, user_id, household_id)` for the org (explicit column list — never `select *` on `persons`) and join to `directory_persons` by id for `first_name`/`last_name`. `listLinkablePersons`: `from('persons').select('id, user_id, household_id, directory_persons!inner(first_name,last_name,deceased_on)')` or two queries — filter `user_id is null` on `persons`, names from the view. Change Inputs to: 'directory names/details are read through `directory_persons` / `directory_households`; the only base-table columns you may read on `persons` are `id`, `user_id`, `household_id` (the view has no `user_id`)'. Change Verify to 'person still visible in `directory_persons` and `persons.user_id` is null' and done_when 7 to '`listLinkablePersons` (persons `user_id is null` joined to `directory_persons`)'. Add a Constraint: 'never `select *` on `persons`/`households`'."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "my_context-shape",
+      "quote": "`my_context()` (step 1.3b) returns `{is_super_admin, orgs:[{org_id, slug, name, status, membership_status, person_id, household_id, permissions[]}], profile}`",
+      "problem": "G2's 1.3b my_context lists memberships in every status except `disabled` AND gives a super admin every org with `membership_status = null`. The prompt later says 'Not found, `pending`, or `disabled` → notFound()' and 'Super admins who are not members also get 404' without telling the agent that super-admin rows arrive with a null membership_status and that disabled rows never arrive; an agent reading the SQL may treat the null rows as a bug or accidentally let super admins through (RLS `app.has_perm` has no super-admin bypass, so their writes would fail anyway).",
+      "fix": "Extend the Inputs sentence: '…`permissions[]`}], profile: {display_name, email, last_org_id}}. Rows are memberships in any status except `disabled`; a super admin additionally receives every org with `membership_status = null` and `permissions = []` — treat those exactly like non-membership (404), because `app.has_perm`/`app.perm_org_ids` have no super-admin bypass and org-page writes would be refused by RLS.' In Build 1 change '(Not found, `pending`, or `disabled` → notFound())' to '(no row, `membership_status` null or `pending` → notFound(); `disabled` rows are not returned by `my_context()`)'."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "role-header-order",
+      "quote": "`Sermon manager` / `Organization manager` / `Announcement manager` as step 1.5 recorded in HANDOFF",
+      "problem": "DESIGN §5 and G3 (1.4/1.5 HANDOFF Decisions) list the founder's grouping as Sermon manager / Announcement manager / Organization manager (matching `permission_key` enum order: sermons.*, announcements.*, then bulletins/documents/users/org). The prompt reorders the headers in 3.1 Build 3, and 3.2 Goal and Build 4 repeat the reordered list.",
+      "fix": "Use 'Sermon manager / Announcement manager / Organization manager (order and membership come from `PERMISSION_GROUPS` in `@church/domain`; DESIGN §5)' in 3.1 Build 3, 3.2 Goal and 3.2 Build 4; keep the instruction that the app never hard-codes the headers."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "path-wording",
+      "quote": "path `{org_id}/logo/{uuid}.{ext}`",
+      "problem": "DESIGN §7 and G3's storage test write the org-assets path as `{org_id}/logo/{uuid}.png`; the prompt generalises to `.{ext}` without saying so (decision 10: note DESIGN wording when diverging). `can_write_object` validates only the uuid segments, so jpeg/webp extensions work, but the deviation should be explicit.",
+      "fix": "Append to the storage Input: '(DESIGN §7 writes the example as `{uuid}.png`; the extension must match the uploaded MIME — `jpg`/`png`/`webp` — and `can_write_object` only checks the org/uuid segments and the exact-path match.)'"
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "doc-misquote",
+      "quote": "turning sharing off makes every existing share link return 404 immediately (DESIGN §7)",
+      "problem": "DESIGN §7 says `srv_resolve_share_link` checks org `sermons_shareable` (so the share PAGE 404s) but also documents that already-minted signed URLs / provider links remain reachable ≤ 1 h after revocation. The helper text as written over-promises.",
+      "fix": "Replace with: 'turning sharing off makes every existing share link page return 404 on the next visit; a file URL already handed out stays valid for up to 1 hour (DESIGN §7)'."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "invented-name",
+      "quote": "`createUserDirect(ctx, input: { email, tempPassword, displayName, personId | newPerson: {firstName, lastName}, permissions })`",
+      "problem": "DESIGN §5 spells the Server Action input as `createUserDirect({ email, tempPassword, personId | newHousehold, permissions })`; the prompt renames the union member to `newPerson` without noting the DESIGN wording (decision 10). It is listed in open_issues but the prompt itself should say it.",
+      "fix": "Either rename to `newHousehold: {firstName, lastName}` (matching DESIGN §5 and the RPC's 'one-person household' semantics) or add '(DESIGN §5 calls this member `newHousehold`; `newPerson` is used here because the RPC creates the household from the person's names — keep one name in the schema, the dialog and HANDOFF)'. Apply the same name in Build 12's `createAccountSchema` ('`personId` xor `newPerson`')."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "wrong-step-reference",
+      "quote": "only `src/lib/users/create-direct.ts` plus pre-existing 2.x usages (Stripe, share, cron)",
+      "problem": "Share (`/s/[token]`, 3.4) and cron (`/api/cron/tick`, 3.6) do not exist yet when 3.2 runs; only 2.2's direct-create code (until moved) and 2.3's Stripe webhook/billing routes use the service client. The grep expectation misleads the agent about what should be present.",
+      "fix": "Replace with: 'only `src/lib/users/create-direct.ts` plus the 2.3 Stripe files (`src/lib/stripe/*`, `app/api/stripe/webhook`, `app/api/billing/*`); if the 2.2 Admins tab still imports the service client directly, move that logic into `create-direct.ts` (Inputs bullet 3).'"
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "length",
+      "quote": "MISSING",
+      "problem": "Orchestrator decision 9 caps agent prompts at 3000 words; 3.1 is ~3140 words and 3.2 ~3290 (whitespace split). The validator does not flag it, but the reviser should trim.",
+      "fix": "Trim ~150 words from 3.1 (e.g. collapse the repeated founder-decision quotes in Inputs to the decision numbers already quoted in Build 4) and ~300 from 3.2 (e.g. shorten the Verify manual-check paragraph and the InviteDialog copy text) so both land under 3000."
+    }
+  ]
+}

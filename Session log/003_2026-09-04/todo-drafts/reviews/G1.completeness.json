@@ -1,0 +1,63 @@
+{
+  "group": "G1",
+  "lens": "completeness",
+  "reviewed": "2026-09-08",
+  "findings": [
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "account-inventory-incomplete",
+      "quote": "Every third-party account the build needs exists under one founder email with 2FA on, before any agent needs a key",
+      "problem": "The checklist inventories GitHub, Supabase, Vercel, Stripe, Expo, Google/Firebase, domain and Resend but not the Apple Developer Program account that step 6.4 (iOS, DESIGN §11 Phase 3: 'Apple Developer account, APNs key, eas build -p ios, TestFlight') requires. HANDOFF's account list written by item 10 / the helper prompt will therefore be silently incomplete.",
+      "fix": "Add checklist item '6b. **Apple Developer Program (needed at step 6.4 — deferred).** US$99/year; enrolment for an individual or organisation can take days (D-U-N-S number for an organisation). Nothing to do now; record \"deferred to 6.4\" in HANDOFF.' Add 'Apple Developer <deferred to 6.4>' to the helper prompt's Inputs account line and to done_when 5 ('Expo, Google/Firebase and Apple Developer accounts exist, or HANDOFF.md says they are deferred to steps 4.5 / 6.4')."
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "critical-path-omitted",
+      "quote": "the Google Play Console developer account (US$25 one-time; identity verification can take days — needed only for a Play Store listing, not for the sideloaded APK of Checkpoint C)",
+      "problem": "Orchestrator decision 24 adopted steps 6.5 (Play Console internal testing + listing) and 6.8 (production release, 'includes Google's 14-day closed-test rule for new personal accounts'). Identity verification plus a mandatory 14-day closed test with 12 testers puts the Play Console account on the critical path to 6.8; the checklist presents it as something that can wait until a listing is wanted and gives the founder no target step.",
+      "fix": "Extend item 6: '… Create and verify the Play Console developer account no later than step 4.5: verification takes days, and a personal developer account created after Nov 2023 must run a 14-day closed test with 12 testers before Google allows production access (steps 6.5 and 6.8). Record in HANDOFF whether it is done or deferred to 4.5.' Add the same 'Play Console <done | deferred to 4.5>' entry to the helper prompt's Inputs account line."
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "domain-consequences-incomplete",
+      "quote": "Changing the domain later changes invite/share URLs and the Supabase redirect URLs; share links already issued keep the old host.",
+      "problem": "The founder decides whether to defer the domain on this information, but two later consequences from the plan are missing: HANDOFF 'Still open for the founder' item 1 lists the privacy-policy URL (steps 6.4/6.5/6.6 need a live URL in both store listings), and Phase 2 Android App Links (PLAN §11 item 7 / step 5.8: `intentFilters` host + `/.well-known/assetlinks.json`) bake the host into the APK, so a domain change after 5.8 means a new app build and re-verification.",
+      "fix": "Append to item 7.1: 'A later change also means: a new privacy-policy/terms URL in both store listings (6.4–6.6); and, once Android App Links ship (step 5.8), a new APK because the host is compiled into the app — so decide the domain before Checkpoint D (5.9) at the latest.'"
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "done-when-incomplete",
+      "quote": "HANDOFF.md records the Android package id (recommended `com.anacast.app`; the given `com.Anacast.app` recorded verbatim if kept), deep-link scheme `anacast`, display name Anacast, and either a value or 'deferred' for brand colours and production domain.",
+      "problem": "Checklist item 10 and helper prompt Build 1 write a per-account line under HANDOFF 'Environment status' ('0. Accounts (step 0.1)'), but no done_when item checks that it exists; only the Decisions part is checked. Steps 2.4, 2.5, 3.9 and 4.5 read that line to know which accounts they can assume.",
+      "fix": "Add a done_when item: 'HANDOFF.md → Environment status has an item \"0. Accounts (step 0.1)\" listing GitHub, Supabase, Vercel, Stripe, Expo, Google/Firebase, Play Console, Apple Developer, domain and Resend as done or deferred to a named step.'"
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "ci-step-unspecified",
+      "quote": "DB re-runnability + RLS tests (guard `scripts/db/test.sh`; add a `postgres:16` service container; step 1.2 owns what the scripts do in CI)",
+      "problem": "DESIGN §2 fixes the CI order 'db tests (PG service) → check-rerunnable → types drift' and decision 11 fixes the standing DB sequence, but the prompt gives the agent no `run:` line for this step, so it will invent one that 1.2 then has to replace. G2's 1.2 Build 9 assumes the step already runs 'the standing sequence' and only adds the `PG_SUPER_URL` service wiring.",
+      "fix": "Replace the parenthetical with: '(guard `scripts/db/test.sh`; `run: bash scripts/db/local-up.sh && bash scripts/db/apply-migrations.sh && bash scripts/db/apply-migrations.sh && bash scripts/db/check-rerunnable.sh && bash scripts/db/test.sh`; declare a `postgres:16` service with `POSTGRES_PASSWORD: postgres`, a health check and `ports: [5432:5432]`, and set `PG_SUPER_URL=postgresql://postgres:postgres@localhost:5432/postgres` on the step — step 1.2 makes `local-up.sh` honour that variable; do not add anything else)'."
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "vercel-settings-incomplete",
+      "quote": "\"Vercel project settings\" (Root Directory `apps/web`, Node 22, Framework Next.js, cron Pro `*/5 * * * *`, Hobby fallback `0 12 * * *` and why Pro is required)",
+      "problem": "This ENV.md section is the reference that 2.5's checklist, 2.6's DEPLOY.md and 3.8's final docs copy from, yet it omits settings those steps enter: 'Include source files outside of the Root Directory in the Build Step' must stay enabled (the `@church/*` packages live outside `apps/web`), Production branch `main`, and Deployment Protection (Vercel Authentication off for Production because share-link visitors are anonymous, on for Preview). Install Command is already flagged by the fidelity review.",
+      "fix": "Extend Build item 13's list: 'Root Directory `apps/web` with \"Include source files outside of the Root Directory in the Build Step\" enabled, Framework Next.js, Node 22, Install Command `pnpm install --frozen-lockfile` (repo root), Production branch `main`, Deployment Protection: Vercel Authentication ON for Preview / OFF for Production, cron Pro `*/5 * * * *` …'. In Finish, extend the founder to-do sentence: '… Vercel must be on Pro before step 2.5 and the project is imported with Root Directory `apps/web` (settings listed in docs/ENV.md)'."
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "turbo-env-incomplete",
+      "quote": "`env`: `NEXT_PUBLIC_*`, `SUPABASE_*`, `STRIPE_*`, `RESEND_*`, `EXPO_PUBLIC_*`, `CRON_SECRET`, `SHARE_LINK_COOKIE_SECRET`",
+      "problem": "The `build` task's cache key omits variables docs/ENV.md (same step) declares and that change build output: `EAS_PROJECT_ID` and `GOOGLE_SERVICES_JSON` are read by `app.config.ts` (DESIGN §2: 'googleServicesFile from env, eas projectId from env'), and `EXPO_ACCESS_TOKEN` does not match `EXPO_PUBLIC_*`. A cached Turbo build could then serve an export made with another project id.",
+      "fix": "Add `EAS_PROJECT_ID`, `GOOGLE_SERVICES_JSON` and `EXPO_ACCESS_TOKEN` to the `build` task's `env` list (or declare `EAS_*` and `EXPO_*` patterns), and add `DATABASE_URL` and `SUPABASE_DB_URL` to a `passThroughEnv` list so the `db:*` scripts see them when run under Turbo later."
+    }
+  ]
+}

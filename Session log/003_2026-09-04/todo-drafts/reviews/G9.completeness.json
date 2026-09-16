@@ -1,0 +1,94 @@
+{
+  "group": "G9",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "3.5a",
+      "severity": "major",
+      "category": "missing-feature",
+      "quote": "columns Title (pinned icon + link to edit when allowed), Audience (group name; \"Everyone\" for null), Publishes/Published (`formatInOrgZone`), Expires, State badge (`ANNOUNCEMENT_STATE_LABELS`), Push (managers only, …), Actions (Edit / Delete)",
+      "problem": "The prompt deliberately builds a member view (\"Members without any `announcements.*` permission can open the list and see only what RLS lets them see\") but the table never renders the `body`, and there is no detail route or dialog. A plain member therefore sees titles only and has no way on the web to read an announcement; managers likewise cannot preview the text without opening the edit form. The skeleton bullet lists `body` as a first-class field and the plan's list page is the only web surface for announcements (no `/announcements/[id]`).",
+      "fix": "In Build 9 add: \"Every row expands (shadcn `Collapsible`, or a `View` button opening a `Dialog`) to show the full plain-text body (`whitespace-pre-wrap`), the audience name, publish/expiry times in the org zone and, for managers, the push status. The member view uses the same component. Add `AnnouncementsTable.test.tsx` case: expanding a row renders the body text.\" Add to done_when 1: \"… and can expand a row to read the body.\""
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "missing-test",
+      "quote": "`dispatch.test.ts` — … 250 tokens → 3 `sendChunks` calls of ≤ 100 (assert through the fake, using the SDK's chunk size constant, not a literal)",
+      "problem": "PLAN §10 step 9 and the skeleton require \"dispatch tests with mocked SDK\", and Verify expects `src/lib/push/expo.ts (+ its test)`, but Build 9 lists no test for `expo.ts` — the only file that touches `expo-server-sdk` (token validation, `chunkPushNotifications`, rejected-chunk isolation, receipt-id chunking). The chunking assertion is also placed in the wrong layer: per Build 1 `sendChunks(messages)` receives ALL messages and chunks internally, so the fake transport sees exactly one call and \"3 `sendChunks` calls\" can never be observed. Chunking — an explicit PLAN §12 unit-test item (\"push dispatch (claiming, chunking, skip unpublished)\") — ends up untested.",
+      "fix": "Add to Build 9: \"`expo.test.ts` — `vi.mock('expo-server-sdk')` with a fake `Expo` class exposing `isExpoPushToken`, `chunkPushNotifications` (delegating to the real static chunk size), `sendPushNotificationsAsync`, `chunkPushNotificationReceiptIds`, `getPushNotificationReceiptsAsync`: 250 messages → `sendPushNotificationsAsync` called `Math.ceil(250 / Expo.pushNotificationChunkSizeLimit)` times; one rejected chunk → that chunk yields `{ tickets: [], error }` and the other chunks' tickets are returned; `getReceipts` batches ids and merges the maps; `isValidToken` rejects a non-Expo string.\" Reword the dispatch test to: \"250 devices → the fake transport receives one `sendChunks` call with 250 messages, whose tickets are mapped 1:1 onto `insertDeliveries` rows\". Add `expo` to the Verify suite list."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "missing-test",
+      "quote": "`afterContentPublish()` in `src/lib/push/after-publish.ts` runs the dispatcher synchronously with the service client and never throws into the Server Action",
+      "problem": "done_when 2 asserts the never-throws contract, but Build 9 names no test for `after-publish.ts`; a regression here would surface as a failed publish for the founder (the Server Action would 500 when Expo is unreachable).",
+      "fix": "Add to Build 9: \"`after-publish.test.ts` — mock `dispatchQueued` to throw → resolves `{ dispatched: false }` and logs; mock it to return a summary → `{ dispatched: true, summary }`; `createServiceSupabase` is called exactly once per call.\" Add `after-publish` to the Verify suite list."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "missing-test",
+      "quote": "run it twice concurrently (`& wait`) → both 200, no duplicate deliveries",
+      "problem": "DESIGN §11 Phase 3 acceptance is \"cron idempotent under concurrent invocation\"; the prompt relies on a manual curl against a live project only (which the executability review notes cannot run against the local shim). There is no automated proof of idempotency.",
+      "fix": "Add to `tick.test.ts` in Build 9: \"two `runTick` calls started with `Promise.all` against a fake `srvClaimNotifications` that hands each queued row out exactly once (models `skip locked`) and a fake `listStorageDeletions` that returns the same rows to both → `insertDeliveries` is called once per row and `markStorageDeletionDone` is idempotent (second call is a no-op, no throw).\""
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "missing-doc",
+      "quote": "**Docs**: `docs/ENV.md` — rows for `CRON_SECRET` … and `EXPO_ACCESS_TOKEN` …; `README.md`: one line pointing there.",
+      "problem": "Step 2.1 created `apps/web/.env.example`; this is the first step that actually reads `CRON_SECRET` and `EXPO_ACCESS_TOKEN` in web code (via `serverEnv()`), but the prompt does not ask to confirm both appear there with placeholders, so a local developer copying `.env.example` gets 503 from the cron route with no hint.",
+      "fix": "Append to Build 8: \"Ensure `apps/web/.env.example` (2.1a) contains `CRON_SECRET=` and `EXPO_ACCESS_TOKEN=` with comment lines (`# openssl rand -hex 32`; `# optional — Expo access token`); add them if missing.\""
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "incomplete-instruction",
+      "quote": "`updateAnnouncement(orgSlug, id, form)` — `announcements.edit`; `getAnnouncement` first (404 → `not_found`); `updateAnnouncement(db, id, { ...input, updated_by })`; 0 rows updated → …; then `afterContentPublish`",
+      "problem": "Create and delete call `revalidatePath('/o/<slug>/announcements')`; the update action does not, so after an edit the list (and the dashboard count) can show stale data until the Next cache expires.",
+      "fix": "Insert after the 0-rows clause: \"`revalidatePath('/o/<slug>/announcements')` and `revalidatePath('/o/<slug>/announcements/<id>/edit')`; then `afterContentPublish`\"."
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "missing-verification",
+      "quote": "sign in as a plain member → only Active rows, no Push column, no buttons",
+      "problem": "done_when 1 promises \"new requires `announcements.create`, edit requires `announcements.edit`\" (PLAN §8/§9: `requirePerm` per page), but neither Verify nor the test list checks the direct-URL path: a member typing `/o/<slug>/announcements/new` or `/announcements/<id>/edit` must get 3.1's 403 page, and a user with `announcements.create` but not `.edit` must be refused on the edit page.",
+      "fix": "Add to the manual Verify script: \"as the plain member open `/o/<slug>/announcements/new` and `/o/<slug>/announcements/<id>/edit` directly → 3.1's 403 page; as a `announcements.create`-only account the edit URL → 403 while `/new` works.\" Add to Build 11 `actions.test.ts`: \"update without `announcements.edit` → `permission_denied`; delete without `announcements.delete` → `permission_denied`.\""
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "handoff-wording",
+      "quote": "State checklist — tick the `announcements` part of \"Web: announcements + bulletins\" (bulletins remain open for 3.5b)",
+      "problem": "HANDOFF.md's State list has no such item; the web line is a single combined entry (\"Web: auth, super admin, org admin (users/permissions, settings, sermons, share links, announcements, bulletins, push, cron)\"). The agent cannot find the item it is told to tick; 3.5b (\"tick the `bulletins` half\") and 3.6 (\"tick 'Web: push + cron'\") have the same problem.",
+      "fix": "In all three Finish blocks replace the tick instruction with: \"In HANDOFF.md State, mark the sub-items of the combined web line the way steps 3.1–3.4 did (e.g. `announcements ✔ (3.5a)` inside the parentheses, or split the line into per-feature checkboxes if an earlier step already did); do not invent a new item.\""
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "scope-gap",
+      "quote": "MISSING",
+      "problem": "RLS grants `bulletins.upload` holders update on `bulletins` (DESIGN §6 \"same\"), and the skeleton lists \"list, delete\" only, but the prompt never says whether a title or date-range typo can be corrected after upload. Left unstated, one agent will add an edit dialog and another will not; the founder's only path today is delete + re-upload, which also re-sends a push.",
+      "fix": "Add to Constraints: \"No edit of a published bulletin in this step (title/date typos → delete and upload again; say so in the Delete confirm text). Metadata editing is a Phase 2 polish item.\" Add an open_issue: \"Bulletin metadata edit (title, range) is not planned anywhere; propose it for 3.10 or 5.7.\""
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "missing-doc",
+      "quote": "abandoned incomplete rows are visible only to `bulletins.upload` holders who can Resume or Discard them",
+      "problem": "DESIGN §4.4 `srv_housekeeping()` \"deletes upload-kind draft rows > 7 days without objects\" — if 1.3b applied that to `bulletins` (publish_at null) the docs paragraph is incomplete (abandoned drafts vanish after a week); if it applies only to sermons the founder should know incomplete bulletin rows persist forever. The prompt does not ask the agent to check.",
+      "fix": "Append to Build 8: \"Read the `srv_housekeeping` body in `9999_init.sql`: state whether incomplete bulletin rows are purged after 7 days by the 3.6 cron or persist until discarded, and record which in docs/ENV.md and HANDOFF.\""
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "missing-verification",
+      "quote": "`pnpm --filter web build` → succeeds; the route list contains `/api/cron/tick` (ƒ dynamic).",
+      "problem": "The Playwright smoke item in PLAN §12 covers \"unauth redirects\" and \"security headers\"; the cron route is excluded from the `proxy.ts` matcher (PLAN §7) — nothing in Verify asserts that exclusion still holds after this step (a matcher change would make Vercel's cron call redirect to `/login` and every tick fail silently).",
+      "fix": "Add to Verify: \"`grep -n 'cron/tick' apps/web/proxy.ts` → the matcher exclusion is present; `curl -i localhost:3000/api/cron/tick` returns 401/503 JSON, never a 307 to `/login`.\""
+    }
+  ]
+}

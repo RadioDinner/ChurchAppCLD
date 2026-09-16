@@ -1,0 +1,72 @@
+{
+  "group": "G2",
+  "lens": "completeness",
+  "reviewed": "2026-09-08",
+  "note": "Findings already raised by reviews/G2.fidelity.json (decision 15/21 schema, RPC and trigger additions; trial_ends_at default; helper counts; trigger-name examples; logo_path; srv_audience_user_ids parameter names; share_link_* catalogue keys; section (5c) placement; org-status check in srv_resolve_share_link) are not repeated here.",
+  "findings": [
+    {
+      "step": "1.2",
+      "severity": "major",
+      "category": "shim-parity",
+      "quote": "Roles `anon`, `authenticated`, `service_role` as `nologin`",
+      "problem": "On Supabase the `service_role` role has BYPASSRLS (that is why the plan's cron and Server Actions can write `notifications`, `notification_deliveries`, `storage_deletions`, `stripe_events` and `billing_*` rows with the service client while DESIGN §6 gives those tables no `authenticated` write policies). The shim creates `service_role` without it, so a 1.4 test that logs in as `service_role` sees RLS the hosted database does not apply, and G3's 1.4 prompt has to patch the shim with `alter role service_role bypassrls` and `alter table storage.objects enable row level security` after the fact. Both belong to 1.2, whose deliverable is a shim that mirrors Supabase (PLAN §10 step 3, DESIGN §12).",
+      "fix": "In Build 2 first bullet write: 'Roles `anon` and `authenticated` as `nologin`; `service_role` as `nologin bypassrls` (Supabase's service role bypasses RLS — the service client relies on it); guard each with …'. In the `storage.objects` bullet add: 'and `alter table storage.objects enable row level security` (RLS is on for `storage.objects` on Supabase; 1.4 adds the `ca_storage_*` policies)'. Add to done_when[5]: '`service_role` has `rolbypassrls = true`; `storage.objects` has RLS enabled'. Add to open_issues: 'G3 1.4 no longer needs to alter `service_role` or enable RLS on `storage.objects` — the shim does it.'"
+    },
+    {
+      "step": "1.2",
+      "severity": "minor",
+      "category": "verify-gap",
+      "quote": "the index `persons_one_head_per_household`, and an `org_id` index on every tenant table.",
+      "problem": "done_when[2] asserts an `org_id` index on every tenant table (PLAN §4 'org_id + index on every tenant table') but the Verify block has no command that checks it, so the agent has nothing to run and the claim is never proven.",
+      "fix": "Add to Verify after the enum count: '`psql \"$DATABASE_URL\" -Atc \"select c.table_name from information_schema.columns c where c.table_schema = ''public'' and c.column_name = ''org_id'' and not exists (select 1 from pg_indexes i where i.schemaname = ''public'' and i.tablename = c.table_name and i.indexdef ~ ''\\\\(org_id[,)]'')\"` → no rows (every tenant table has an index whose first column is `org_id`; composite indexes such as `(org_id, publish_at desc)` count).'"
+    },
+    {
+      "step": "1.2",
+      "severity": "minor",
+      "category": "doc-gap",
+      "quote": "add a short \"Local database\" section: the two start paths",
+      "problem": "DESIGN §12 names a third way to get a database — 'With Docker (founder's machine): `npx supabase start` + the same scripts against `postgresql://postgres:postgres@127.0.0.1:54322/postgres`'. `local-up.sh` already supports it through `PG_SUPER_URL` (Build 9) but `docs/ENV.md` is told to document only Path A and Path B, so the founder's own machine has no documented path.",
+      "fix": "Change Build 8 to: 'add a short \"Local database\" section: the three ways to get a database — Path A (system cluster), Path B (initdb fallback), and any existing superuser URL via `PG_SUPER_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres` (for example after `npx supabase start` on a machine with Docker, DESIGN §12) — then `pnpm db:up && …`, how to stop the fallback cluster, and that `DATABASE_URL` set in the environment short-circuits `local-up.sh`.'"
+    },
+    {
+      "step": "1.3a",
+      "severity": "major",
+      "category": "founder-decision-missing",
+      "quote": "forbid changing `congregation_status`, `member_since`, `youth_override`, `household_role` to anything other than `child`/`other`",
+      "problem": "Orchestrator decision 6 says 'Directory admins **and household adults** may set [the head of house]' and decision 21 lists 'household-adult head designation' among the G12 gaps that must be fixed in 9999 through the G2 fixers. `guard_persons_columns` as written blocks every non-admin from writing `household_role = 'head'` or `'spouse'`, so a family can never designate its own head (or mark a spouse) from the mobile household screens (5.2), and the 1.3b `set_head_of_house` RPC would be blocked by this trigger for household adults too. HANDOFF 'Founder answers' #8 also says designation is 'editable by directory admins and by the household'.",
+      "fix": "Replace the clause with: 'forbid changing `congregation_status`, `member_since`, `youth_override`; for `household_role`: a caller who is a household adult of `new.household_id` (has a person there with `household_role in (''head'',''spouse'')`, per `app.can_edit_household` minus the admin branch) may set any role on persons of that household — including `head` and `spouse` (orchestrator decision 6: directory admins and household adults designate the head; the partial unique index still allows only one head, so the 1.3b `set_head_of_house` RPC swaps atomically) — while every other non-admin may set only `child`/`other`; …'. Add to Verify smoke 4: 'As a household head, `update persons set household_role = ''spouse''` on another adult of the same household succeeds; as an unrelated member it raises `household_role_not_allowed`.' Add the same sentence to done_when[3]."
+    },
+    {
+      "step": "1.3a",
+      "severity": "major",
+      "category": "verify-gap",
+      "quote": "9. `update organization_settings set timezone = 'Mars/Olympus'` → `invalid_timezone` (22023).",
+      "problem": "The smoke script proves 9 of the 17 trigger functions. Six that DESIGN §8 calls 'invariants that must not be bypassable' get no check at all in this step: `stamp_response_scope` (scope_key `p:`/`h:`, `no_person_linked`), `freeze_survey_shape` (`survey_shape_frozen` after `draft`), `mirror_subscription_status` (Stripe status → `organizations.status`, only when `billing_mode = 'stripe'`), `enqueue_storage_deletion` (delete of an upload sermon → `storage_deletions` row), `guard_persons_columns` (`field_not_editable`, `minor_cannot_have_account`), and `guard_last_org_manager` on the `org_memberships` status path (only the permissions-delete path is tested, while PLAN §12 says 'last manager cannot be stripped (permissions or status)'). `cancel_notifications_on_delete` is tested for announcements only. 1.4 tests some of these later, but the step that writes them must show they fire.",
+      "fix": "Append to the smoke script: '10. As a member with a linked person: insert a `survey_responses` row for a `per_person` survey → `person_id` = own person, `household_id` null, `scope_key = ''p:'' || person_id`; for a `per_household` survey → `household_id` set, `scope_key = ''h:'' || household_id`; as a member with no person → `no_person_linked` (P0001). 11. `update surveys set status = ''open''` then `update surveys set response_mode = ''per_household''` → `survey_shape_frozen`; inserting a `survey_questions` row for that survey → `survey_shape_frozen`. 12. Org with `billing_mode = ''stripe''`: insert `billing_subscriptions` with `status = ''past_due''` → `organizations.status = ''past_due''`; `''canceled''` → `suspended`; the same on an org with `billing_mode = ''manual''` → status unchanged. 13. Insert an upload sermon with a valid `storage_path`, delete it → one `storage_deletions` row (`bucket_id = ''sermon-media''`, `object_name` = the path). 14. As a household adult (not admin): `update persons set congregation_status = ''member''` → `field_not_editable` (42501, detail names the column); setting `user_id` on a `child` → `minor_cannot_have_account` (P0001). 15. `update org_memberships set status = ''disabled''` on the only manager → `last_org_manager`; with `set local app.cascade = ''on''` the same update succeeds and an `audit_log` row `action = ''org_without_manager''` exists. 16. Delete an approved pushed event → its `notifications` row is `cancelled`.' Extend done_when[3]–[5] with one clause each (`stamp_response_scope` scope keys, shape freeze, Stripe mirror, storage deletion enqueue, persons column guard, membership-status path of the last-manager guard)."
+    },
+    {
+      "step": "1.3a",
+      "severity": "minor",
+      "category": "reads-gap",
+      "quote": "Read `docs/PLAN.md` §4 (\"Derivation\", \"Key helper functions\", \"Permission mapping\") and §5, and `docs/DESIGN.md` §4.3, §4.4 sections (5)–(7)",
+      "problem": "The trigger semantics this step implements live in DESIGN §4.2, which is not in the reading list: the `guard_last_org_manager` skip rule and its 'org has no manager' audit row, `stamp_response_scope` overwriting ids from caller identity, the survey shape freeze, the `audit_log` table list ('never stores leader notes'), `households.created_via` values, and the `billing_subscriptions` mirror rule. The agent is told to copy §4.4 bodies that §4.4 itself only names in a comment ('trigger fns … per §4.2').",
+      "fix": "Change the opening to '…`docs/DESIGN.md` §4.2 (table rows for `org_membership_permissions`, `households`, `surveys`, `survey_responses`, `billing_subscriptions` and `audit_log` — they state the trigger rules), §4.3, §4.4 sections (5)–(7) …' and add 'docs/DESIGN.md §4.2 (trigger rules per table)' to `reads`."
+    },
+    {
+      "step": "1.3b",
+      "severity": "major",
+      "category": "verify-gap",
+      "quote": "8. `submit_survey_response` for a `per_household` survey by two adults of one household → the second gets `survey_already_responded` when `allow_edit = false`.",
+      "problem": "The smoke script leaves several RPCs unexercised although they carry 'Never cut' behaviour (PLAN §10) or cron correctness: `srv_attach_user` (the direct-account path behind `createUserDirect` — must create the `created_via = 'admin'` household hidden from the fellowship, link the person, grant perms, and refuse a minor), `srv_process_account_deletions` (must run with `app.cascade = 'on'` so removing the only manager audits `org_without_manager` instead of raising, and must delete the `auth.users` row), `srv_enqueue_due_notifications` (a row inserted before the trigger existed, or a future-dated announcement, gets exactly one notification once due and never a duplicate), `remove_membership` (hard delete, `persons.user_id` nulled, devices deleted only when no other active membership remains), `save_person` for a non-admin (`household_role_not_allowed`, own contact fields allowed), and `set_membership_status` (`disabled` needs `users.delete`, `pending` → `invalid_payload`). done_when has no line for any of them.",
+      "fix": "Append to the smoke script: '9. `srv_attach_user(U3, A, null, ''Third'', array[''sermons.upload''])` → active membership, a household with `created_via = ''admin''` and `hide_from_fellowship = true`, person role `head` linked to U3, one permission row; with `person_id` of a `child` → `minor_cannot_have_account`. 10. `request_account_deletion()` as U1 (the only manager of A) then `srv_process_account_deletions()` (after setting the row''s `scheduled_for` to the past) → returns 1, U1 is gone from `auth.users`, `persons.user_id` is null, and `audit_log` has `action = ''org_without_manager''` for A. 11. Insert an announcement with `push = true`, delete its `notifications` row, call `srv_enqueue_due_notifications()` → 1 and one `queued` row; call again → 0. 12. `remove_membership(<U2''s membership>)` by a `users.delete` holder → membership and permissions gone, U2''s person unlinked, `push_devices` for U2 deleted only if U2 has no other active membership. 13. As a household adult, `save_person` setting `congregation_status` on another person → `field_not_editable`; setting `household_role = ''head''` on a person in another household → `household_role_not_allowed`; editing own `mobile_phone` succeeds. 14. `set_membership_status(id, ''pending'')` → `invalid_payload`; `''disabled''` without `users.delete` → `permission_denied`.' Add a done_when line: '`srv_attach_user` creates the hidden admin household and links the person (refusing minors); `srv_process_account_deletions` deletes the auth user under `app.cascade = ''on''` and audits `org_without_manager`; `srv_enqueue_due_notifications` never enqueues twice; `remove_membership` unlinks the person and cleans devices/preferences.'"
+    },
+    {
+      "step": "1.2 / 1.3a / 1.3b",
+      "severity": "minor",
+      "category": "handoff-gap",
+      "quote": "`HANDOFF.md`: tick nothing in \"State\" yet for the migration line but add a sub-bullet",
+      "problem": "Skeleton prompt-writing rule 7 and orchestrator decision 12 require every Finish block to update the HANDOFF **feature table** as well as the State checklist. None of the three Finish blocks mentions the 'Founder's feature checklist' table, whose `Schema` column reads 'planned' for every feature; after 1.3b every Phase 1 feature's schema (tables, triggers, views, RPCs) exists, and the table would still say 'planned' until some later step happens to notice.",
+      "fix": "1.2 Finish: add 'In the Founder''s feature checklist leave `Schema` at `planned` but add a footnote line under the table: \"Schema column: tables 1.2 ✓, functions/views 1.3a, RPCs 1.3b, RLS/tests 1.4 — marked `done` after 1.4\".' 1.3a Finish: add 'update that footnote (1.3a ✓)'. 1.3b Finish: add 'update the footnote (1.3b ✓) and set the `Schema` column to `done (pending RLS 1.4)` for Super admin, Org admin settings, Users + permissions, Sermons, Announcements, Bulletins, Documents, Directory, Calendars and Surveys.'"
+    }
+  ]
+}

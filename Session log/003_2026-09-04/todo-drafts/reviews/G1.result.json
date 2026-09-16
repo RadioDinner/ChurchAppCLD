@@ -1,0 +1,15 @@
+{
+  "group": "G1",
+  "applied": 30,
+  "rejected": [],
+  "validator_errors": 0,
+  "open_issues": [
+    "Vercel plan timing (0.1 item 3.2): the executability critic proposed 'Hobby now, upgrade at 2.5'; the skeleton, founder decision 10 and G6 2.5's precondition all assume Pro from 0.1, so the revision keeps Pro as the recommendation and allows Hobby today only with a recorded 'upgrade to Pro before step 2.5' to-do in HANDOFF (one rule, aligned across goal, checklist, done_when and notes). G6 2.5's sentence 'the Vercel team Anacast is on Pro (step 0.1 …)' should add 'or upgrade now via Team Settings → Billing' — one-line fix for the G6 reviser or the global fixer.",
+    "CI contract now fixed by 1.1 (service postgres:16 with POSTGRES_PASSWORD postgres; PG_SUPER_URL=postgresql://postgres:postgres@localhost:5432/postgres on the DB step; DATABASE_URL=postgresql://churchapp_owner:churchapp@localhost:5432/churchapp?sslmode=disable on the types-drift step; run lines written out). G2 1.2 Build 9 and G3 1.5 already assume these names; the global review should confirm neither renames them.",
+    "0.1 keeps the skeleton's rule that the Supabase project is created in 2.4, not 0.1; if the orchestrator prefers earlier creation, 0.1 item 2.3 and 2.4's checklist must change together.",
+    "0.1 records the Expo username in HANDOFF for 4.5's `eas init`; G11 4.1's app.config.ts does not currently set `owner` — if it ever does, it should read the HANDOFF value.",
+    "1.1 adds `@tanstack/query-async-storage-persister` 5.102.8 to the pnpm catalog because DESIGN §3 lists it under 'Data (catalog)'; only mobile (4.1) consumes it — G11 may prefer a plain mobile dependency; not a blocker.",
+    "DESIGN §13 risk 4 and DESIGN §11 'Founder action items' still say Supabase Pro; historical per orchestrator decision 4, no G1 action (HANDOFF item 1 already says Free; 1.5 rewrites the bootstrap docs).",
+    "Files touched: /home/user/ChurchAppCLD/Session log/003_2026-09-04/todo-drafts/groups/G1.json only (not committed). A stray assembler output file created by `assemble.py --help` during verification was deleted."
+  ]
+}

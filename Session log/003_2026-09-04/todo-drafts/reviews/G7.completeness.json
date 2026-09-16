@@ -1,0 +1,78 @@
+{
+  "group": "G7",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "3.1",
+      "severity": "major",
+      "category": "rpc-wiring",
+      "quote": "`my_context()` (step 1.3b) returns `{is_super_admin, orgs:[…], profile}`; `profiles.last_org_id` remembers the active church.",
+      "problem": "DESIGN §4.4 defines `my_context()` as `{is_super_admin, orgs:[{org_id, slug, name, status, membership_status, person_id, household_id, permissions[]}]}` — no `profile`, no `last_org_id`, no `trial_ends_at`. The `/o` landing rule (Build 2) and the trial banner (`trial_ends_at`, Build 2 StatusBanner) both depend on data the RPC does not return, and the prompt never tells the agent where else to read it.",
+      "fix": "Replace the Inputs sentence with: \"`my_context()` (step 1.3b) returns `{is_super_admin, orgs:[{org_id, slug, name, status, membership_status, person_id, household_id, permissions[]}]}` (DESIGN §4.4) — nothing else. Read `profiles.last_org_id` for the signed-in user with the user client (own-row select policy) in `app/(org)/o/page.tsx` and in `switchOrg`, and read `trial_ends_at`, `billing_mode` and `contact_email` from `organizations` via `getOrgBySlug` (select policy = member) in the org layout. If 1.3b's `my_context()` happens to include a `profile` object, use it, but do not assume it.\" Add the same `getOrgBySlug` call to Build 2 layout.tsx and to the StatusBanner bullet (\"`trial` → 'Trial ends <date>' from the `organizations` row loaded by the layout\")."
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "\"Published sermons\", \"Active announcements\", \"Current bulletin\" counts (`sermons`, `announcements`, `bulletins` with `publish_at <= now()`; RLS limits rows).",
+      "problem": "`bulletins` carry `starts_on`/`ends_on` (DESIGN §4.2) and 'current' is undefined; 'Active announcements' also ignores `expires_at`. The card would show a count rather than the current bulletin and would count expired announcements.",
+      "fix": "Change to: \"'Published sermons' = `sermons` with `publish_at <= now()`; 'Active announcements' = `announcements` with `publish_at <= now()` and (`expires_at is null` or `expires_at > now()`); 'Current bulletin' = the `bulletins` row with `publish_at <= now()` whose `starts_on <= today <= ends_on` (today in the org timezone via `@church/domain/dates.ts`), else the most recent published one, shown as its title + date range (or 'No bulletin yet').\""
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "feature-gap",
+      "quote": "renders `src/features/org/OrgShell.tsx` (sidebar + top bar) with `src/features/org/OrgNav.tsx`, `src/features/org/OrgSwitcher.tsx`, `src/features/org/StatusBanner.tsx`, the church name and logo",
+      "problem": "The org shell has no sign-out control (only the no-church page gets one). The founder's Checkpoint B trial needs to switch between the super admin and a church admin account; PLAN §9 gives mobile a 'Sign out' entry and web has no equivalent in this step.",
+      "fix": "Add to the OrgShell bullet: \"The top bar shows the signed-in user's display name/email with a menu containing 'Sign out' (reuse step 2.1's sign-out Server Action or add `signOut()` to `src/features/org/actions.ts` calling `supabase.auth.signOut()` then `redirect('/login')`) and, for super admins, the 'Super admin' link to `/admin`.\""
+    },
+    {
+      "step": "3.1",
+      "severity": "minor",
+      "category": "handoff",
+      "quote": "tick \"Web: … org admin (settings)\" progress in the State checklist (keep users/permissions unticked)",
+      "problem": "HANDOFF.md's State list has a single checkbox line `- [ ] Web: auth, super admin, org admin (users/permissions, settings, sermons, share links, announcements, bulletins, push, cron)`; it cannot be partially ticked, so the instruction is not executable as written.",
+      "fix": "Replace with: \"In HANDOFF.md 'State', split the single `Web: …` line into sub-bullets (`auth` (2.1), `super admin` (2.2), `org shell + settings + billing read-only` (3.1), `users/permissions` (3.2), `sermons` (3.3), `share links` (3.4), `announcements + bulletins` (3.5), `push + cron` (3.6)), tick the ones already done and this step's, and leave the rest unticked.\" Apply the same wording in step 3.2's Finish (tick the `users/permissions` sub-bullet)."
+    },
+    {
+      "step": "3.2",
+      "severity": "major",
+      "category": "edge-case",
+      "quote": "if the email already exists, find the user with `service.auth.admin.listUsers` (or `getUserByEmail` if supabase-js 2.112 exposes it), continue with that `user_id` WITHOUT changing its password",
+      "problem": "Neither `createAccount` nor `inviteUser` handles an email that already has a membership in THIS church: `srv_attach_user` will hit `unique(org_id, user_id)` (SQLSTATE 23505) or silently re-attach, and the invite path lets an admin mint an invitation for someone who is already an active member (`accept_invitation` then merges permissions — an unexpected permission grant). PLAN §12 / DESIGN §11 acceptance require readable errors for these flows.",
+      "fix": "Add to Build 7 (b): \"Before calling `auth.admin.createUser`, look the email up in `listMemberships(orgId)` (the `profiles.email` column is visible to `users.*` holders); if a membership for that email already exists in this church, return `{ ok: false, error: 'already_member' }` mapped to 'This email already has access to this church — manage them in the grid.' Also map SQLSTATE 23505 from `srv_attach_user` to the same message.\" Add to Build 5 `inviteUser`: \"If the email already belongs to an active membership of this church, refuse with the same message; if it belongs to a `disabled` membership, tell the actor to re-enable instead of inviting.\" Add both cases to the Verify manual check and to the `createAccountSchema`/action unit tests."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "rpc-wiring",
+      "quote": "`listMemberships(orgId)` — `org_memberships` joined to `profiles` (`display_name`, `email`), `org_membership_permissions` and the linked `directory_persons` row",
+      "problem": "`directory_persons` is a self-filtering view; a `users.delete`- or `users.edit_permissions`-only holder is not a directory admin and may not see the linked person, and many memberships have no person at all. A PostgREST embedded join through the view is not possible anyway (views have no FK to `org_memberships`). Written as one join, unlinked/hidden rows disappear from the grid.",
+      "fix": "Rewrite as: \"`listMemberships(orgId)` runs two queries with the user client — `org_memberships` with embedded `profiles` and `org_membership_permissions`, then `directory_persons` where `user_id in (<the membership user ids>)` — and merges them in TypeScript; a membership whose person is missing or not visible to the actor shows 'Not linked to a directory person' (or 'Not visible to you' when the actor lacks `users.create`/`org.settings`). Never drop a membership row because the person lookup returned nothing.\""
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "rpc-wiring",
+      "quote": "`service.auth.admin.createUser({ email, password: tempPassword, email_confirm: true, user_metadata: { display_name } })`",
+      "problem": "`profiles` rows are created by the `on_auth_user_created` trigger (DESIGN §4.2); the docs do not say which `raw_user_meta_data` key (if any) seeds `profiles.display_name`, so the display name typed in the dialog may never reach the profile.",
+      "fix": "Add to Build 7 (b): \"Read `app.on_auth_user_created` in `9999_init.sql` to learn which metadata key seeds `profiles.display_name`; pass that key in `user_metadata`. If the trigger reads none, rely on `srv_attach_user`'s `display_name` argument and, if that RPC does not write `profiles.display_name` either, update the profile row with the service client right after creation and record the gap in HANDOFF 'Deviations from plan'.\""
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "feature-gap",
+      "quote": "optional directory person (`src/features/users/PersonPicker.tsx` — a `command`-based searchable list fed by `listLinkablePersons`",
+      "problem": "DESIGN §5 'Getting accounts' path 3 is 'Admin-created directory first, then invite/create with `person_id` preselected'. Nothing lets a later page (5.1 directory) open the dialogs with a person preselected, so 5.1 would have to modify 3.2's dialogs.",
+      "fix": "Add to Build 3: \"`/o/[orgSlug]/users` accepts `?invite=<personId>` and `?create=<personId>` search params (`searchParams` is a Promise): when present and the person is returned by `listLinkablePersons`, open the corresponding dialog with that person preselected and the display name prefilled. Step 5.1 links to these URLs from the household page.\" Add the param names to `notes`."
+    },
+    {
+      "step": "3.2",
+      "severity": "minor",
+      "category": "edge-case",
+      "quote": "builds `link = ${NEXT_PUBLIC_APP_URL}/invite/${token}`",
+      "problem": "`NEXT_PUBLIC_APP_URL` is set by the founder in step 2.5 and may be missing in local runs or a preview deployment; the action would then produce `undefined/invite/…` links, the only path to accept invitations without Resend.",
+      "fix": "Add: \"If `NEXT_PUBLIC_APP_URL` is unset, fall back to the request origin (`(await headers()).get('origin')` or `x-forwarded-host` + proto) and log a one-line server warning; never emit a link without a scheme and host. Unit-test the link builder with and without the env var.\""
+    }
+  ]
+}

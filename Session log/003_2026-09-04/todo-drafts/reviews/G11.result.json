@@ -1,0 +1,98 @@
+{
+ "run_id": "wf_350e9ef8-185",
+ "runs": [
+  {
+   "task": "wucs7fjqj",
+   "args": {
+    "groups": [
+     "G11"
+    ]
+   },
+   "outcome": "stopped by 'Fable limit' (no reset time); drafter + fidelity critic done, executability/completeness critics + reviser failed",
+   "subagent_tokens": 707900,
+   "tool_uses": 112,
+   "duration_ms": 1773016
+  },
+  {
+   "task": "w3mhlzpjk",
+   "args": {
+    "groups": [
+     "G11"
+    ]
+   },
+   "resumeFromRunId": "wf_350e9ef8-185",
+   "outcome": "completed",
+   "subagent_tokens": 682786,
+   "tool_uses": 87,
+   "duration_ms": 1372658
+  }
+ ],
+ "subagent_tokens_total": 1390686,
+ "logs": [
+  "G11: 53 findings (0 blockers)"
+ ],
+ "result": [
+  {
+   "group": "G11",
+   "drafted": [
+    {
+     "id": "4.1a",
+     "title": "Expo scaffold — project config, Metro, EAS profiles, Supabase client, query persistence",
+     "actor": "agent",
+     "prompt_words": 2658
+    },
+    {
+     "id": "4.1b",
+     "title": "Mobile auth — OTP-first sign-in, password, verify code, invite deep link, no-church, org gate and switcher",
+     "actor": "agent",
+     "prompt_words": 2152
+    },
+    {
+     "id": "4.2a",
+     "title": "Mobile feed — home (announcements + current bulletin), announcement detail, bulletins list/detail with Android PDF open, signed-URL hook",
+     "actor": "agent",
+     "prompt_words": 1797
+    },
+    {
+     "id": "4.2b",
+     "title": "Mobile sermons — list, detail and SermonPlayer strategies (expo-audio background, expo-video, hosted YouTube WebView, open external)",
+     "actor": "agent",
+     "prompt_words": 1917
+    },
+    {
+     "id": "4.3",
+     "title": "Push & deep links",
+     "actor": "agent",
+     "prompt_words": 1927
+    },
+    {
+     "id": "4.4",
+     "title": "Mobile build docs + CI",
+     "actor": "agent",
+     "prompt_words": 2587
+    },
+    {
+     "id": "4.5",
+     "title": "FOUNDER Expo/EAS/Firebase + Checkpoint C",
+     "actor": "founder",
+     "prompt_words": 0
+    }
+   ],
+   "findings": 53,
+   "blockers": 0,
+   "applied": 53,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "File: /home/user/ChurchAppCLD/Session log/003_2026-09-04/todo-drafts/groups/G11.json — all 53 critic entries (14 fidelity, 32 executability, 7 completeness; several were the same defect seen through two lenses) were applied; none rejected. One was applied with a reconciliation: the 4.1b super-admin hint on `no-church` says 'Invite → accept in the browser' rather than the critic's 'Create account or Invite', because the 4.5 critic showed Create account fails for the founder's already-existing auth account.",
+    "Dependency change for the assembler: 4.1a `depends_on` is now [\"1.7b\", \"2.1a\"] (only the web brand/@theme approach is mirrored) and 4.1b is [\"4.1a\", \"2.1b\"] (invite page / `inviteDeepLink`). Other groups still pointing at unsplit 4.1/4.2 (G13 5.6, G13 5.4) should be repointed to 4.1b/4.2b.",
+    "Ask G6 (2.4) to make the Confirm signup template `{{ .Token }}` edit MANDATORY: a `signInWithOtp({ shouldCreateUser: true })` call that creates a new user sends Confirm signup, not Magic Link, so the mobile invite flow for people without an account dead-ends otherwise. 4.1b/4.4/4.5 now tell the founder both templates need it.",
+    "Ask G4 (1.7a) to confirm `upsertPushDevice` sets `enabled: true` (and `last_seen_at`) on conflict of `expo_push_token`; 4.3 tells its agent to extend it additively with a test if not.",
+    "Verify offline-unverifiable claim: EAS may reserve the `EAS_` prefix for user environment variables. 4.4/4.5 carry an `ANACAST_EAS_PROJECT_ID` contingency (app.config reads `EAS_PROJECT_ID ?? ANACAST_EAS_PROJECT_ID`); if EAS accepts `EAS_PROJECT_ID` the contingency can be dropped, otherwise PLAN §9/DESIGN §10 should rename the variable.",
+    "Theme deviation from orchestrator decision 5's 'single theme.ts': 4.1a splits into `src/theme/tokens.ts` (values, no imports — required so `app.config.ts` loads under Node and Vitest) + `src/theme.ts` (adds `paperTheme`); colour values remain in one file. `@tanstack/query-async-storage-persister` 5.102.8 lives in `apps/mobile/package.json`, not the catalog (DESIGN §3 says catalog; mobile-only). `expo-doctor` is a devDependency so Verify blocks and CI use `pnpm --filter mobile doctor` (pinned) — this is how orchestrator decision 11's `npx expo-doctor` check is satisfied.",
+    "Validator prints one WARN for 4.4 ('mentions the old com.churchappcld placeholder'): intentional — it is the explicit target of the consistency-pass grep the fidelity critic asked for.",
+    "Proposed step 4.6 (mobile polish template) was expanded to a full 1740-word agent prompt in the 3.10 shape; the orchestrator decides at assembly whether to adopt it."
+   ]
+  }
+ ]
+}

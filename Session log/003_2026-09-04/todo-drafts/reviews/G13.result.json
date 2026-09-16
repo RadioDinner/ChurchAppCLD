@@ -1,0 +1,116 @@
+{
+ "group": "G13",
+ "mode": "single-agent bites (founder request)",
+ "bites": [
+  {
+   "bite": "full-run attempt",
+   "run_id": "wf_7d914404-1a6",
+   "task": "we42ggfoe",
+   "args": {
+    "groups": [
+     "G13"
+    ]
+   },
+   "outcome": "stopped by usage limit (resets 4:20pm UTC) before writing",
+   "subagent_tokens": 141601
+  },
+  {
+   "bite": "G13-1 draft 5.4",
+   "run_id": "wf_3377d638-f65",
+   "task": "w7t00f355",
+   "subagent_tokens": 206582
+  },
+  {
+   "bite": "G13-2 draft 5.5",
+   "run_id": "wf_7bbcdf86-264",
+   "task": "wo2l038gz",
+   "subagent_tokens": 141621
+  },
+  {
+   "bite": "G13-3 draft 5.6",
+   "run_id": "wf_a9aaa30d-c8c",
+   "task": "w61g5jfcs",
+   "subagent_tokens": 229320
+  },
+  {
+   "bite": "G13-4 draft 5.7",
+   "run_id": "wf_b0ba9161-f71",
+   "task": "wn22arogr",
+   "subagent_tokens": 204407
+  },
+  {
+   "bite": "G13-5 critic fidelity",
+   "run_id": "wf_b9f25f61-889",
+   "task": "wqezd0s1p",
+   "subagent_tokens": 313525
+  },
+  {
+   "bite": "G13-6 critic executability",
+   "run_id": "wf_ea2be4f2-2dc",
+   "task": "wz77u5wfh",
+   "outcome": "limit hit at return; saved file complete, not re-run",
+   "subagent_tokens": 329906
+  },
+  {
+   "bite": "G13-7 critic completeness",
+   "run_id": "wf_5f63735d-e77",
+   "task": "ww9s7dq0x",
+   "subagent_tokens": 252031
+  },
+  {
+   "bite": "G13-8 revise",
+   "run_id": "wf_1caf88d8-6ca",
+   "task": "w9r04bgxf",
+   "subagent_tokens": 286223,
+   "tool_uses": 41,
+   "duration_ms": 858917
+  }
+ ],
+ "subagent_tokens_total": 2105216,
+ "findings": {
+  "fidelity": 17,
+  "executability": 30,
+  "completeness": 13
+ },
+ "logs": [],
+ "result": [
+  {
+   "group": "G13",
+   "drafted": [],
+   "findings": 0,
+   "blockers": 0,
+   "applied": 56,
+   "rejected": [
+    {
+     "finding": "executability 5.4a [2] and 5.6a [12] (sizing): trim Build 7/12 of 5.4a and Build 3 of 5.6a to land under 3,000 words",
+     "reason": "The reviser brief says 'do not shorten prompts — add or correct'. Both overshoots are now recorded explicitly in each step's notes (5.4a ≈3,350 words; 5.6a ≈3,970 words, the only validator warning) with the assembler's fallback (5.4c split; move 5.6a Build 3 detail into done_when). The validator reports 0 errors."
+    },
+    {
+     "finding": "completeness 5.5 [1] and 5.6b [2]: rename the specs to `apps/web/e2e/groups.spec.ts` / `apps/web/e2e/join.spec.ts` for sibling consistency with G12",
+     "reason": "Conflicts with the fidelity and executability critics: G10 3.7a's `smoke` project has `testMatch: /smoke\\.spec\\.ts/`, so `<feature>.spec.ts` files (including G12's `directory.spec.ts`/`events.spec.ts`) are never collected and the Verify claims would be vacuous. Adopted the executability fix instead: G13 specs are named `<feature>.smoke.spec.ts` (collected by the existing regex), every Verify proves collection with `playwright test --list --project=smoke`, and 5.7c widens `testMatch` to every `e2e/*.spec.ts` outside `full/` so the G12/G14 files run too. Flagged for the assembler in open_issues."
+    },
+    {
+     "finding": "executability 5.6a [9]: add `bash scripts/db/test.sh --only 08_rerunnable → PASS` to Verify",
+     "reason": "Applied the substance (second `\\i supabase/migrations/9998_join_codes.sql` line in `08_rerunnable.sql`, `check-rerunnable.sh` iterating over all migrations, Verify names `08_rerunnable.sql` in the full `test.sh` run) but not the `--only` flag: G3's `test.sh` is not documented to take a file filter, so the prompt runs the whole suite instead of naming an option that may not exist."
+    },
+    {
+     "finding": "completeness 5.9 [7] alternative: keep id 5.8 with a 'provisional' note only",
+     "reason": "Took the critic's other option and renumbered instead: G12 already proposes a 5.8, so G13's join-landing proposal is now 5.9 and Checkpoint D is 5.10 (both marked provisional; all cross-references in 5.7a/5.7c prompts, notes and open_issues updated). Keeping a colliding id would have left two 5.8 proposals for the assembler."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Playwright layout drift across groups: G10 3.7a ships one `apps/web/e2e/smoke.spec.ts` with `testMatch: /smoke\\.spec\\.ts/`; G12 (`directory.spec.ts`, `events.spec.ts`) and G14 (`e2e/smoke/legal.spec.ts`) name files that regex never collects. G13 now uses `<feature>.smoke.spec.ts` and proves collection with `--list`; 5.7c widens `testMatch`. The assembler should tell G12/G14 to adopt the same naming or rely on 5.7c's widening (which runs after them).",
+    "5.6a redefines `public.my_context()` / `app.member_org_ids()` in `9998_join_codes.sql` only if 1.3 hid pending memberships from `my_context()` or counted them in the read helpers — PLAN §4 states neither. G2 (1.3) should make both explicit in `9999_init.sql` while unfrozen.",
+    "`08_rerunnable.sql` (G3 1.4a) re-applies only `9999_init.sql`; 5.6a appends the 9998 `\\i` line and 6.1a/6.3a must append theirs or the re-apply drops their `ca_%` policies. G14's prompts should say so.",
+    "5.6b replaces 3.2a's `/users` 'Approve' action on pending memberships (which would activate via `set_membership_status` without linking a person or closing the join request) with a link to `/join-requests`. G7's 3.2a could drop the action now, or G2/G3 could add a DB guard refusing `pending → active` outside `approve_join_request`.",
+    "Error-key convention: 5.6a now uses `P0001` for `join_code_invalid`/`join_request_not_found`/`join_code_generation_failed` (1.3b's convention; the draft's `P0002` is gone) and adds a ninth key `join_request_not_found`. G4's 1.6b `errors.ts` catalogue must accept these additive keys.",
+    "5.7a tightens 4.1b's `parseAppLink` (`apps/mobile/src/lib/links.ts`) from any https host to the `EXPO_PUBLIC_WEB_URL` host — a recorded deviation; G11 could adopt the host check in 4.1b directly.",
+    "Migration and test-file numbering: 5.7c's optional index migration must not take 9997 (6.1a) or 9996 (6.3a); RLS test `11_` is claimed by both 5.6a and G14 6.3a — recommend 6.3a → `13_account_deletion.sql`.",
+    "Proposal ids are provisional: G13's join-landing proposal is 5.9 and Checkpoint D is 5.10 (G12 proposes 5.8); Checkpoint D now carries a full founder checklist and a 3.10-style helper prompt and can be adopted verbatim.",
+    "5.6c mobile sign-in with a join code creates the auth account before the code is checked (same exposure as web `/signup`; `srv_housekeeping` does not purge such accounts) — recorded for `docs/CHECKLIST_SECURITY.md` and handed to 6.3a/6.6 for the privacy text; the founder may prefer web-only account creation.",
+    "5.5 `depends_on` now includes 5.3a (calendar audience select must receive `canManageGroups`); G14 6.1a/6.1b should pass `canManageGroups` too and expect `queryKeys.groups.{detail,counts,usage,picker}` (no `audienceGroups` root)."
+   ]
+  }
+ ]
+}

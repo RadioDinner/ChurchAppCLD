@@ -1,0 +1,97 @@
+{
+ "run_id": "wf_01c992d6-508",
+ "runs": [
+  {
+   "task": "wjbw7w78f",
+   "args": {
+    "groups": [
+     "G8"
+    ]
+   },
+   "outcome": "stopped by usage limit (resets 6:30pm UTC); drafter done, 3 critics + reviser failed",
+   "subagent_tokens": 314081,
+   "tool_uses": 43,
+   "duration_ms": 943226
+  },
+  {
+   "task": "w9f342act",
+   "args": {
+    "groups": [
+     "G8"
+    ]
+   },
+   "resumeFromRunId": "wf_01c992d6-508",
+   "outcome": "completed",
+   "subagent_tokens": 910814,
+   "tool_uses": 127,
+   "duration_ms": 2005756
+  }
+ ],
+ "subagent_tokens_total": 1224895,
+ "logs": [
+  "G8: 54 findings (2 blockers)"
+ ],
+ "result": [
+  {
+   "group": "G8",
+   "drafted": [
+    {
+     "id": "3.3a",
+     "title": "Sermons — list, linked sermons, edit, player, delete",
+     "actor": "agent",
+     "prompt_words": 2722
+    },
+    {
+     "id": "3.3b",
+     "title": "Sermons — resumable upload (tus) with the 50 MB plan cap",
+     "actor": "agent",
+     "prompt_words": 2485
+    },
+    {
+     "id": "3.4",
+     "title": "Share links + /s/[token] + /embed/yt/[id]",
+     "actor": "agent",
+     "prompt_words": 3043
+    }
+   ],
+   "findings": 54,
+   "blockers": 2,
+   "applied": 52,
+   "rejected": [
+    {
+     "finding": "3.4 completeness (major, passwordless links): redirect to `/api/share/<token>/unlock?auto=1` whose handler calls `resolveShare` with `password: null` again and sets the cookie",
+     "reason": "Applied the intent (a password-less `max_views = 1` link survives a reload) but not the mechanism: the page's first GET already returned `ok` and incremented `view_count`, so a second RPC call from the handler would count two views per first visit. Replaced with a 60-second signed grant (`typ: 'grant'`, minted by the page, redeemed by a `GET` on the unlock route that sets the cookie WITHOUT calling the RPC) plus a `?unlocked=1` loop guard. Recorded in notes/open_issues as an addition beyond DESIGN §7 the founder may veto."
+    },
+    {
+     "finding": "3.4 fidelity (minor, passwordless links): 'every page load is an unlock (counts a view); say so in the panel copy; do not try to set the cookie from the page'",
+     "reason": "Conflicts with the completeness critic's major finding; adopting it would make `max_views` count page loads. Kept its useful half (panel copy explaining view counting, no cookie set from the Server Component) but resolved the counting problem with the grant flow instead; the 'count every load' behaviour is documented as the fallback if the founder vetoes the grant."
+    },
+    {
+     "finding": "3.3b executability (major, error keys): define `UploadErrorKey = StorageErrorKey | 'auth_required' | 'permission_denied' | 'network_error' | 'cancelled'` with web-local copies of the last two",
+     "reason": "Partially rejected: 1.6b's `DOMAIN_ERROR_KEYS` already contains `network`, so `network_error` would be a second, web-local name for the same thing (violates the 'copy names from the catalogue' rule); `cancelled` is not an error at all. Adopted `UploadErrorKey = StorageErrorKey | 'auth_required' | 'permission_denied' | 'network'` (every member is a catalogue key) and the fidelity critic's `onCancel()` callback for Cancel."
+    },
+    {
+     "finding": "3.4 completeness (minor, route hardening): `curl -sI -X GET /api/share/unknown/unlock → 405` and 'export only POST'",
+     "reason": "The unlock route now also exports `GET` for grant redemption (needed by the password-less flow above), so GET cannot be 405. Kept the rest of the finding: `Cache-Control: no-store` on every response, 413 for bodies over 1 KB, and 405 for every other method (verified with `curl -X PUT … → 405`); GET without a valid grant returns 404 JSON."
+    },
+    {
+     "finding": "3.11 fidelity (minor): expand the proposed step to the standard 1200–3000-word depth",
+     "reason": "Not cheap and the step's existence is undecided (orchestrator decision 8). Took the critic's alternative: marked the prompt explicitly as a STUB to be drafted at assembly, while adding the cheap parts (`<NNNN>` file name, exact revoke/grant statements, schema-qualified `extensions.digest` per `check-rerunnable.sh`, ledger row format `| <NNNN>_share_link_load.sql | pending | founder |`, additive keys)."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Step 3.4 was split into 3.4a (token/cookie crypto, ShareLinksPanel, create/revoke actions; depends on 3.3b) and 3.4b (public /s/[token], unlock route, share headers, /embed/yt/[id]; depends on 3.4a) under orchestrator decision 13 — the revised single prompt exceeded 4,200 words and ~25 new files. Other groups referencing `3.4` (3.7 in G10, 4.2 in G11) must be repointed to `3.4b`; references to `3.3` to `3.3b` (or `3.3a` for SermonPlayer only). 3.3a's depends_on is now [3.1, 1.6b, 1.7a].",
+    "CSP `media-src` widening to `'self' blob: https:` (both variants of G5's 2.1a `src/lib/security/csp.ts`) now happens in 3.3a, not 3.4 — G5 may prefer to ship the wider value in 2.1a directly; DESIGN §9 should be updated at assembly.",
+    "G8 adds two additive `@church/db` queries not in G4's 1.7a list: `statObject(db, bucket, path)` (3.3b) and `getShareLinkForCookieVisit(svc, linkId)` (3.4b), and may extend `insertSermonDraft` with optional `mime_type`. G4 can absorb them into 1.7a or leave them to G8's prompts.",
+    "3.3b places the generic uploader at `apps/web/src/features/uploads/{tus.ts,ResumableUpload.tsx,upload-errors.ts,media-probe.ts}` per DESIGN §11 step 8; G9 (3.5 bulletins) and G13 (5.4 documents) should reuse it and say so.",
+    "Password-less share links use a new 60-second signed grant redeemed by `GET /api/share/[token]/unlock?grant=` so `max_views` counts visitors, not page loads — beyond DESIGN §7; founder may veto (fallback: every load counts, stated in the panel).",
+    "Proposed step 3.11 is a STUB (≈450 words) with file name `<NNNN>_share_link_load.sql`; if adopted before 5.6 it takes 9998 and `9998_join_codes.sql` / `9997_surveys_head_of_house.sql` shift down. G5 also proposes a step numbered 3.11 (super-admin 404 lift) — one of the two needs renumbering.",
+    "3.4b's `rate_limited`/`unavailable` states render with HTTP 200 (App Router pages cannot set 429/503); only the unlock Route Handler returns real codes. `needs_password_reset` is indistinguishable on the public 404 page; leaders see 3.4a's 'Needs new link' badge instead.",
+    "If G5's `app/(public)/layout.tsx` renders chrome, 3.4b moves `/s/[token]` and `/embed/yt/[id]` into a sibling `app/(share)` group (URLs unchanged); G5 should state whether the (public) layout has chrome.",
+    "3.7's mock-env smoke (no `SUPABASE_SECRET_KEY`, no `SHARE_LINK_COOKIE_SECRET`) must keep asserting `/s/unknown` → 404; 3.4b orders the token-shape check before any secret access and verifies it.",
+    "Version pins used: `tus-js-client` 4.3.1 (PLAN §3) in 3.3b, `jose` 6.2.10 (DESIGN §3) in 3.4a — `jose` is not a transitive dependency of `@supabase/ssr` 0.12, contrary to the first draft."
+   ]
+  }
+ ]
+}

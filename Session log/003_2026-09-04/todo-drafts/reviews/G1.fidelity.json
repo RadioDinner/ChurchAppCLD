@@ -1,0 +1,95 @@
+{
+  "group": "G1",
+  "lens": "fidelity",
+  "reviewed": "2026-09-08",
+  "findings": [
+    {
+      "step": "0.1",
+      "severity": "major",
+      "category": "founder-decision-contradicted",
+      "quote": "Android package id: you gave `com.Anacast.app`. **Recommended: `com.anacast.app`** (all lowercase — uppercase segments are legal for Android but conflict with Java package conventions and some tooling). It cannot change after the first Play upload. Confirm one value.",
+      "problem": "Orchestrator decision 18 (founder, 2026-09-07) confirms `com.anacast.app` and says prompts use the lowercase id everywhere with no case caveat; HANDOFF.md Decisions already records it. The step still treats the id as unconfirmed in the goal ('recommended `com.anacast.app`'), checklist item 8.1, helper prompt Inputs ('<com.anacast.app | com.Anacast.app>'), helper Build 2 ('if it is not all-lowercase, add …'), helper Finish ('a package id that is not lowercase'), done_when 6 ('the given `com.Anacast.app` recorded verbatim if kept'), notes and open_issues 6.",
+      "fix": "Replace checklist item 8.1 with: 'Android package id: `com.anacast.app` (confirmed 2026-09-07; immutable after the first Play upload). Check that HANDOFF.md → Decisions lists it; nothing to decide.' Goal: 'Android package id `com.anacast.app` (confirmed)'. Helper Inputs: drop the package-id line or make it '`com.anacast.app` (confirmed)'. Helper Build 2: 'confirm HANDOFF Decisions already lists display name `Anacast`, package id `com.anacast.app`, deep-link scheme `anacast`; add only what is missing'. Helper Finish: delete the sentence starting 'If a value I gave contradicts the plan (for example a package id that is not lowercase)'. done_when 6: 'HANDOFF.md records package id `com.anacast.app`, deep-link scheme `anacast`, display name Anacast, the brand palette, and either a domain or \"deferred\"'. Delete open_issues 6."
+    },
+    {
+      "step": "0.1",
+      "severity": "major",
+      "category": "founder-decision-contradicted",
+      "quote": "Brand colours: a primary colour as a hex code (optionally an accent). \"Deferred\" is acceptable — web and mobile use a neutral default theme until you supply them.",
+      "problem": "Orchestrator decision 17 (founder, 2026-09-07) supplies the five-blue palette (Prussian Blue #00072d, Deep Navy #001c55, Imperial Blue #0a2472, Bright Marine #0e6ba8, Icy Blue #a6e1fa) and explicitly replaces the 'neutral default theme' wording; HANDOFF.md already has a 'Brand palette' table. What is still open is only the founder's confirmation of the token roles (HANDOFF 'Still open for the founder' item 5). The checklist item 8.4, helper prompt Inputs ('<#RRGGBB primary, optional accent | deferred>'), helper Build 2 ('brand colours or \"deferred — neutral default theme\"') and done_when 6 all contradict this.",
+      "fix": "Checklist 8.4: 'Brand colours: the five-blue palette is recorded in HANDOFF.md (\"Brand palette\"). Confirm or change the suggested token roles (primary Imperial Blue, primaryDark Deep Navy, ink Prussian Blue, accent Bright Marine, tint Icy Blue) — \"keep as suggested\" is a valid answer.' Helper Inputs: 'Token roles: <keep as suggested | your assignment>'. Helper Build 2: 'brand palette: confirm the HANDOFF table exists; record the token-role decision in its third column'. done_when 6: replace 'either a value or deferred for brand colours' with 'the token roles are confirmed or reassigned'. Remove every occurrence of 'neutral default theme' from the step."
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "stale-reference",
+      "quote": "\"Open questions for the founder\": remove the parts of question 9 that are now answered; keep whatever is deferred.",
+      "problem": "HANDOFF.md has no section with that heading; the live heading is 'Still open for the founder' (numbered 1–5, where 1 = production domain and 5 = token roles). 'Question 9' refers to the row in the 'Founder answers' table whose trailing 'founder to confirm' note is now history (decision 18).",
+      "fix": "Replace with: '\"Still open for the founder\": strike item 1 (production domain) if I gave a domain and item 5 (token roles) once I confirm them; in the \"Founder answers\" table row 9, replace the \"founder to confirm\" note with \"confirmed `com.anacast.app` 2026-09-07\".'"
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "stale-reference",
+      "quote": "HANDOFF.md 'Environment status' item 1 still says 'Pro recommended' for Supabase while decision 10 says Free — the helper prompt does not fix that line",
+      "problem": "HANDOFF.md 'Environment status' item 1 already reads 'Free plan per the founder … upgrade to Pro when sermon uploads must exceed 50 MB'. The notes sentence and open_issues 4 are stale; orchestrator decision 4 also says any remaining 'Pro recommended' wording is historical and prompts must not repeat it.",
+      "fix": "Delete that sentence from 0.1 notes and delete open_issues 4 (or reduce it to: 'DESIGN §13 risk 4 and open question 14 still say Supabase Pro; historical per decision 4, no action')."
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "placeholder-convention",
+      "quote": "If you want a custom domain (for example `app.anacast.<tld>`), register it now.",
+      "problem": "Orchestrator decision 9 prescribes the `<DOMAIN>` placeholder for the production domain; decision 5 routes the domain only through `NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_WEB_URL`. The prompt invents a partial example and names only `NEXT_PUBLIC_APP_URL`.",
+      "fix": "Replace with: 'If you want a custom domain (`<DOMAIN>`), register it now. Until then `NEXT_PUBLIC_APP_URL` (web) and `EXPO_PUBLIC_WEB_URL` (mobile) carry the Vercel URL `<VERCEL_URL>`.'"
+    },
+    {
+      "step": "0.1",
+      "severity": "minor",
+      "category": "prompt-format",
+      "quote": "## Inputs (ask me for any value that is missing instead of guessing)",
+      "problem": "Orchestrator decision 9 requires the six headed sections verbatim (`## Inputs / prior state`). The helper prompt uses a different heading; the validator accepts it but the assembled TODO will be inconsistent.",
+      "fix": "Rename the heading to `## Inputs / prior state` and move the parenthetical into the first bullet."
+    },
+    {
+      "step": "1.1",
+      "severity": "major",
+      "category": "misquoted-doc",
+      "quote": "`@types/react` on the 19.2 line matching React 19.2 (check `npm view @types/react version`; DESIGN §3 says `~19.1`, treat that as stale and record the value you used in HANDOFF version pins)",
+      "problem": "DESIGN §3 (lines 92 and 104) and PLAN §2 (line 100) both say `@types/react ~19.2`; nothing in the docs says `~19.1` (the only '19.1' in DESIGN is the shadcn CLI 4.19.1). The prompt would make the agent record a non-existent doc discrepancy in HANDOFF. The same false claim appears in notes and open_issues 3. Orchestrator decision 3 also names `@types/react-dom`, which the catalog omits.",
+      "fix": "Replace with: '`@types/react` ~19.2 and `@types/react-dom` ~19.2 (the 19.2 line matching React 19.2.3 — DESIGN §3, PLAN §2, orchestrator decision 3)'. In notes, replace the sentence 'DESIGN §3's `@types/react ~19.1` does not match…' with 'Catalog `@types/react`/`@types/react-dom` follow the 19.2 line per DESIGN §3.' Delete open_issues 3. In Finish, keep recording the installed `@types/react` version but drop the implication that it deviates from the docs."
+    },
+    {
+      "step": "1.1",
+      "severity": "major",
+      "category": "orchestrator-decision-missing",
+      "quote": "run `pnpm --filter ./apps/web build` — a directory filter, so the package name chosen in 2.1 does not matter",
+      "problem": "Orchestrator decision 2 fixes the web package name as `web` and says filters in prompts are `pnpm --filter web build`; decision 11 makes `pnpm --filter web build` the standard web verification command. The CI workflow written here should use the same command so CI and the prompts' Verify blocks agree. The name-agnostic rationale is repeated in notes and open_issues 2, which are now resolved.",
+      "fix": "In Build item 11 use `pnpm --filter web build` and drop the parenthetical; in notes replace the 'CI uses the directory filter…' sentence with 'CI runs `pnpm --filter web build` (the web package is named `web`, orchestrator decision 2)'. Delete open_issues 2 (or mark it 'resolved by decision 2')."
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "orchestrator-decision-incomplete",
+      "quote": "describe the Vercel settings in `docs/ENV.md` (Root Directory `apps/web`, Framework Next.js, Node 22; Vercel detects the pnpm workspace and installs from the repo root)",
+      "problem": "Orchestrator decision 1 also fixes the Install Command `pnpm install --frozen-lockfile` run from the repo root, and resolves the layout question, so open_issues 1 is stale. The ENV.md 'Vercel project settings' section (Build item 13) should carry the same value step 2.5's checklist will enter.",
+      "fix": "In items 10 and 13 add 'Install Command `pnpm install --frozen-lockfile` (run from the repo root)' to the Vercel settings list. Delete open_issues 1 or mark it 'resolved by orchestrator decision 1'."
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "doc-name-omitted",
+      "quote": "`@tanstack/react-query` 5.102.8, `date-fns` 4.4.0, `@date-fns/tz` (current 1.x)",
+      "problem": "DESIGN §3 lists `@tanstack/query-async-storage-persister` 5.102.8 under 'Data (catalog)' alongside `@tanstack/react-query`; the catalog list here omits it. It is consumed by the mobile app (4.1) but the docs place it in the catalog.",
+      "fix": "Add `@tanstack/query-async-storage-persister` 5.102.8 to the catalog list in Build item 2 (or state explicitly that 4.1 adds it to the catalog, and say why)."
+    },
+    {
+      "step": "1.1",
+      "severity": "minor",
+      "category": "orchestrator-decision-incomplete",
+      "quote": "raise it together with the `sermon-media` bucket `file_size_limit` when the project moves to Pro",
+      "problem": "Orchestrator decision 21 fixes how the raise happens: a later migration taking the next free number below the reserved block, worked example `9995_storage_limit.sql`, documented in docs/MIGRATIONS.md (step 1.5). The ENV.md row should point there so the founder is not told to edit `9999_init.sql` after it is pasted.",
+      "fix": "Append to the `NEXT_PUBLIC_MAX_UPLOAD_MB` row notes: 'the bucket limit is raised by a later re-runnable migration (worked example `9995_storage_limit.sql`, see docs/MIGRATIONS.md once step 1.5 writes it), never by editing a pasted `9999_init.sql`'."
+    }
+  ]
+}

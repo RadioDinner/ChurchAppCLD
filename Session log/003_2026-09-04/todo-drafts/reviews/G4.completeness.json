@@ -1,0 +1,86 @@
+{
+  "group": "G4",
+  "lens": "completeness against the plan",
+  "findings": [
+    {
+      "step": "1.6",
+      "severity": "major",
+      "category": "missing-schema",
+      "quote": "`events.ts` (Phase 2 consumers, schema now so names are fixed): `calendarSchema` (…), `eventSchema` (…)",
+      "problem": "The Goal promises \"Zod 4 schemas for every form and RPC payload\" and Build 9 deliberately adds Phase-2 `events.ts`, yet the `surveys` family is absent although `submit_survey_response(survey_id uuid, answers jsonb)` is a Phase-1 RPC in `9999_init.sql` (1.3b) that step 1.7 wraps as `submitSurveyResponse(db, { survey_id, answers })` — its `answers` payload (`{question_id: value}`, keys must belong to the survey) therefore has no domain schema, and the survey builder/responder (6.1) would invent field names later. `surveys`, `survey_questions` columns are already fixed by 1.2 (`position, kind, prompt, options, required`).",
+      "fix": "Add to Build 9: \"- `surveys.ts` (Phase 3 consumers, names fixed now — copy columns from the `surveys` / `survey_questions` tables in the migration): `surveySchema` (`title`, `description`, `audience_group_id` nullable, `response_mode`, `allow_edit`, `status`, `opens_at`, `closes_at` > `opens_at` when both set, `push`), `surveyQuestionSchema` (`position` int ≥ 0, `kind` questionKindSchema, `prompt` 1–500, `options` nullable string[] required for `single_choice`/`multi_choice`, `required`), `surveyAnswersSchema = z.record(uuidSchema, z.unknown())` (object keyed by `question_id`, the shape `submit_survey_response` accepts), `submitSurveyResponseSchema` (`survey_id`, `answers: surveyAnswersSchema`).\" Add `surveys.ts` to the schemas list in the Goal, to `## Verify` (valid + invalid samples) and to done_when item 7."
+    },
+    {
+      "step": "1.6",
+      "severity": "minor",
+      "category": "path-builders",
+      "quote": "`sermonMediaPath(orgId, sermonId, ext)` → `${orgId}/sermons/${sermonId}/${uuid}.${ext}` (the uuid is passed in — no `crypto` in this package), `bulletinPath`, `documentPath`, `householdPhotoPath`, `personPhotoPath`, `orgLogoPath`",
+      "problem": "Only the sermon template is spelled out. DESIGN §7 fixes every bucket's path and 1.2 encodes them as table checks, and `app.can_write_object` requires the stored path to equal the object name exactly, so a divergent builder makes every upload of that kind fail with 42501 at upload time.",
+      "fix": "Replace the builder list with the DESIGN §7 templates: `bulletinPath(orgId, bulletinId, uuid, ext)` → `${orgId}/bulletins/${bulletinId}/${uuid}.${ext}` (ext `pdf|jpg|png`), `documentPath(orgId, documentId, uuid, ext)` → `${orgId}/documents/${documentId}/${uuid}.${ext}`, `householdPhotoPath(orgId, householdId, uuid)` → `${orgId}/households/${householdId}/${uuid}.jpg`, `personPhotoPath(orgId, personId, uuid)` → `${orgId}/persons/${personId}/${uuid}.jpg`, `orgLogoPath(orgId, uuid, ext)` → `${orgId}/logo/${uuid}.${ext}`; and add to `src/limits.test.ts`: \"every builder's output satisfies the corresponding `storage_path` / `photo_path` / `logo_path` check expression copied from `9999_init.sql` section (3) (assert with the same regex/like pattern)\"."
+    },
+    {
+      "step": "1.6",
+      "severity": "minor",
+      "category": "parity",
+      "quote": "`SYSTEM_AUDIENCE_GROUPS` = the six system kinds in order `everyone, members, attendees, youth, men, women` with display names \"All attendees\", \"Members\", \"Non-member attendees\", \"Youth\", \"Men\", \"Women\"",
+      "problem": "The same six names are inserted into `audience_groups.name` by `app.on_org_created` (1.3a). The prompt sources them from HANDOFF prose, not from the migration, so the web/mobile pickers (which read `audience_groups`) and the domain constant can drift with no test catching it — unlike enums, buckets and error keys, which all get a parity test.",
+      "fix": "Append to Build 5: \"Copy the six display names from the `insert into public.audience_groups` statement inside `app.on_org_created()` in `9999_init.sql` (the migration wins), and add a parity assertion in `src/audiences.test.ts` that extracts those name literals from the SQL and compares them, in order, with `SYSTEM_AUDIENCE_GROUPS`.\""
+    },
+    {
+      "step": "1.6",
+      "severity": "minor",
+      "category": "docs-sync",
+      "quote": "`PERMISSION_TOOLTIPS: Record<PermissionKey, string>` carrying the DESIGN §5 mapping",
+      "problem": "Step 1.5 (which runs before 1.6) writes the permission-mapping section of `docs/RLS.md`, the founder-facing home of the same text (PLAN §4: \"documented in docs/RLS.md and checkbox tooltips\"). The prompt never tells the agent to read it, so the tooltips and the doc can state the mapping differently.",
+      "fix": "Add to `## Inputs / prior state`: \"- `docs/RLS.md` (step 1.5) has a 'Permission mapping' section; the tooltip sentences must say the same thing — copy its wording (fix the doc in the same commit if it contradicts DESIGN §5).\" Add `docs/RLS.md` to `reads`."
+    },
+    {
+      "step": "1.6",
+      "severity": "minor",
+      "category": "robustness",
+      "quote": "`context.ts`: `myContextSchema` = the jsonb of `my_context()`",
+      "problem": "The RPC result schemas (`myContextSchema`, `acceptInvitationResultSchema`, `shareResolveResultSchema`, `attachUserResultSchema`) are used by 1.7 to parse live responses. With Zod 4's default `z.object` (strips unknown keys but is fine) vs `z.strictObject` the agent may pick strict; a later `9998_*` migration that adds a key to `my_context()` would then break every signed-in client. The prompt does not say which.",
+      "fix": "Add one sentence to Build 9 intro: \"Schemas that parse RPC RESULTS (`myContextSchema`, `acceptInvitationResultSchema`, `shareResolveResultSchema`, `attachUserResultSchema`, `shareLinkCreatedSchema`) use `z.looseObject` so additive migration changes never break deployed clients; schemas that validate INPUT stay `z.object` (unknown keys stripped) — never `z.strictObject` on results.\""
+    },
+    {
+      "step": "1.6",
+      "severity": "minor",
+      "category": "url-helpers",
+      "quote": "export `youtubeHostedEmbedPath(id) = '/embed/yt/' + id`",
+      "problem": "The plan fixes three more cross-app URL shapes that several later steps must build identically: the invite link `https://APP_URL/invite/{token}` (DESIGN §5, steps 3.2 web + 4.1 mobile), its \"Open in app\" deep link with scheme `anacast` (orchestrator decision 5, steps 2.1 + 4.1), and the share URL `${APP_URL}/s/{token}` (DESIGN §7, step 3.4). Only the embed path gets a helper, so 2.1/3.2/3.4/4.1 will each hand-roll the strings.",
+      "fix": "Add Build 6b: \"`src/urls.ts`: `APP_SCHEME = 'anacast'`; `inviteUrl(appUrl, token)` → `${appUrl}/invite/${token}`; `inviteDeepLink(token)` → `anacast://invite/${token}`; `shareLinkUrl(appUrl, token)` → `${appUrl}/s/${token}`; `youtubeHostedEmbedUrl(appUrl, id)` (uses `youtubeHostedEmbedPath`); all trim a trailing slash from `appUrl`. Tests for each.\" Export from `src/index.ts`; mention in open_issues that G5/G7/G8/G11 must use them."
+    },
+    {
+      "step": "1.7",
+      "severity": "major",
+      "category": "missing-query",
+      "quote": "`insertDeliveries(svc, rows)` and `listPendingReceipts(svc)` for step 3.6 — these two take `ServiceDbClient`",
+      "problem": "PLAN §7 / DESIGN §8 give the dispatcher and cron a full write cycle that the standing order says must go through `@church/db/queries/*`: after chunked sends mark `notifications` `sent`/`failed` (+`sent_at`, error), record Expo tickets and later receipts on `notification_deliveries`, disable devices on `DeviceNotRegistered` (present), and the cron's \"sweep orphan objects > 24 h\" needs to list bucket objects and the paths the tables reference. The module stops at insert + list, so step 3.6 would have to write raw Supabase calls in `apps/web` or extend the package out of order.",
+      "fix": "Extend Build 6 `notifications.ts`: \"`markNotificationsSent(svc, ids: string[])` (status `sent`, `sent_at = now`), `markNotificationFailed(svc, id, error: string)` (status `failed`), `requeueNotification(svc, id)`, `insertDeliveries(svc, rows)` returning ids, `updateDeliveryTicket(svc, id, { ticket_id, status, error })`, `listPendingReceipts(svc, { olderThanMinutes = 15 })`, `markDeliveryReceipt(svc, id, { status, error })` — column names from `notification_deliveries` in the generated types.\" Extend `storage.ts`: \"`listObjects(svc, bucket, prefix, { limit = 1000, offset = 0 })` wrapping `svc.storage.from(bucket).list(prefix, { limit, offset })` and `listReferencedPaths(svc, bucket)` returning every `storage_path`/`photo_path`/`logo_path` the tables hold for that bucket — the cron's orphan sweep (3.6) diffs the two.\" Add both to done_when item 4's module description."
+    },
+    {
+      "step": "1.7",
+      "severity": "minor",
+      "category": "missing-query",
+      "quote": "`insertStripeEvent(svc, …)`, `markStripeEventProcessed(svc, id, error?)` for step 2.3",
+      "problem": "DESIGN §8 webhook semantics need two reads the module does not offer: look up an existing `stripe_events` row to decide \"duplicate with `processed_at not null` → 200; duplicate unprocessed → reprocess\", and \"resolve org by `stripe_customer_id` then `metadata.org_id`\". Without them 2.3 falls back to raw `.from('stripe_events')` calls in the route handler.",
+      "fix": "Extend Build 6 `billing.ts`: \"`getStripeEvent(svc, id)` → row or null (`unwrapMaybe`); `insertStripeEvent(svc, { id, type, event_created })` that ignores a duplicate key (return the existing row via `getStripeEvent`); `markStripeEventProcessed(svc, id, error?)`; `getBillingCustomerByStripeId(svc, stripe_customer_id)` → `{ org_id }` or null; `getLatestSubscription(svc, orgId)` (for the out-of-order `event_created` guard).\""
+    },
+    {
+      "step": "1.7",
+      "severity": "minor",
+      "category": "caching",
+      "quote": "`.signedUrl(bucket, path)` (consumers set `staleTime: SIGNED_URL_CACHE_MS`)",
+      "problem": "DESIGN §10 fixes the mobile cache policy — TanStack persister on `expo-sqlite/kv-store`, `staleTime` 5 min, `gcTime` 7 days, and \"signed URLs never persisted\". `keys.ts` is the shared place for that, but the prompt only forbids the URL inside the key; step 4.1 has no predicate to exclude signed-URL queries from dehydration and no shared constants, so web and mobile will pick different numbers.",
+      "fix": "Add to Build 7: \"Export `QUERY_STALE_TIME_MS = 5 * 60 * 1000`, `QUERY_GC_TIME_MS = 7 * 24 * 60 * 60 * 1000`, `SIGNED_URL_KEY_ROOT = 'signedUrl'`, and `shouldPersistQuery(queryKey: readonly unknown[]): boolean` returning false for `signedUrl` and `context` keys — step 4.1 passes it as the persister's `dehydrateOptions.shouldDehydrateQuery` and step 2.1 uses the two constants for the web `QueryClient`. Unit-test the predicate.\""
+    },
+    {
+      "step": "1.7",
+      "severity": "minor",
+      "category": "upload-flow",
+      "quote": "`insertSermonDraft` — inserts the row with `publish_at = null` and the exact planned `storage_path` from `sermonMediaPath(...)`",
+      "problem": "`sermonMediaPath` embeds the sermon id, so the row's id must exist before the path can be computed; the prompt does not say who generates it. An agent may insert first and let the DB default the id, leaving no path to plan — contradicting the PLAN §6 flow \"insert row with the exact planned path → TUS upload\".",
+      "fix": "Amend Build 6 `sermons.ts`: \"`insertSermonDraft(db, { id, org_id, title, …, media_kind, storage_path })` — the CALLER supplies `id` (generated with `crypto.randomUUID()` in the app) so `sermonMediaPath(org_id, id, uuid, ext)` can be computed before the insert; the function passes `id` through in the insert payload and returns the row.\""
+    }
+  ]
+}

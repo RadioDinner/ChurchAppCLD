@@ -1,0 +1,71 @@
+{
+ "run_id": "wf_d7df784f-664",
+ "runs": [
+  {
+   "task": "wkz1ehl0a",
+   "args": {
+    "groups": [
+     "G9"
+    ]
+   },
+   "outcome": "completed",
+   "subagent_tokens": 1097561,
+   "tool_uses": 150,
+   "duration_ms": 2508092
+  }
+ ],
+ "subagent_tokens_total": 1097561,
+ "logs": [
+  "G9: 44 findings (2 blockers)"
+ ],
+ "result": [
+  {
+   "group": "G9",
+   "drafted": [
+    {
+     "id": "3.5a",
+     "title": "Announcements — list, create, edit, delete, audience and scheduling",
+     "actor": "agent",
+     "prompt_words": 2488
+    },
+    {
+     "id": "3.5b",
+     "title": "Bulletins — This Sunday / Quarter presets, PDF/JPG/PNG upload, list, open, delete",
+     "actor": "agent",
+     "prompt_words": 2467
+    },
+    {
+     "id": "3.6",
+     "title": "Push dispatch + cron",
+     "actor": "agent",
+     "prompt_words": 3281
+    }
+   ],
+   "findings": 44,
+   "blockers": 2,
+   "applied": 38,
+   "rejected": [
+    {
+     "finding": "executability / 3.5b schema-assumption: write `9998_bulletins_publish_at_nullable.sql` if `bulletins.publish_at` is NOT NULL",
+     "reason": "Partially applied. The nullability check and the re-runnable `drop not null` migration are in 3.5b's Inputs and done_when, but the proposed file number was rejected: the skeleton reserves 9998 for `9998_join_codes.sql` (5.6) and 9997 for `9997_surveys_head_of_house.sql` (6.1). The prompt now says 'the next free descending number recorded in the HANDOFF ledger (9998 and 9997 are reserved)' and an open issue asks the orchestrator to settle M3 migration numbers (or have G2 make the column explicitly nullable while 9999 is unfrozen)."
+    },
+    {
+     "finding": "executability / 3.6 sizing: split into 3.6a (Build 1–4, 7) and 3.6b (Build 5, 6, 8 = all docs)",
+     "reason": "Applied with one deviation: `docs/ENV.md` / `.env.example` work is split by ownership instead of all going to 3.6b — 3.6a documents `EXPO_ACCESS_TOKEN` and the push paragraph because 3.6a is the step that reads that variable, 3.6b documents `CRON_SECRET`, the tick and the README line. Everything else follows the proposed cut (3.6a depends_on 3.5b/3.5a; 3.6b depends_on 3.6a; proposed 3.12 now depends_on 3.6b)."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Assembler must repoint dependencies after the 3.6 split: G10 3.7, G11 4.3, G14 6.2 `depends_on: 3.6` → `3.6b`; G13 5.4 `depends_on: 3.5` → `3.5a` (+ `3.5b` if it reuses the bulletin upload pattern).",
+    "Bulletin Push column vs RLS: `notifications` select admits only `announcements.*` holders (DESIGN §6 / 1.4a), so 3.5b shows the Push column to announcement managers and a hint to `bulletins.upload`-only leaders, and 3.6a's Retry reads the row with the service client. A `ca_notifications_select` widening for `kind = 'bulletin'` is folded into proposed 3.12; the orchestrator may instead ask G3 to widen the policy in `9999_init.sql` while it is unfrozen.",
+    "Migration numbering for any M3 migration (3.5b `bulletins.publish_at drop not null` if needed, G8's proposed 3.11, proposed 3.12) collides with the reserved 9998 (join codes) / 9997 (surveys); the orchestrator should settle the descending numbers or have G2 make `bulletins.publish_at` explicitly nullable in 9999.",
+    "G4 1.7a should keep `listPendingReceipts` filtering on `receipt_status is null`; 3.6a fixes the vocabulary `null | ok | error | unknown` and writes tickets in `insertDeliveries` (so `updateDeliveryTicket` is unused on the main path). G4 may also pre-ship the additive helpers G9 names (`getBulletin`, `cancelNotification`, `rescheduleNotification`, `resetNotificationForRetry`, `getNotificationById`, `countDeliveriesByNotification`, `listPreferencesForUsers`, `listEnabledDevicesForUsers`, `removeObjects`, `listOrganizationIds`, optional `org_id` on `enqueueStorageDeletion`).",
+    "G8 must not rename 3.3a's `src/features/sermons/dates.ts`: 3.5a promotes it to `src/lib/dates.ts` (re-export kept) and adds `instantToZonedLocal`; 3.5b/3.6a import from `src/lib/dates.ts`.",
+    "3.3b: if the `UploadErrorKey` → message mapping stays inside `UploadSermonForm`, 3.5b lifts it into `src/features/uploads/upload-errors.ts` as `uploadErrorMessage(key)`; G8 could ship it there directly.",
+    "Bulletin metadata edit (title, range) is planned nowhere — 3.5b is delete + re-upload only; propose for 3.10 or 5.7.",
+    "Prompt length: 3.5b (~3,200 words) and 3.6a (~3,350 words) exceed decision 9's 3,000 target but are under the validator's 3,400 warning; the reviser added fixes without shortening — candidates to move out are named in the file's last open issue.",
+    "Playwright env for `/api/cron/tick` (503 without `CRON_SECRET` vs 401): G10 decides whether the 3.7 mock env sets a dummy secret; 3.6b asserts whichever the config provides."
+   ]
+  }
+ ]
+}

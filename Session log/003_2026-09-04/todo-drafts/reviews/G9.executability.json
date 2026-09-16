@@ -1,0 +1,158 @@
+{
+  "group": "G9",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "3.5b",
+      "severity": "blocker",
+      "category": "rls-contradiction",
+      "quote": "`listNotificationStatus(db, orgId)` filtered to `kind = 'bulletin'` for uploaders … Push (uploaders only; `PushStatusBadge` with the `bulletin` notification row",
+      "problem": "DESIGN §6 and G3 1.4 fix the `notifications` select policy to 'any `announcements.*` holder' only. A leader who holds `bulletins.upload` but no `announcements.*` permission (the founder's `push_on_bulletin` use case) gets zero rows from `listNotificationStatus` under RLS, so the Push column always renders 'Not queued'/'Off' and the finalize toast's 'push queued' is unverifiable. The done_when item 'Publishing a bulletin … shown as \"Queued — …\"' cannot be met for a bulletins.upload-only account, and two agents would build different work-arounds (one might import the service client).",
+      "fix": "In Build 5/6 make the Push column conditional on `hasAnyPerm(ctx, ['announcements.create','announcements.edit','announcements.delete'])` (the RLS reader set) and, for `bulletins.upload` holders without it, render the cell as 'Push status is shown to announcement managers' (no query). State this in Inputs ('Database facts: `notifications` select = `announcements.*` holders only — a bulletins.upload-only leader cannot read outbox rows'). Change done_when 4 to '…shown as \"Queued — …\" to announcement managers; bulletins.upload-only accounts see a hint instead' and done_when 1 ('Push column … appear only for `bulletins.upload` holders' → 'for announcement managers'). Add an open_issue: a `9998_*` policy tweak (`ca_notifications_select` also for `bulletins.upload` where `kind = 'bulletin'`) would remove the hint; proposed 3.12 could carry it."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "rls-contradiction",
+      "quote": "verify the notification belongs to `ctx` org (read it with the user client — managers can select `notifications`)",
+      "problem": "Same policy: for `kind = 'bulletin'` the prompt gates Retry on `bulletins.upload`, but a bulletins.upload-only user cannot select `notifications`, so the ownership check returns nothing and Retry silently fails for exactly the permission the prompt allows.",
+      "fix": "Replace with: 'after `requirePerm`, read the notification with the SERVICE client (`getNotificationById(svc, id)` — additive in `queries/notifications.ts`) and refuse unless `row.org_id === ctx.org.<id field>` and `row.kind` matches the permission branch'. Keep the user client out of this check."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "wrong-name",
+      "quote": "`push_devices (id, user_id, expo_push_token, platform, device_name, disabled_at | is_enabled …)`",
+      "problem": "G2 1.2 fixed the column as `enabled boolean default true` (and `last_seen_at`); neither `disabled_at` nor `is_enabled` exists. `notification_deliveries` is `(id, notification_id, user_id, device_id, expo_ticket_id, receipt_status text, error, created_at, updated_at)` — the prompt's '…device/token…' hides that there is no token column on deliveries. Orchestrator decision 10 requires copied names; 'read the types' does not excuse a wrong list that an agent may trust.",
+      "fix": "Replace the two expectations with the 1.2 column lists: `push_devices (id, user_id, expo_push_token, platform, device_name, enabled, last_seen_at, created_at, updated_at)` and `notification_deliveries (id, notification_id, user_id, device_id, expo_ticket_id, receipt_status, error, created_at, updated_at)`; say 'enabled devices = `enabled = true`; `disablePushDeviceById` sets `enabled = false`'; drop the token column from the delivery row description in Build 2 (store `device_id` only). Fix the matching open_issue (item about `disabled_at` vs `is_enabled`) accordingly."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "helper-contract-mismatch",
+      "quote": "`insertDeliveries(svc, rows)` where each row carries … `receipt_status = ticket.status === 'ok' ? 'pending' : 'error'` … `listPendingReceipts(svc, { olderThanMinutes })` (deliveries with a ticket id and `receipt_status = 'pending'`)",
+      "problem": "1.7a defines `listPendingReceipts` as 'deliveries with a ticket and no receipt' (i.e. `receipt_status is null`) and `receipt_status` is free text. If 3.6 writes `'pending'` while the 1.7a helper filters on null, receipts are never fetched and DeviceNotRegistered devices are never disabled — silently.",
+      "fix": "Add to Inputs: 'Read `listPendingReceipts` in `packages/db/src/queries/notifications.ts` first and adopt ITS representation of \"no receipt yet\" (null vs `'pending'`); write deliveries with that value and extend the helper additively only if it cannot express `olderThanMinutes`'. Prefer null-as-pending and list the vocabulary as `null (pending) | ok | error | unknown`. Also align with 1.7a's `insertDeliveries` → `updateDeliveryTicket(id, …)` pattern or state explicitly that tickets are written in the insert."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "duplicate-helper",
+      "quote": "one `in (...)` query per table through an additive `findReferencedPaths(svc, bucket, names)` in `queries/storage.ts`",
+      "problem": "1.7a already ships `listReferencedPaths(svc, bucket)` returning every `storage_path`/`photo_path`/`logo_path` for a bucket 'so the cron's orphan sweep (3.6) diffs the two'. The prompt invents a second helper with a different signature; two agents would produce two overlapping functions.",
+      "fix": "Replace with: 'use 1.7a's `listReferencedPaths(svc, bucket)` (Set of referenced names) and diff in TypeScript; extend it additively with an optional `names: string[]` filter only if the full list is too large'. Remove `findReferencedPaths` from Build 6, Finish and the open_issues list."
+    },
+    {
+      "step": "3.5b",
+      "severity": "major",
+      "category": "wrong-name",
+      "quote": "`extensionFor(mime)` if 1.6a shipped it (else add it additively next to `bulletinPath`, with a test)",
+      "problem": "1.6a ships `extensionForMime(mime)` and `isAllowedMime(bucket, mime)` in `limits.ts`. An agent looking for `extensionFor` will not find it and will add a duplicate; Build 3 and Finish/open_issues repeat the wrong name.",
+      "fix": "Use `extensionForMime(mime)` everywhere (Inputs, Build 3, Finish, open_issues) and drop the 'if 1.6a shipped it' clause. In Build 2, implement `resolveBulletinMime` on top of `isAllowedMime('bulletins', mime)` and mirror 3.3b's `resolveUploadType(fileName, reportedType)` (string arguments so the Server Action can re-run it) instead of a `File`-typed function."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "sizing",
+      "quote": "Kept as one step (about 14 new files, no SQL) but sized L; if the executing agent runs long, the natural cut is after Build 4",
+      "problem": "Counting the prompt: 10 new source files (expo, dispatch, refs, receipts, push-actions, route, tick, storage-deletions, orphan-sweep, urls additions), ~10 additive `@church/db` helpers across 5 modules incl. two new modules, 9 named test files, docs/ENV.md section, README, HANDOFF — well over the ~25-file guideline of orchestrator decision 13, and the prompt is already 3,281 words. Leaving the cut to the executing agent means the second half has no prompt.",
+      "fix": "Split per decision 13: `3.6a` 'Push dispatch — transport, dispatcher, receipts, after-publish, admin status + Retry' (Build 1–4, 7, tests dispatch/receipts/push-actions/urls; depends_on 3.5b) and `3.6b` 'Cron tick — route, storage drain, orphan sweep, housekeeping, docs' (Build 5, 6, 8, tests tick/storage-deletions/orphan-sweep/route; depends_on 3.6a). Give each its own full prompt, done_when and commit message; note in open_issues that 3.7 (G10), 4.3 (G11), 6.2 (G14) `depends_on: 3.6` → `3.6b`."
+    },
+    {
+      "step": "3.5a",
+      "severity": "major",
+      "category": "duplicate-helper",
+      "quote": "**Timezone helpers** `src/features/announcements/datetime.ts` (web-only; `@church/domain` stays Intl-only): `zonedInputToIso(input: 'YYYY-MM-DDTHH:mm', tz): string`",
+      "problem": "3.3a (G8) already built `src/features/sermons/dates.ts` with `zonedLocalToInstant(datetimeLocal, tz)` and org-zone formatters for the same `datetime-local` → instant problem. 3.5a's Inputs say 'copy the patterns, not the files' but then order a third, differently named implementation; 3.5b then imports 3.5a's copy. Two conversions with different DST handling in one app is a real bug source.",
+      "fix": "Change Build 2 to: 'Read `src/features/sermons/dates.ts` (3.3a: `zonedLocalToInstant`, formatters). Move it to `src/lib/dates.ts` (keep a re-export in the sermons module so 3.3a/3.4a callers compile) and add the inverse `instantToZonedLocal` and `formatInOrgZone` there; do not write a second local→instant conversion.' Update 3.5b Inputs/Finish and 3.6 references from `src/features/announcements/datetime.ts` to `src/lib/dates.ts`."
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "schema-assumption",
+      "quote": "a Server Action inserts the `bulletins` row with `publish_at = null`",
+      "problem": "DESIGN/G2 define `bulletins.publish_at default now()` without saying it is nullable (sermons explicitly document null = draft; bulletins do not). By 3.5b `9999_init.sql` is pasted and frozen, so if the column is NOT NULL the whole draft→upload→finalize flow is impossible without a `9998_*` migration.",
+      "fix": "Add to Inputs 'Database facts': 'confirm in `9999_init.sql` that `bulletins.publish_at` is nullable (no `not null`); if it is not, stop and write a re-runnable `9998_bulletins_publish_at_nullable.sql` (`alter table … alter column publish_at drop not null`) per docs/MIGRATIONS.md, apply locally with the standing sequence, and record it in HANDOFF ledger/deviations'."
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "ambiguous-signature",
+      "quote": "compute `canCreate/canEdit/canDelete` from `hasAnyPerm`",
+      "problem": "Two `hasAnyPerm` exist with different shapes: `@church/domain` `hasAnyPerm(perms: PermissionKey[], keys)` (1.6a) and `src/lib/auth/require-perm.ts` `hasAnyPerm(ctx, perms)` (2.1a/3.1). The Inputs list the domain one; 3.5b uses `hasPerm(ctx, …)`. Agents will import different ones.",
+      "fix": "In 3.5a Build 8 and 3.5b Build 6 write `hasPerm(ctx, …)` / `hasAnyPerm(ctx, …)` from `src/lib/auth/require-perm.ts` explicitly, and remove `hasAnyPerm` from the `@church/domain` line of 3.5a's Inputs."
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "name-collision",
+      "quote": "`deleteBulletin(orgSlug, bulletinId)`: `deleteBulletin(db, id)`",
+      "problem": "The Server Action and the `@church/db` query share the name `deleteBulletin` inside one module; same in 3.5a (`updateAnnouncement`, `deleteAnnouncement` action vs query). Compiles only with import aliasing the prompt does not mention; different agents will resolve it differently.",
+      "fix": "Suffix the actions: `deleteBulletinAction`, `updateAnnouncementAction`, `deleteAnnouncementAction` (or import the queries as `import * as q from '@church/db'` and say so once under Constraints)."
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "browser-behaviour",
+      "quote": "PDF → `window.open(url, '_blank', 'noopener')`",
+      "problem": "`window.open` called after awaiting the `mintBulletinUrl` Server Action is outside the user-gesture window and is blocked by default popup blockers in Chrome/Safari.",
+      "fix": "Specify: 'open a blank tab synchronously in the click handler (`const w = window.open('', '_blank', 'noopener')`), then set `w.location = url` after the action resolves; if `w` is null render the signed URL as an `<a target=\"_blank\" rel=\"noopener\">Open</a>` fallback'."
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "verify-environment",
+      "quote": "With a live project (`apps/web/.env.local` pointing at the founder's step 2.5 project or the local seed)",
+      "problem": "The local harness is plain Postgres 16 with a shim — no GoTrue, PostgREST or Storage — so the Next app cannot run against 'the local seed'. Same wording in 3.5b ('or the local seed') and 3.6 ('service key from the founder's project or the local shim').",
+      "fix": "Drop the local alternatives in all three Verify blocks: 'With the founder's hosted project from step 2.5 (`apps/web/.env.local`) … Without access to it, write the script into `session_log.md`.'"
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "dead-parameter",
+      "quote": "`dispatchQueued(svc: ServiceDbClient, { transport, limit = 50, now = () => new Date(), deadlineMs = 25_000, orgId? })` … If `orgId` filtering is impossible through `srv_claim_notifications` (it takes only `max_rows`)",
+      "problem": "1.3b fixes `srv_claim_notifications(max_rows int)`; the impossibility is known, so `orgId` is a dead option that two agents will implement differently (ignore vs post-filter and un-claim).",
+      "fix": "Remove `orgId` from the `dispatchQueued` options and from `afterContentPublish`'s call; keep the sentence 'claiming is global by design (proposed 3.12 adds an `org` parameter)'."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "incomplete-instruction",
+      "quote": "Update `pushStatusLabel`: `queued` → \"Queued (sends within 5 minutes)\" — drop the \"step 3.6\" wording",
+      "problem": "Verify demands `git grep \"step 3.6\" apps/web/src` → nothing, but Build 7 only renames the badge labels. 3.5a's reschedule notice, 3.5a's after-publish.ts comment and 3.5b's finalize toast ('delivered by the push dispatcher, step 3.6') also carry the phrase and are not listed.",
+      "fix": "Add to Build 7: 'also rewrite 3.5a's \"Push already queued …(step 3.6)\" notice (→ \"Push already queued — a moved publish time is re-checked by the dispatcher before sending\"), 3.5b's finalize toast (→ \"Bulletin published — push sent/queued\" using `AfterPublishResult.summary`), and the stub comment in `after-publish.ts`'. Also add `app/(org)/o/[orgSlug]/announcements/page.tsx` to the pages exporting `maxDuration = 60`, since Retry dispatches from the list page."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "logic",
+      "quote": "rotating by `floor(minute / 5) % 5` over `sermon-media`, `bulletins`, `documents`, `directory-photos`, `org-assets`",
+      "problem": "Under the documented Hobby fallback `0 12 * * *` the minute is always 0, so only `sermon-media` is ever swept.",
+      "fix": "Rotate on `Math.floor(Date.now() / 300_000) % 5` (5-minute epochs) so every schedule cycles through all five buckets; assert the rotation in `orphan-sweep.test.ts` with an injected `now`."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "sdk-api",
+      "quote": "wraps `new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN, useFcmV1: true })`",
+      "problem": "`useFcmV1` was a transitional option in older expo-server-sdk releases; in the pinned 7.2.x line FCM v1 is the only path and the option may not exist in the constructor type, failing typecheck.",
+      "fix": "Write: '`new Expo({ accessToken })` — pass only options present in the installed version's `ExpoClientOptions`; FCM v1 is the default, do not pass legacy flags'. Also change `truncate(row.body, 178) + '…'` to append the ellipsis only when truncation happened."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "missing-helper",
+      "quote": "iterate `organizations.id` values, cap the total",
+      "problem": "No helper is named for listing org ids with the service client; 1.7a's `listOrganizations` joins settings and billing (super-admin shape). Agents will either misuse it or write raw `svc.from(...)`, which Constraints forbid.",
+      "fix": "Name it: 'additive `listOrganizationIds(svc): Promise<string[]>` in `queries/organizations.ts` (with test) — add to the Finish deviations list'."
+    },
+    {
+      "step": "3.5b",
+      "severity": "minor",
+      "category": "ambiguous-signature",
+      "quote": "on `onError(key)` show `errorMessageFor(key)`",
+      "problem": "1.6b's `errorMessageFor(err)` takes an error object and 3.3b's `UploadErrorKey` values (`object_already_exists`, `network_error`, `cancelled`) are not all `DomainErrorKey`s, so the call may not typecheck.",
+      "fix": "Say: 'map `UploadErrorKey` to text with the helper 3.3b shipped in `src/features/uploads/upload-errors.ts` (read its export name); fall back to `errorMessageFor` only for `DomainError`s'."
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "group": "G13",
+  "lens": "completeness against the plan",
+  "findings": [
+    {
+      "step": "5.6a",
+      "severity": "major",
+      "category": "missing-fallback / executability of 5.6c",
+      "quote": "`public.my_context()` returns memberships in every status except `disabled` (G11 relies on `membership_status = 'pending'` appearing there)",
+      "problem": "The whole pending-membership design (5.6a tests (2)/(3), 5.6c's `resolveEntryRoute`, 5.7c DM-14) rests on two facts the prompt only asks the agent to 'confirm': that `my_context()` lists `pending` memberships and that `app.member_org_ids()` counts ONLY `active` ones. PLAN §4 does not state either. If 1.3 built them differently the agent has no instruction, cannot edit 9999, and 5.6c breaks silently.",
+      "fix": "Add to Build 1 (5): 'If `public.my_context()` omits `pending` memberships, or `app.member_org_ids()` (and any helper the read policies use) counts `pending` ones, redefine that function in THIS file with `create or replace` and the identical signature (no drop) so pending memberships are visible in `my_context()` but grant no reads; add the fact to the header comment and to the HANDOFF Deviations.' Make test (3) 'Pending grants nothing' explicitly the guard for this."
+    },
+    {
+      "step": "5.5",
+      "severity": "major",
+      "category": "inconsistent file layout (Playwright)",
+      "quote": "3.7a's Playwright layout (`apps/web/e2e/smoke/*.spec.ts`, `pnpm --filter web test:e2e:smoke`, `e2e/helpers/headers.ts` `expectStrictHeaders`, env-gated `full` project)",
+      "problem": "G10 3.7a creates `apps/web/e2e/smoke.spec.ts` (one file) plus `e2e/helpers/headers.ts`; the per-feature smoke specs added by G12 and by 5.4a live at `apps/web/e2e/<feature>.spec.ts` (`directory.spec.ts`, `events.spec.ts`, `documents.spec.ts`). There is no `e2e/smoke/` directory, so `e2e/smoke/groups.spec.ts` (Build 10, done_when) may be outside the project's `testMatch` and diverges from every sibling step.",
+      "fix": "Replace `apps/web/e2e/smoke/*.spec.ts` with `apps/web/e2e/smoke.spec.ts` and per-feature `apps/web/e2e/<feature>.spec.ts` in Inputs, and rename `e2e/smoke/groups.spec.ts` to `apps/web/e2e/groups.spec.ts` in Build 10, Verify and done_when."
+    },
+    {
+      "step": "5.6b",
+      "severity": "major",
+      "category": "inconsistent file layout (Playwright)",
+      "quote": "Playwright smoke `apps/web/e2e/smoke/join.spec.ts` (mock env)",
+      "problem": "Same as 5.5: 3.7a has no `e2e/smoke/` directory; sibling steps put feature specs at `apps/web/e2e/<feature>.spec.ts`. The `join.spec.ts` may never run under the `smoke` project.",
+      "fix": "Rename to `apps/web/e2e/join.spec.ts` in Build 9, Verify, done_when and the Inputs line `3.7a's Playwright layout (`apps/web/e2e/smoke/*.spec.ts`…)` → `apps/web/e2e/smoke.spec.ts` + per-feature specs, helpers in `e2e/helpers/headers.ts`."
+    },
+    {
+      "step": "5.7a",
+      "severity": "minor",
+      "category": "inconsistent file path",
+      "quote": "Playwright `smoke` project with `apps/web/e2e/smoke.spec.ts` and `e2e/helpers.ts` (`expectStrictHeaders`)",
+      "problem": "3.7a defines the helper at `apps/web/e2e/helpers/headers.ts` (directory `e2e/helpers/`), not `e2e/helpers.ts`.",
+      "fix": "Replace `e2e/helpers.ts` with `apps/web/e2e/helpers/headers.ts` here and in `reads`."
+    },
+    {
+      "step": "5.7c",
+      "severity": "minor",
+      "category": "inconsistent file path / route sweep gap / count mismatch",
+      "quote": "`apps/web/e2e/smoke.spec.ts`, `e2e/helpers.ts` with `expectStrictHeaders` … the 12 Phase 2 org routes … `phase2.spec.ts` (13 routes + assetlinks)",
+      "problem": "(a) helper path is `e2e/helpers/headers.ts` (3.7a); (b) the sweep in Build 6 omits `/o/any/events` (5.3a's events list — skeleton 5.3 names `/events list + /events/pending`) and `/o/any/events/new`; (c) Build 6 lists 12 routes, Verify says 13.",
+      "fix": "Fix the helper path; add `/o/any/events` and `/o/any/events/new` (if 5.3a built it — read `apps/web/e2e/events.spec.ts`) to the Build 6 table; make done_when/Verify counts match the table (e.g. '14 routes + assetlinks')."
+    },
+    {
+      "step": "5.7c",
+      "severity": "minor",
+      "category": "migration number collision",
+      "quote": "`9997_directory_indexes.sql` unless 6.1a already claimed 9997; then `9996_`",
+      "problem": "G14's 6.3a already names `9996_account_archival.sql`; naming 9996 here sets up a second collision. The ledger and the directory listing are the only safe source.",
+      "fix": "Replace the parenthetical with: 'take the next free number below the lowest file in `supabase/migrations/` and the HANDOFF ledger (6.1a plans 9997, 6.3a plans 9996 — do not reuse either; record the number you took so G14 shifts)'."
+    },
+    {
+      "step": "5.5",
+      "severity": "minor",
+      "category": "dependency gap",
+      "quote": "Update each caller (announcement form 3.5a, document form 5.4a, calendar form 5.3a) to pass the prop; if a caller does not exist yet, skip it and list it in HANDOFF.",
+      "problem": "The skeleton bullet says custom groups are 'used by announcements/documents/calendars/surveys selects', yet `depends_on` is [5.1b, 5.4a] only; PLAN §11 orders calendars (3) before groups (5). Without 5.3a in `depends_on` the assembler may schedule 5.5 first and the calendar select never gets custom groups.",
+      "fix": "Add \"5.3a\" to `depends_on` (keep the tolerance sentence) and mention it in `notes`."
+    },
+    {
+      "step": "proposed 5.8",
+      "severity": "major",
+      "category": "id collision / dangling dependency",
+      "quote": "\"id\": \"5.8\" … \"depends_on\": [\"5.6b\", \"5.6c\", \"5.7\"]",
+      "problem": "G12 also proposes a step with id 5.8 (directory & events follow-up migration); two proposals with the same id cannot both be adopted, and `5.7` no longer exists as a step (split into 5.7a/5.7b/5.7c), so the dependency dangles.",
+      "fix": "Renumber G13's proposal (e.g. `5.10`, leaving 5.8/5.9 to the assembler) or add a note that the id is provisional, and set `depends_on` to [\"5.6b\", \"5.6c\", \"5.7a\"] (the assetlinks route and intentFilters live in 5.7a)."
+    },
+    {
+      "step": "proposed 5.9",
+      "severity": "minor",
+      "category": "founder step without checklist",
+      "quote": "The drafter did not write the full checklist because the assembler decides whether Checkpoint D becomes a real step",
+      "problem": "The skeleton requires every founder step to carry a numbered click-path checklist and a Done-when check; as drafted the proposal cannot be adopted verbatim. Checkpoint D is a real gap (M3 and M4 end in checkpoints B and C; M5 has none) and the plan's Phase 2 acceptance ('push lands on a physical Android device and deep-links') needs a founder gate.",
+      "fix": "Write the `founder_checklist` now (4.5 pattern: `npx eas-cli credentials -p android` → copy SHA-256 → Vercel env `ANDROID_CERT_SHA256_FINGERPRINTS` → redeploy → `curl …/.well-known/assetlinks.json` → `npx eas-cli build -p android --profile preview` → sideload → `adb shell pm get-app-links com.anacast.app` → tap an emailed invite link → run `docs/ACCEPTANCE_WEB.md` 'Phase 2 trial (Checkpoint D)' → run the consolidated device checklist → record in HANDOFF) plus a `helper_prompt` for a 3.10-style fix round."
+    },
+    {
+      "step": "5.6a",
+      "severity": "minor",
+      "category": "docs / security checklist not updated",
+      "quote": "MISSING",
+      "problem": "PLAN §12 / DESIGN §12 make `docs/CHECKLIST_SECURITY.md` the manual gate with a `has_function_privilege` audit and 'anon grants none'; the step adds six client RPCs and two `app.*` helpers but never updates that checklist (only RLS.md, MIGRATIONS.md, README).",
+      "fix": "Add to Build 7: '`docs/CHECKLIST_SECURITY.md` — extend the `has_function_privilege` audit row with the six join RPCs (authenticated only) and `app.generate_join_code` / `app.attach_joined_user` (no grants), and add a row \"a `pending` membership reads nothing but its own join request\".'"
+    },
+    {
+      "step": "5.6a",
+      "severity": "minor",
+      "category": "edge case not covered",
+      "quote": "`public.accept_invitation(text)` is the template for \"attach a user to an org\" (upserts the membership `active`, …)",
+      "problem": "A requester with a `pending` join request who then accepts an invitation (DESIGN §5 path 1) becomes `active` while the `join_requests` row stays `pending` in 5.6b's queue; nothing says what `approve_join_request` does then or what the queue shows.",
+      "fix": "Add to `approve_join_request`: 'if the membership is already `active`, do not raise — mark the request `approved` (person_id from the existing linked person) and return the membership id'; add RLS assertion (11): pending requester accepts an invitation → `approve_join_request` succeeds, creates no second household, request `approved`. In 5.6b's Pending tab show the hint 'Already a member (joined by invitation) — approve to close'."
+    },
+    {
+      "step": "5.6c",
+      "severity": "minor",
+      "category": "known consequence undocumented",
+      "quote": "calls `signInWithOtp` with `shouldCreateUser: true` (extend 4.1b's rule: `true` when `pending_invite_token` OR `pending_join_code` exists",
+      "problem": "The code is only validated for shape before the auth user is created, so any 8-character string mints an Anacast account with no church (the RPC can only run after sign-in). Consistent with the web `/signup` route in PLAN §8, but not recorded anywhere for the founder, the privacy policy (6.3a/6.6) or the security checklist.",
+      "fix": "Add to Build 11 / Finish: record in HANDOFF Decisions and `docs/CHECKLIST_SECURITY.md` 'mobile sign-in with a join code creates the auth account before the code is checked; an invalid code leaves a church-less account (same exposure as web `/signup`); `srv_housekeeping` does not purge them' and hand the sentence to 6.3a/6.6 for the privacy text."
+    },
+    {
+      "step": "5.7b",
+      "severity": "minor",
+      "category": "docs / security checklist not updated",
+      "quote": "Link it from `docs/RLS.md` (Directory section: …), `README.md` docs index and `docs/ACCEPTANCE_WEB.md`",
+      "problem": "The import handles bulk PII (names, birthdates, emails) and the prompt's Constraints forbid storing or logging cell values, but `docs/CHECKLIST_SECURITY.md` (the manual security gate in PLAN §12) gets no row for it; 5.7c later adds rows for its own work only.",
+      "fix": "Add to Build 7: '`docs/CHECKLIST_SECURITY.md` — row \"CSV import: file discarded after each request, no cell values in logs (`grep` the action for console/log calls), writes only through `save_household`/`save_person`/`set_congregation_status` under RLS, imported households hidden from the fellowship by default\".'"
+    }
+  ]
+}

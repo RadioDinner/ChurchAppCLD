@@ -1,0 +1,215 @@
+{
+  "group": "G5",
+  "lens": "executability",
+  "reviewed": "2026-09-05",
+  "findings": [
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "dependencies / prior state ids",
+      "quote": "\"depends_on\": [\"1.7\"] … Step 1.6 produced `@church/domain` … Step 1.7 produced `@church/db` … and `@church/supabase-client`",
+      "problem": "G4 split the skeleton steps into 1.6a/1.6b and 1.7a/1.7b (G4 open_issues: 'G5 2.1 … depends_on 1.7 → 1.7b'). There is no step 1.6 or 1.7 in docs/TODO.md, so the dependency chain breaks at assembly and the Inputs tell the agent to look for steps that do not exist. 2.2a/2.2b Inputs repeat '1.6'/'1.7'.",
+      "fix": "Set 2.1 depends_on to [\"1.7b\"]. In 2.1 Inputs write: 'Steps 1.6a/1.6b produced `@church/domain` (1.6a: permissions, enums, audiences, media-links, limits, dates, fixture; 1.6b: `errors.ts`, `urls.ts`, `schemas/*`). Step 1.7a produced `@church/db` (`database.types.ts`, `DbClient`/`ServiceDbClient`/`brandServiceClient`, `unwrap*`, `rpc.ts` incl. `myContext(db)`, `queries/*`, `keys.ts`); step 1.7b produced `@church/supabase-client`.' Replace '1.6'/'1.7' with '1.6a/1.6b'/'1.7a/1.7b' in 2.2a and 2.2b Inputs and reads."
+    },
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "exact names / import paths from prior steps",
+      "quote": "`client.ts` — `createBrowserSupabase()` wrapping `createWebBrowserClient` from `@church/supabase-client` … Read `packages/db/src/rpc.ts` and `packages/supabase-client/src/index.ts` for the exact exported names … `service.ts` — imports `server-only`; `createServiceSupabase()` with the secret key",
+      "problem": "Per G4 1.7b the browser factory is exported from the subpath `@church/supabase-client/web` (`src/web.ts`), not the package root (`src/index.ts` holds `resolvePublicSupabaseEnv`/`resolveServiceSupabaseEnv` and adapter types); `Database` comes from `@church/db/types`. More importantly, G4 1.7a types every `srv*` wrapper and service query on the branded `ServiceDbClient`, obtainable only through `brandServiceClient(client)`, and says 'step 2.1's service.ts calls it'. A `createServiceSupabase()` that returns a plain client will not typecheck against `srvAttachUser(svc, …)` in 2.2b or the 2.3/3.4/3.6 helpers.",
+      "fix": "Build 3: 'import `createWebBrowserClient({ url, key })` from `@church/supabase-client/web`; import `resolvePublicSupabaseEnv`/`resolveServiceSupabaseEnv` from `@church/supabase-client` and use them inside `src/lib/env.ts` instead of re-implementing the `?? legacy` logic; type clients as `DbClient` from `@church/db` (`Database` from `@church/db/types`); `createServiceSupabase(): ServiceDbClient` = `brandServiceClient(createClient<Database>(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } }))`.' Update the reads list to `packages/supabase-client/src/{index,web}.ts`."
+    },
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "tests unexecutable as written",
+      "quote": "`vitest.config.ts` with `environment: 'jsdom'`, `@vitejs/plugin-react`, alias `@/` … `src/lib/env.test.ts` (legacy alias fallback, default 50 for `NEXT_PUBLIC_MAX_UPLOAD_MB`, missing var error names the var)",
+      "problem": "`serverEnv()` imports `server-only`, whose default export condition throws on import ('This module cannot be imported from a Client Component module') in any non-react-server environment such as Vitest. `env.test.ts` therefore fails to load, and so does every later test that imports a module reaching `server-only`, `next/headers`, `next/cache` or `next/navigation` (2.2a `actions.test.ts`, 2.2b `create-direct.test.ts`, `admin-actions.test.ts`). The prompt gives no test-harness rule, so two agents will solve it differently or drop the tests.",
+      "fix": "Build 14: add 'In `vitest.config.ts` alias `server-only` to `src/test/empty.ts` (an empty module) and add `src/test/setup.ts` (loaded via `setupFiles`) that `vi.mock`s `next/headers` (`cookies()` → a stub jar), `next/navigation` (`redirect`/`notFound`/`forbidden` throw sentinel errors) and `next/cache` (`revalidatePath` no-op). Keep Node-only modules under `environment: node` via `// @vitest-environment node` where jsdom is not needed.' Add to Done when: 'vitest loads `src/lib/env.test.ts` including `serverEnv()` cases'. 2.2a/2.2b prompts: 'reuse the 2.1 test setup (`server-only` alias + Next mocks)'."
+    },
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "cross-group contract / compatible results",
+      "quote": "`requireOrgMember(slug)` → `OrgContext = {org: {orgId, slug, name, status}, membershipStatus, personId, householdId, permissions: PermissionKey[], isSuperAdmin}`; `notFound()` when the slug is not in `orgs` or the membership is not `active` (a super admin with `membership_status = null` passes — step 3.1 may narrow this",
+      "problem": "G7 3.1 specifies the opposite rule (super admins without a membership get 404) and a different shape: `OrgContext = { org: {org_id, slug, name, status}, permissions, personId, householdId, isSuperAdmin, writable }` with `requireWritable(ctx)` reading `ctx.writable`, and `requirePerm(ctx, perm | perms[])`. The 3.1 agent will rewrite the 2.1 guard, and G5's own proposed step 3.11 assumes 3.1 kept the 404 rule. Two contradictory contracts for the same function.",
+      "fix": "Pick one and state it in both prompts (orchestrator). Recommended for 2.1: `OrgContext = { org: { org_id, slug, name, status }, membershipStatus, personId, householdId, permissions, isSuperAdmin, writable: status in ('trial','active','past_due') }`; `requireWritable(ctx)` throws `organization_suspended` when `!ctx.writable`; `requirePerm(ctx, perm | perms[])`; super admins with `membership_status = null` get `notFound()` in 2.1 (matches G7 3.1 and DESIGN §5) and step 3.11 lifts it. Add the same wording to the notes/open_issues so G7 does not diverge."
+    },
+    {
+      "step": "2.1",
+      "severity": "major",
+      "category": "sizing (orchestrator decision 13)",
+      "quote": "About 30 files, most tiny (shadcn output excluded) — kept as one L session.",
+      "problem": "Counting the Build list: package/config (6), env + 3 clients + errors (5), proxy + paths + next.config + csp (4), layout/globals/providers/brand/not-found/error/forbidden/loading/utils (9), guards (7), public pages (3), auth layout + login page + LoginForm + schemas + actions + signup + callback + reset + invite (9), admin layout + AdminShell + admin page + /o page (4), result.ts, vitest.config, 5 test files, .env.example, README ≈ 52 new files plus ~20 shadcn components and two shadcn CLI runs. Decision 13 says > ~25 new files → split.",
+      "fix": "Split into 2.1a 'Web app package, config, Supabase clients, proxy, CSP, layout/theme, shadcn, guards, public pages, test harness' (Build 1–9, 13, 14 partial, 15) and 2.1b 'Auth flow, super-admin and org shells' (Build 10–12 and their tests) with 2.1b depends_on [\"2.1a\"], each with the full six-section prompt, its own commit message (`feat(web): Next.js app shell, Supabase clients, guards and security headers` / `feat(web): auth flow, invite page and admin/org shells`), done_when and notes; record the split in notes and update 2.2a depends_on to [\"2.1b\"]."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "duplication of shared constants",
+      "quote": "`src/lib/brand.ts` exporting `APP_NAME = 'Anacast'` and `APP_SCHEME = 'anacast'` … linking to `anacast://invite/<token>` … `toActionError(err)` that maps a PostgREST/RPC error to `{key, message}` … (match `message` against the catalogue keys",
+      "problem": "G4 1.6b already exports `APP_SCHEME`, `inviteUrl(appUrl, token)`, `inviteDeepLink(token)` and `toDomainError(err)` (with `DomainError.key`), 1.6a exports `readMaxUploadMb`/`MAX_UPLOAD_MB_DEFAULT`, `myContextSchema` + `contextOrgBySlug` live in `schemas/context.ts`, auth form schemas (`emailPasswordSchema`, `otpRequestSchema`, `otpVerifySchema`, `passwordResetSchema`) in `schemas/auth.ts`, and 1.7a exports `QUERY_STALE_TIME_MS`/`QUERY_GC_TIME_MS` for the QueryClient. Re-implementing them in the app lets the two copies drift (G4's open issue names G5 2.1 explicitly).",
+      "fix": "Build 6: `brand.ts` exports only `APP_NAME` and re-exports `APP_SCHEME` from `@church/domain`. Build 10: build the button href with `inviteDeepLink(token)`; use `schemas/auth.ts` from `@church/domain` and drop `src/features/auth/schemas.ts` (keep `schemas.test.ts` as a thin import test or remove it and lower 'at least 5 test files' to 4). Build 3: `toActionError = (err) => { const d = toDomainError(err); return { key: d.key, message: d.message } }`. Build 8: state that `myContextSchema` exists in `@church/domain` `schemas/context.ts` (add only if missing). Build 2: use `readMaxUploadMb`. Build 6: QueryClient defaults from `QUERY_STALE_TIME_MS`/`QUERY_GC_TIME_MS`."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "build-time correctness",
+      "quote": "`publicEnv()` returns `{supabaseUrl, supabasePublishableKey, appUrl, maxUploadMb}` from `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? NEXT_PUBLIC_SUPABASE_ANON_KEY`",
+      "problem": "`publicEnv()` is called from the browser client factory. Next inlines `NEXT_PUBLIC_*` only when referenced as literal `process.env.NEXT_PUBLIC_X` expressions; a table-driven `process.env[name]` lookup returns undefined in the browser and sign-in breaks — visible only when a real project exists (2.5).",
+      "fix": "Build 2: add 'Reference each variable as a literal `process.env.NEXT_PUBLIC_…` expression (never `process.env[name]`), so Next inlines it into client bundles; `publicEnv()` must be safe to call in client components.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "non-interactive commands",
+      "quote": "run `pnpm dlx shadcn@4.19.1 init` in `apps/web` (Tailwind 4 preset, base colour neutral, CSS variables on, components path `src/components/ui`, utils `src/lib/utils.ts` exporting `cn`), then add `button input …`",
+      "problem": "`shadcn init`/`add` prompt interactively (framework, base colour, aliases, overwrite) and hang or pick defaults in a non-TTY agent session; the component path is driven by `components.json` aliases, which the prompt never mentions.",
+      "fix": "Replace with: 'Run `pnpm dlx shadcn@4.19.1 init --yes --base-color neutral --css-variables` in `apps/web` (create `components.json` first if the CLI asks for anything: `aliases.components = \"@/components\"`, `aliases.ui = \"@/components/ui\"`, `aliases.utils = \"@/lib/utils\"`, `tailwind.css = \"app/globals.css\"`), then `pnpm dlx shadcn@4.19.1 add --yes --overwrite <components>`.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "concreteness / compatible results",
+      "quote": "`headers()` returning for `/(.*)`: … `frame-ancestors 'none'`. Add `X-Frame-Options: DENY` on a second `headers()` entry whose `source` matches everything EXCEPT `/s/:path*` and `/embed/:path*` (use a negative-lookahead regex source; … for `/embed/*` also omit `frame-ancestors 'none'`)",
+      "problem": "The first entry (`/(.*)`) already sends a CSP with `frame-ancestors 'none'` to `/embed/*`, so 'omit it for /embed/*' cannot be satisfied without splitting the CSP entry too; the exact `source` is left open, so two agents produce different header tables and 3.4's frame-ability breaks silently.",
+      "fix": "Build 5: 'Two `headers()` entries: (a) `source: '/((?!s/|embed/).*)'` → full CSP (with `frame-ancestors 'none'`) + `X-Frame-Options: DENY` + the other headers; (b) `source: '/(s|embed)/:path*'` → the same CSP built with `buildCsp({ frameAncestors: '*' })` and no `X-Frame-Options`, plus `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex` (3.4 keeps these). `csp.test.ts` asserts both variants.'"
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "edge case in guards",
+      "quote": "redirect unauthenticated requests whose path starts with `/admin` or `/o` to `/login?next=…`",
+      "problem": "'starts with `/o`' also matches `/other` or any future public route beginning with the letter o; the paths test does not pin the boundary, so two agents implement different predicates.",
+      "fix": "Build 4: '`isProtectedPath(p)` = `p === '/admin' || p.startsWith('/admin/') || p === '/o' || p.startsWith('/o/')`'; add `/other` → false and `/o/x` → true to `paths.test.ts`."
+    },
+    {
+      "step": "2.1",
+      "severity": "minor",
+      "category": "module format",
+      "quote": "`eslint.config.js` exports `@church/eslint-config/next` … `outputFileTracingRoot: path.join(__dirname, '../..')`",
+      "problem": "`apps/web/package.json` is not declared `\"type\": \"module\"`, so an `eslint.config.js` using `export default` fails to load under ESLint 9, while `next.config.ts` uses `__dirname`, which is undefined if the agent does set `\"type\": \"module\"`. Either way one of the two files breaks depending on an unstated choice.",
+      "fix": "Build 1: name the file `eslint.config.mjs` (as 1.1's packages did with `.js` under `\"type\": \"module\"` — pick one and say so) and in `next.config.ts` use `path.join(import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url)), '../..')` or `process.cwd()`-independent `path.resolve(__dirname, '../..')` with a stated `\"type\"` decision."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "exact names from prior steps",
+      "quote": "if there is no schema for creating a church or for the full settings row, add `organizationCreateSchema`, `organizationUpdateSchema` and `organizationSettingsSchema` … Zod parse with `organizationCreateSchema` … `updateChurch` (`organizationUpdateSchema`",
+      "problem": "G4 1.6b already fixes `createOrganizationSchema` (`slug`, `name` 2–120, `contact_email`, `billing_mode` default manual, `trial_ends_at`), `updateOrganizationSchema` (partial + `status`), `organizationSettingsSchema` (all columns except `org_id`/timestamps, includes `logo_path`), `updateSettingsSchema`, `validateSettingsUpdate(current, patch)`, `DEFAULT_SETTINGS`, `fellowshipSchema` (`slug`, `name`, `description`) and `orgBillingFormSchema`. The prompt's different names make the agent add duplicate schemas; its name-length rule (2–80) also contradicts 1.6b's 2–120.",
+      "fix": "Replace the conditional with: 'Use `createOrganizationSchema`, `updateOrganizationSchema`, `organizationSettingsSchema`, `updateSettingsSchema`, `validateSettingsUpdate`, `DEFAULT_SETTINGS` and `fellowshipSchema` from `@church/domain` (1.6b) — extend them there only if a field is missing and record it.' Use 1.6b's bounds (name 2–120) in the form; state that `fields.test.ts` compares against `Object.keys(organizationSettingsSchema.shape)` minus `logo_path`."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "schema mismatch / built result wrong",
+      "quote": "\"New fellowship\" dialog with Name → Server Action `createFellowship`), `app/(super)/admin/fellowships/[id]/page.tsx` (rename form → `renameFellowship`",
+      "problem": "`fellowships` has `slug citext unique` (DESIGN §4.2; G2 1.2 fixes `id, slug citext unique, name, description, created_at, updated_at`; 1.6b's `fellowshipSchema` is `slug, name, description`). A create dialog with only Name fails on insert (null/unique slug), and 'rename' leaves slug/description unreachable.",
+      "fix": "Build 7: 'New fellowship dialog: Name, Slug (derived with the same `slugify`, editable, unique — `23505` → field error), Description (optional); `createFellowship` validates with `fellowshipSchema` and calls `insertFellowship`. Edit form on `[id]`: name, slug, description → `updateFellowship`.' Update goal/done_when ('create, rename' → 'create, edit name/slug/description')."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "parallel modules / exact file names",
+      "quote": "via `@church/db/queries/orgs.ts` (`listOrganizationsForAdmin(client)`) … `queries/orgs.ts` `organizationCounts(client, orgId)` … queries in `packages/db/src/queries/fellowships.ts` … `update organization_settings … where org_id = orgId` with the user client",
+      "problem": "G4 1.7a already ships `packages/db/src/queries/organizations.ts` (`listOrganizations` joining settings + latest subscription, `getOrganization`, `insertOrganization`, `updateOrganization`, `listFellowships`, `getFellowship`, `insertFellowship`, `updateFellowship`, `listFellowshipMemberships`, `addOrgToFellowship`, `removeOrgFromFellowship`) and `queries/settings.ts` (`getSettings`, `updateSettings(orgId, patch)`). Telling the agent to create `orgs.ts`/`fellowships.ts` and inline the settings update produces a second, incompatible query layer that 2.3/3.1 (which read `organizations.ts`) will not use.",
+      "fix": "Inputs/Build 1, 5, 6, 7: 'Use the 1.7a modules `packages/db/src/queries/organizations.ts` and `settings.ts`; add only what is missing — `organizationCounts(db, orgId)` in `organizations.ts`, `deleteFellowship(db, id)`, and extend `insertOrganization` to accept `status` (needed for `free` → `active`) — and record the additions in HANDOFF. `saveOrgSettings` calls `updateSettings(db, orgId, patch)`.' Replace every `queries/orgs.ts` / `queries/fellowships.ts` reference (prompt, reads, done_when)."
+    },
+    {
+      "step": "2.2a",
+      "severity": "major",
+      "category": "RLS behaviour / silent no-op",
+      "quote": "Server Action `saveOrgSettings(orgId, values)`: `requireSuperAdmin()`, Zod parse, `update organization_settings … where org_id = orgId` with the user client … Toast on success.",
+      "problem": "The `organization_settings` update policy is `org.settings` ∧ `app.org_writable(org_id)` (G3 1.4a, G7 3.1). For a `suspended` or `cancelled` church the update matches zero rows and PostgREST returns success with no error, so the super admin sees 'Saved' while nothing changed. The same applies to `updateChurch` if any write policy carries `org_writable`.",
+      "fix": "Build 5 and 8: 'Every update uses `.select('org_id').maybeSingle()` (or the 1.7a helper's `unwrapMaybe`) and treats `null` as `{ ok: false, error: { key: 'organization_suspended' } }` when the org status is `suspended`/`cancelled`, else `permission_denied`. Disable the Settings form with a banner \"This church is suspended — settings are read-only until it is unsuspended (Billing tab, 2.2b)\" when `status = 'suspended'`.' Add a unit test for the zero-row branch."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "verify commands",
+      "quote": "Anonymous `curl -sI http://localhost:3000/admin/churches/new` (mock-env server) → redirect to `/login?next=%2Fadmin%2Fchurches%2Fnew`.",
+      "problem": "Unlike 2.1, neither 2.2a nor 2.2b says how to start the mock-env server, so the curl checks are not runnable as written.",
+      "fix": "Prefix both Verify blocks with: 'With `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_placeholder NEXT_PUBLIC_APP_URL=http://localhost:3000` exported, run `pnpm --filter web build && pnpm --filter web start` in one shell, then:'."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "constraints contradict build",
+      "quote": "No new runtime dependency beyond shadcn components generated into `src/components/ui/*` (`command` for the timezone select if not present, `alert-dialog` for confirms).",
+      "problem": "The shadcn `command` component pulls the `cmdk` runtime dependency, contradicting 'no new runtime dependency'; the timezone list should also come from 1.6a's guarded `Intl.supportedValuesOf` helper in `dates.ts` rather than a raw call that throws on older runtimes.",
+      "fix": "Constraints: 'No new runtime dependency except those shadcn adds for `command` (`cmdk`) and `alert-dialog`.' Build 5: 'timezone options from `@church/domain` `dates.ts` (`listTimeZones()` or the equivalent 1.6a export — read the file)'."
+    },
+    {
+      "step": "2.2a",
+      "severity": "minor",
+      "category": "file names from docs (decision 10)",
+      "quote": "`src/features/orgs/OrgFellowshipsPanel.tsx` … Components in `src/features/fellowships/{FellowshipTable,FellowshipForm,FellowshipMembers}.tsx`",
+      "problem": "DESIGN §11 step 6 names `src/features/orgs/{ChurchForm,SettingsForm,FellowshipLinks,FirstAdminDialog,BillingPanel}.tsx`. `FellowshipLinks` is renamed and `FirstAdminDialog` is split (2.2b) without a recorded deviation, which decision 10 requires.",
+      "fix": "Either name the church-tab component `src/features/orgs/FellowshipLinks.tsx` or add to Finish/notes: 'record under Deviations from plan: DESIGN §11 `FellowshipLinks` → `OrgFellowshipsPanel`, `FirstAdminDialog` → `InviteAdminDialog` + `CreateAdminDialog` (2.2b)'."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "runtime failure only visible after deploy",
+      "quote": "`listMembershipsWithPermissions(client, orgId)` joining `org_memberships` → `profiles` (display name, email; …) → `org_membership_permissions`",
+      "problem": "`org_memberships.user_id` and `profiles.user_id` both reference `auth.users`; there is no FK between them, so a PostgREST embed `profiles(...)` fails with 'could not find a relationship' — and only at runtime against a hosted project (2.5), since no DB is reachable in this step. G4 1.7a already ships `listMemberships(orgId)` (embed permissions, second query for profiles, merged in TS) and a test asserting it never embeds `profiles(`.",
+      "fix": "Build 1: 'Use `listMemberships(db, orgId)` from `@church/db/queries/memberships.ts` (1.7a). Do not write a new query; if a field is missing extend that function.' Apply the same rule to `/admin/super-admins` (Build 4): `super_admins` then `profiles` by `user_id in (...)` in two queries."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "exact names from prior steps",
+      "quote": "`createUserDirect(input: {orgId, email, tempPassword, displayName, personId: string | null, permissions: PermissionKey[]}, deps?)` … Validate with `createUserDirectSchema` (email, password ≥ 12, display name 1–80, permissions ⊆ `PERMISSION_KEYS`) … add `inviteAdminSchema`, `createUserDirectSchema` there if missing",
+      "problem": "G4 1.6b fixes `createUserDirectSchema` with snake_case keys `org`, `email`, `temp_password` (≥ 12), `display_name`, `person_id` xor `new_household { household_name, first_name, last_name }`, `perms`, and `createInvitationSchema { org, email, person_id, perms }`; 1.7a wrappers are `createInvitation(db, { org, email, person_id, perms })` and `srvAttachUser(svc, { user_id, org, person_id, display_name, perms })`. The camelCase input and the new `inviteAdminSchema` make G7 3.2 (which must reuse this function) incompatible. Note also that `srv_attach_user` (G2 1.3b) has no `new_household` parameter — it builds the one-person household from `display_name` when `person_id` is null.",
+      "fix": "Build 2: 'Input type = `z.infer<typeof createUserDirectSchema>` from `@church/domain` (`org`, `email`, `temp_password`, `display_name`, `person_id | new_household`, `perms`). Call `srvAttachUser(svc, { user_id, org, person_id: input.person_id ?? null, display_name, perms })`; when `new_household` is given and the RPC has no such parameter, pass `person_id: null` and record in HANDOFF that `new_household` names are not yet forwarded (G4/G2 mismatch).' Build 1: 'Invite dialog validates with `createInvitationSchema` (person_id null) — no `inviteAdminSchema`.' Update done_when item 3 and the test-case list to the snake_case keys."
+    },
+    {
+      "step": "2.2b",
+      "severity": "major",
+      "category": "RLS precondition to verify",
+      "quote": "Server Actions in `src/features/orgs/billing-actions.ts` (all `requireSuperAdmin()`, Zod, USER client updates on `organizations` …) … \"Unsuspend\" (→ `active`, or `trial` when `trial_ends_at` is in the future) … \"Reactivate\"",
+      "problem": "G3 1.4a says 'every write policy also requires `app.org_writable(org_id)`' while listing `ca_organizations_update_super` as plain `app.is_super_admin()`. If the executing 1.4a agent applied the blanket rule to `organizations`, Unsuspend/Reactivate match zero rows and silently do nothing — the agent cannot observe this without a DB. The prompt never tells it to check.",
+      "fix": "Inputs: 'Read `ca_organizations_update_super` in `9999_init.sql` section (8): it must be `using (app.is_super_admin())` with NO `app.org_writable` clause, otherwise Unsuspend/Reactivate are impossible — if it has one, stop, record it in HANDOFF \"Open questions\" for a `9998_*` fix, and ship the buttons disabled with that note.' Build 3: use `.select('id').maybeSingle()` and treat a null row as an error (never toast success on zero rows)."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "wrong API in client code",
+      "quote": "Temporary password (auto-generated 16 chars from `crypto.randomBytes`, regenerate button, min 12 if edited)",
+      "problem": "`CreateAdminDialog.tsx` is a client component; `crypto.randomBytes` is Node-only and does not exist in the browser bundle.",
+      "fix": "Replace with 'generated with `globalThis.crypto.getRandomValues` (Web Crypto, works in browser and Node 22) mapped onto an unambiguous alphabet; put the generator in `src/lib/users/temp-password.ts` and unit-test length/alphabet'."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "error handling",
+      "quote": "Service client → `srv_attach_user(user.id, orgId, personId, displayName, permissions)`; on failure delete the just-created auth user",
+      "problem": "`srv_attach_user` calls `require_writable` (G2 1.3b), so on a suspended church it raises `organization_suspended`; the prompt does not list that key, so the admin sees a generic error after the account was created and deleted.",
+      "fix": "Build 2 step 4: 'Map `organization_suspended` → \"This church is suspended — unsuspend it in the Billing tab before creating accounts\"; better, check `status !== 'suspended'` with the user client before calling `createUser` so no auth user is created and rolled back.' Add it as test case (f)."
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "concreteness",
+      "quote": "\"Reactivate\" (from `cancelled` within 30 days → `active`)",
+      "problem": "`organizations` has no `cancelled_at` column (DESIGN §4.2); `srv_housekeeping` purges orgs 'in cancelled for more than 30 days' by a predicate the agent must match (G2 1.3b), otherwise the UI offers Reactivate on rows the next cron run deletes.",
+      "fix": "Build 3: 'Read the purge predicate in `srv_housekeeping()` (section 5c) and compute \"purges on <date>\" from the same column (expected `updated_at + 30 days`); show that date on the Cancel confirmation and next to Reactivate; hide Reactivate once it has passed.'"
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "concreteness / two implementations",
+      "quote": "Read the SQL from the migration text at build time or copy it verbatim; never hard-code a real email.",
+      "problem": "Reading `../../supabase/migrations/9999_init.sql` from a Server Component ties the deployed app to the repo layout (and Vercel's output tracing), while a copied constant drifts if the migration changes — two allowed implementations yield different files.",
+      "fix": "Replace with: 'Copy the two statements verbatim into `src/features/super-admins/bootstrap-sql.ts` as exported constants with `<FOUNDER_EMAIL>` placeholders, and add a unit test that the INSERT string appears in `supabase/migrations/9999_init.sql` section (11) (the test may read the file; the app never does).'"
+    },
+    {
+      "step": "2.2b",
+      "severity": "minor",
+      "category": "founder to-do correctness",
+      "quote": "under founder to-dos for step 2.5 add \"after creating the first church, create or invite yourself as its first admin from the Admins tab so `/o/<slug>` opens for you\"",
+      "problem": "Direct creation with the founder's own email fails with `email_exists` (the account exists from the 2.5 sign-up); only Invite + accept works for an existing user (`accept_invitation` merges). G6 2.5 already uses the invite path.",
+      "fix": "Change to: 'invite yourself (your account already exists, so \"Create account\" would return `email_exists`) from the Admins tab, open the shown link while signed in and accept, so `/o/<slug>` opens for you'."
+    }
+  ]
+}

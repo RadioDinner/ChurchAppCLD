@@ -1,0 +1,158 @@
+{
+  "group": "G10",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "3.7a",
+      "severity": "major",
+      "category": "cross-group-inconsistency",
+      "quote": "`expectShareHeaders(response)` (CSP contains `frame-ancestors *`, `x-robots-tag` contains `noindex`, `referrer-policy: no-referrer`, header `x-frame-options` absent)",
+      "problem": "G8's 3.4b builds THREE header variants, not two: `/s/:path*` gets `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store`; `/embed/*` gets `Referrer-Policy: strict-origin-when-cross-origin`, `noindex`, no `X-Frame-Options`, no `frame-ancestors 'none'`. Neither variant is specified as `frame-ancestors *`. The prompt applies `expectShareHeaders` to `/embed/yt/dQw4w9WgXcQ` (Build 4.4, 4.5) so the `no-referrer` assertion fails on the embed page, and the Inputs paragraph ('two security-header variants … the `/(s|embed)/:path*` set') misdescribes what 3.4b produced.",
+      "fix": "In Inputs replace 'two security-header variants — … the `/(s|embed)/:path*` set with `frame-ancestors *`, `X-Robots-Tag: noindex`, `Referrer-Policy: no-referrer`, no X-Frame-Options' with 'three variants (read `src/lib/security/csp.ts` for the exact strings): strict default; `/s/*` (`X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`, `Cache-Control: private, no-store`, no `X-Frame-Options`, no `frame-ancestors 'none'`); `/embed/*` (`Referrer-Policy: strict-origin-when-cross-origin`, `noindex`, no `X-Frame-Options`, no `frame-ancestors 'none'`)'. In Build 3 define `expectShareHeaders` (CSP does NOT contain `frame-ancestors 'none'`; `x-robots-tag` contains `noindex`; `referrer-policy: no-referrer`; `cache-control` contains `no-store`; `x-frame-options` absent) and a separate `expectEmbedHeaders` (CSP does NOT contain `frame-ancestors 'none'`; `x-robots-tag` contains `noindex`; `x-frame-options` absent; `referrer-policy` equals whatever `csp.ts` sets for `/embed/*`). Use `expectEmbedHeaders` for `/embed/yt/*` in Build 4.4 and 4.5 and in done_when item 3 ('`/embed/yt/dQw4w9WgXcQ` → 200 frame-able + noindex' stays)."
+    },
+    {
+      "step": "3.7a",
+      "severity": "major",
+      "category": "wrong-expected-outcome",
+      "quote": "`POST /api/billing/checkout` and `POST /api/billing/portal` anonymous → 401 or a redirect to `/login`, never 500.",
+      "problem": "G6's 2.3 runs a same-origin check FIRST on both routes and answers 403 `bad_origin` when the `origin` header is missing or foreign; a Playwright `request.post` without an Origin header will get 403, and with Stripe unconfigured the routes answer 503 `stripe_not_configured`. A test asserting '401 or redirect' fails on a correct build.",
+      "fix": "Replace with: '`POST /api/billing/checkout` and `POST /api/billing/portal` anonymous (no `Origin` header) → read `app/api/billing/{checkout,portal}/route.ts` (2.3) and assert the documented status for that case — expected 403 `bad_origin` (same-origin check runs first), or 401 `unauthorized` when an `Origin: <baseURL>` header is sent and the caller is signed out; with the mock env (no Stripe) the configured check may yield 503 `stripe_not_configured`. Assert the JSON `error` key matches one of those, never 500 and never a redirect to `/login`.' Update done_when item 3 ('anonymous `POST /api/billing/{checkout,portal}` never 500') accordingly."
+    },
+    {
+      "step": "3.7a",
+      "severity": "minor",
+      "category": "flaky-assertion",
+      "quote": "`expectStrictHeaders` on `/`, `/privacy`, `/login` and on the redirect response of `/admin`",
+      "problem": "Redirect responses produced by `proxy.ts` (middleware) do not reliably carry `next.config.ts` `headers()` entries; asserting the full strict set on the 307 is likely to fail for a correct build.",
+      "fix": "Change to: 'on `/`, `/privacy`, `/login` and `/definitely-not-a-route`; for the `/admin` redirect assert only that the 307 has a `location` starting with `/login?next=` and, if the response carries a `content-security-policy` header at all, that it satisfies `expectStrictHeaders` — record in `e2e/README.md` whether middleware redirects carry the headers'."
+    },
+    {
+      "step": "3.7a",
+      "severity": "minor",
+      "category": "verify-command",
+      "quote": "`command: 'pnpm build && pnpm start -- --port 3100'` run in `apps/web`, `url: baseURL`, `reuseExistingServer: !process.env.CI`, `timeout: 240_000`",
+      "problem": "In CI the web-build step from 1.1 has already built the app with `NEXT_PUBLIC_APP_URL=http://localhost:3000`; the webServer rebuilds it (a second multi-minute `next build`) and 240 s is a tight ceiling for build+start on a GitHub runner, so the smoke job is slow and flaky for no reason.",
+      "fix": "Use `command: process.env.CI && existsSync('.next/BUILD_ID') ? 'pnpm start -- --port 3100' : 'pnpm build && pnpm start -- --port 3100'`, set `timeout: process.env.CI ? 600_000 : 240_000`, and in Build 6 change the 1.1 CI web-build step's mock env to the values in `apps/web/e2e/mock-env.ts` (in particular `NEXT_PUBLIC_APP_URL=http://localhost:3100`) so the CI build is reused by the smoke run."
+    },
+    {
+      "step": "3.7a",
+      "severity": "minor",
+      "category": "brittle-assertion",
+      "quote": "asserts `content-security-policy` contains `frame-ancestors 'none'` and `frame-src https://www.youtube-nocookie.com https://drive.google.com`",
+      "problem": "Asserting the exact host order inside `frame-src` couples the test to the string layout of `csp.ts`; G8 3.4b extended the CSP and may order sources differently.",
+      "fix": "Replace with 'asserts the `frame-src` directive of `content-security-policy` contains both `https://www.youtube-nocookie.com` and `https://drive.google.com` (parse the directive; do not assert order)'. Mirror the wording in done_when item 3."
+    },
+    {
+      "step": "3.7b",
+      "severity": "blocker",
+      "category": "data-layer-conflict",
+      "quote": "`cleanupRun(tag)` → deletes `organizations` whose `slug` starts with the tag (cascade removes settings, memberships, sermons, share links; storage objects become orphans for the 3.6b sweep",
+      "problem": "DESIGN §4.2 (line 131) and PLAN §4: 'Hard org deletion is forbidden (super admin sets `cancelled`; a cron purges after 30 days with the service role); child FKs that must not cascade use `on delete no action`', and DESIGN §6 gives `organizations` no delete policy. `app.guard_last_org_manager` also fires on membership deletes unless `app.cascade = 'on'`, which a PostgREST service client cannot set. A plain `delete from organizations` from `supabase-admin.ts` will be blocked by a `no action` FK or the trigger, so the suite is not self-cleaning and repeat runs collide on the slug/email.",
+      "fix": "Rewrite Build 3 `cleanupRun(tag)`: (1) delete the run's `auth.users` first via `auth.admin.listUsers` + `deleteUser` (this removes memberships/permissions through the `profiles`/`persons.user_id` FKs and lets the org lose its last manager legitimately — read `9999_init.sql` §guard_last_org_manager to confirm the depth/cascade skip; if the guard still blocks, delete `org_membership_permissions` then `org_memberships` for the org explicitly); (2) delete child rows that are `on delete no action` in dependency order (read the FK definitions in `9999_init.sql` — at least `audit_log`, `stripe_events`/`billing_*` rows for the org, `storage_deletions`) then `sermon_share_links`, `sermons`, `announcements`, `bulletins`; (3) `delete from organizations where slug like '<tag>%'`; (4) if any step is refused, fall back to `update organizations set status = 'cancelled'` and record the leftover slug in the run output and `docs/QA_WEB.md` ('purged by `srv_housekeeping` after 30 days'). Add a Verify line: 'Prove `cleanupRun` against the LOCAL database first: `scripts/db/local-up.sh && scripts/db/apply-migrations.sh`, seed with `supabase/seed/dev_seed.sql`, run `cleanupRun` through a service-role connection and confirm the org rows are gone before running against the hosted project.' Update the notes sentence 'Cleanup deletes run-tagged organizations (cascade)' to match."
+    },
+    {
+      "step": "3.7b",
+      "severity": "major",
+      "category": "wrong-instruction",
+      "quote": "emits ~80 consecutive 32 kbps / 44.1 kHz MPEG-1 Layer III frames (header bytes `FF FB 40 C0`, 104-byte frames, zeroed main data)",
+      "problem": "The bytes and the frame size disagree: in the MPEG-1 Layer III header byte 3 `0x40` is bitrate index 4 = 56 kbps (frame length 144×56000/44100 ≈ 182 bytes), while 104-byte frames correspond to 32 kbps (bitrate index 1, byte `0x10`). A fresh agent following the literal bytes writes a malformed file whose frame headers do not line up; the Vitest guard (`ff fb` + size) does not catch it and the upload probe/player in 3.3b may reject or hang on it.",
+      "fix": "Replace with 'header bytes `FF FB 10 C0` (MPEG-1, Layer III, no CRC, bitrate index 1 = 32 kbps, 44.1 kHz, no padding, mono) followed by 100 zero bytes = 104-byte frames; write ~80 frames (~2 s, ~8 KB)'. Extend the Vitest guard to walk the file frame by frame and assert every frame starts with `FF FB` at 104-byte offsets, and add a Verify line 'play `small.mp3` once in Chromium via `page.setContent('<audio controls src=…>')` and assert `duration` > 1 s'."
+    },
+    {
+      "step": "3.7b",
+      "severity": "major",
+      "category": "harness-conflict",
+      "quote": "When `BASE_URL` is unset and `E2E_*` is set, the `webServer` must start the app against the **real** project: map `NEXT_PUBLIC_SUPABASE_URL ← E2E_SUPABASE_URL`, `SUPABASE_SECRET_KEY ← E2E_SUPABASE_KEY`",
+      "problem": "There is one `webServer` per config, so with `E2E_*` exported `pnpm --filter web test:e2e` (all projects) starts the app against the hosted project and the `smoke`/`smoke-mobile` tests then run against it too — their assumptions (login request to `localhost:54321` fails, `/api/stripe/webhook` → 503, mock secret literal in env, `NEXT_PUBLIC_APP_URL=http://localhost:3100`) break. The mapping also omits `NEXT_PUBLIC_APP_URL`, so share URLs created during the local full run point at the hosted `NEXT_PUBLIC_APP_URL` from `.env.local` instead of `localhost:3100`.",
+      "fix": "Add to Build 1: 'The config selects the webServer env from the invoked projects: when `E2E_*` is set AND the run includes a non-`full` project, fail fast with \"run smoke and full separately (`test:e2e:smoke`, `test:e2e:full`)\"; alternatively read a `E2E_MODE=full` variable set by the `test:e2e:full` script (`E2E_MODE=full playwright test --project=full --workers=1`). In full mode also set `NEXT_PUBLIC_APP_URL=http://localhost:3100` so `${APP_URL}/s/{token}` points at the local server, and keep `NEXT_PUBLIC_MAX_UPLOAD_MB=50`.' Make the `smoke` specs assert `test.skip(process.env.E2E_MODE === 'full', 'smoke runs only against the mock env')` as a belt-and-braces guard."
+    },
+    {
+      "step": "3.7b",
+      "severity": "major",
+      "category": "done-when-not-checkable",
+      "quote": "With `E2E_SUPABASE_URL`, `E2E_SUPABASE_KEY` (secret key, runner only), `E2E_SUPER_EMAIL`, `E2E_SUPER_PASSWORD` set, `pnpm --filter web test:e2e:full` passes twice in a row (locally against the hosted project and with `BASE_URL` pointing at the Vercel deployment)",
+      "problem": "The agent that executes 3.7b has no hosted credentials (the Constraints even say 'If I have not given you `E2E_*` values … run it only in its skipped mode'), and 3.7b's dependency chain (3.7a → 3.6b → … → 3.1 → 2.2) does not include 2.4/2.5, so the hosted project may not exist yet. As written the step can never be ticked by the agent and 3.8 (which depends on 3.7b) stalls.",
+      "fix": "Rewrite done_when item 2 as: 'Either (a) with `E2E_*` supplied by the founder (requires steps 2.4/2.5 done) `pnpm --filter web test:e2e:full` passes twice in a row locally and once with `BASE_URL` = the Vercel URL, covering: …; or (b) `E2E_*` was not supplied: the full project type-checks, reports every test skipped with the `docs/ENV.md` message, and HANDOFF.md founder to-dos contain \"run `pnpm --filter web test:e2e:full` with `E2E_*` before Checkpoint B (docs/QA_WEB.md)\" — the hosted run then happens in step 3.9 (checklist item 8.3).' Add 'Preconditions for the hosted run: steps 2.4 and 2.5 ticked in HANDOFF.md' to Inputs."
+    },
+    {
+      "step": "3.7b",
+      "severity": "major",
+      "category": "sizing",
+      "quote": "\"estimated_session\": \"L\"",
+      "problem": "One session must write and debug a 12-step serial acceptance E2E plus a security spec against a real backend, generate a media fixture, add axe scans to two suites, do a manual labels/focus/contrast pass across every form and dialog (fixing components and theme tokens), audit and create loading/error/not-found files at three levels and empty states on nine list pages, and write `docs/QA_WEB.md`. Orchestrator decision 13 says a step that touches this many components must be split; the drafter's own notes concede 'the audit touches many components'.",
+      "fix": "Split into 3.7b 'Web QA — env-gated full E2E and security spec' (Build items 1–5, 8 (E2E parts), 9; `docs/QA_WEB.md` sections on suites, env, fixture, cleanup) and 3.7c 'Web QA — accessibility and empty/loading/error-state audit' (Build items 6–7, the audit table in `docs/QA_WEB.md`, theme-token changes), each with its own full prompt, done_when, commit message (`test(web): env-gated acceptance E2E and security spec` / `fix(web): accessibility pass and empty/loading/error states, QA audit`), `depends_on: ['3.7a']` and `['3.7b']`; make 3.8 depend on 3.7c and record the split in notes."
+    },
+    {
+      "step": "3.7b",
+      "severity": "minor",
+      "category": "api-misuse",
+      "quote": "add project `full`: `testMatch: /full\\/.*\\.spec\\.ts/`, Chromium desktop, `fullyParallel: false`, `workers: 1`, `timeout: 120_000`, `retries: 0`",
+      "problem": "`workers` is a top-level Playwright config option, not a per-project option; the TypeScript config will not accept it on the project object.",
+      "fix": "Remove `workers: 1` from the project and make the script `test:e2e:full` = `playwright test --project=full --workers=1` (also in `apps/web/e2e/README.md` and `docs/QA_WEB.md`); keep `fullyParallel: false` on the project and `test.describe.serial` in the specs."
+    },
+    {
+      "step": "3.7b",
+      "severity": "minor",
+      "category": "wrong-expected-outcome",
+      "quote": "`goto('/admin')` → 404 or redirect (3.1/2.1a: non-super-admins never see `/admin`)",
+      "problem": "G5 2.1a's `requireSuperAdmin()` calls `forbidden()` (403 via `app/forbidden.tsx`) with `notFound()` only as fallback, so a signed-in member most likely sees 403, which the assertion does not allow.",
+      "fix": "Change to '`goto('/admin')` → 403 (`app/forbidden.tsx`) or 404 — read `src/lib/auth/require-super.ts` and assert the one it implements; never the churches table'."
+    },
+    {
+      "step": "3.8",
+      "severity": "major",
+      "category": "wrong-expected-outcome",
+      "quote": "Users → disable the member → cannot sign in; enable again.",
+      "problem": "Disabling a membership (`set_membership_status … 'disabled'`, G7 3.2a) does not touch `auth.users`; the member can still sign in and `requireOrgMember` answers 404 for the disabled org (G7: '404 for unknown slug, non-member, pending or disabled membership'). The acceptance script would make the founder record a false 'bug' at Checkpoint B.",
+      "fix": "Replace with 'Users → disable the member → in the member's private window sign-in still succeeds but `/o/acceptance/dashboard` is a 404 and the church is gone from the org switcher (2.1b lands on the no-church/landing page); as admin enable again → the page loads again'. Mirror in done_when item 4 ('disable/enable member' → 'disable → org 404 for the member / enable → access back') and in 3.9 checklist item 8.2 ('disable/enable a member')."
+    },
+    {
+      "step": "3.8",
+      "severity": "major",
+      "category": "verify-command",
+      "quote": "`grep -n 'NEXT_PUBLIC_\\|SUPABASE_\\|STRIPE_\\|RESEND_\\|CRON_SECRET\\|SHARE_LINK_COOKIE_SECRET\\|E2E_\\|EXPO_\\|EAS_\\|GOOGLE_SERVICES_JSON\\|DATABASE_URL\\|BASE_URL' -o docs/ENV.md apps/web/.env.example .env.example | sort -u` → the same variable set appears in all three files",
+      "problem": "With `-o` grep prints only the matched prefix (`NEXT_PUBLIC_`, `STRIPE_` …), not the variable names, so the check proves nothing; and the expectation itself is wrong — `apps/web/.env.example` deliberately lacks the mobile/EAS/E2E variables that the root `.env.example` and `docs/ENV.md` carry, so the three sets can never be identical. done_when item 3 repeats the impossible 'matches … exactly'.",
+      "fix": "Replace the command with: `for f in docs/ENV.md .env.example apps/web/.env.example; do grep -ohE '\\b(NEXT_PUBLIC|SUPABASE|STRIPE|RESEND|EXPO(_PUBLIC)?|EAS|E2E)_[A-Z0-9_]+\\b|\\b(CRON_SECRET|SHARE_LINK_COOKIE_SECRET|GOOGLE_SERVICES_JSON|DATABASE_URL|BASE_URL)\\b' $f | sort -u > /tmp/vars-$(basename $f).txt; done; diff /tmp/vars-ENV.md.txt /tmp/vars-.env.example.txt` → empty; `comm -13 /tmp/vars-ENV.md.txt /tmp/vars-.env.example.txt` → empty (web example ⊆ ENV.md). Change done_when item 3 to 'the root `.env.example` variable set equals `docs/ENV.md`'s and `apps/web/.env.example` is a subset containing every web variable'."
+    },
+    {
+      "step": "3.8",
+      "severity": "minor",
+      "category": "cross-group-name",
+      "quote": "\"Email sending (Resend) configured\" (`RESEND_API_KEY` present — add `resendConfigured()` next to `stripeConfigured()` if 3.2b did not)",
+      "problem": "G7 3.2b already ships `isEmailConfigured()` in `src/lib/email/resend.ts` (both `RESEND_API_KEY` and `RESEND_FROM` set); inventing `resendConfigured()` duplicates it and the panel would disagree with the invite dialog when only one variable is set.",
+      "fix": "Replace with '(`isEmailConfigured()` from `src/lib/email/resend.ts`, 3.2b — both `RESEND_API_KEY` and `RESEND_FROM`)' and drop `resendConfigured()` from notes and open_issues."
+    },
+    {
+      "step": "3.8",
+      "severity": "minor",
+      "category": "wrong-expected-outcome",
+      "quote": "`anon` has no table grants and cannot call any RPC (SQL: `select * from information_schema.role_table_grants where grantee = 'anon'` → 0 rows",
+      "problem": "On hosted Supabase `anon` holds default grants in the `storage`, `graphql_public` and other system schemas, so the unqualified query returns rows and the founder records a false failure.",
+      "fix": "Change to `select * from information_schema.role_table_grants where grantee = 'anon' and table_schema = 'public'` → 0 rows, and `select routine_name from information_schema.routine_privileges where grantee = 'anon' and routine_schema = 'public'` → 0 rows."
+    },
+    {
+      "step": "3.8",
+      "severity": "minor",
+      "category": "inconsistency",
+      "quote": "State checklist with every M1–M3 step ticked and M4–M6 unticked",
+      "problem": "3.9 and 3.10 are M3 steps that are not done when 3.8 runs; an agent following this literally ticks them.",
+      "fix": "Replace with 'State checklist with every step through 3.8 ticked, 3.9/3.10 and M4–M6 unticked'."
+    },
+    {
+      "step": "3.9",
+      "severity": "minor",
+      "category": "contradiction",
+      "quote": "Read-only towards the deployment: no Stripe API calls, no Checkout sessions, no sign-ins with my credentials, no `E2E_*` values typed anywhere.",
+      "problem": "Build item 2 of the same helper prompt tells the agent to run `pnpm --filter web test:e2e:full` when `E2E_*` is exported, and that suite signs in with `E2E_SUPER_EMAIL`/`E2E_SUPER_PASSWORD` and creates/deletes churches and users on the hosted project — the opposite of read-only.",
+      "fix": "Change the constraint to 'Read-only towards the deployment except the env-gated full suite: no Stripe API calls, no Checkout sessions, no manual sign-ins with my credentials, no `E2E_*` values typed anywhere. The full suite may run only if I say the variables are exported in this shell; it creates and removes run-tagged test churches and `example.invalid` users (docs/QA_WEB.md).'"
+    },
+    {
+      "step": "3.10",
+      "severity": "minor",
+      "category": "verify-command",
+      "quote": "`grep -rn -E 'sk_test_[A-Za-z0-9]{8}|whsec_|sb_secret_[A-Za-z0-9]{8}|@gmail\\.' apps packages docs 'Session log/<this session>/triage.md'` → nothing except the committed mock literal from 3.7a.",
+      "problem": "`whsec_` without a length quantifier matches the intentional format hints `whsec_…` that 2.3 wrote in `docs/BILLING.md` and 3.8 in `docs/ENV.md`/`docs/ACCEPTANCE_WEB.md`, so the check always fails.",
+      "fix": "Use `whsec_[A-Za-z0-9]{8}` and `price_[A-Za-z0-9]{8}` (format hints use an ellipsis and never eight alphanumerics)."
+    }
+  ]
+}

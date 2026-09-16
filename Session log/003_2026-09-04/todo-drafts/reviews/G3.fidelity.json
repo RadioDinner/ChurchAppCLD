@@ -1,0 +1,94 @@
+{
+  "group": "G3",
+  "lens": "fidelity",
+  "findings": [
+    {
+      "step": "1.4a",
+      "severity": "major",
+      "category": "standing-order (9999 frozen after paste)",
+      "quote": "On Pro raise the project's global upload limit in the dashboard, set this to 2147483648 (2 GiB) and re-paste this section; bucket rows are upserted.",
+      "problem": "The constant's comment tells a future reader to edit `9999_init.sql` and re-paste part of it after it is in production. CLAUDE.md / skeleton standing orders freeze `9999_init.sql` once it is in the HANDOFF ledger; later changes are `9998_*` files. Orchestrator decision 4 only says the bucket rows are upserted so a later paste can raise the limit — it does not license editing the frozen file.",
+      "fix": "Replace the comment text with: `-- 50 MiB: Supabase FREE plan cap (founder decision 10). To raise it on Pro: raise the project's global upload limit in the dashboard, then ship a new migration (e.g. supabase/migrations/9998_storage_limit.sql) that repeats ONLY this bucket upsert with 2147483648 (2 GiB) — never edit this file once it is in the HANDOFF ledger. Keep NEXT_PUBLIC_MAX_UPLOAD_MB (docs/ENV.md) in sync.` Adjust the Finish bullet ('how to raise it on Pro') accordingly and drop the open_issues sentence that says re-pasting section (10) is the current instruction."
+    },
+    {
+      "step": "1.4a",
+      "severity": "minor",
+      "category": "doc-contradiction (hosted verbatim run)",
+      "quote": "Every test file starts with `\\set ON_ERROR_STOP on` and `begin;` and ends with `rollback;`",
+      "problem": "DESIGN §12 says the test files 'run verbatim in the hosted SQL editor'. `\\set` is a psql meta-command and fails as the first line of every file in the Supabase SQL editor; `scripts/db/test.sh` already passes `-v ON_ERROR_STOP=1`, so the line is redundant locally. `05_audiences.sql` (`\\set fixture \\`cat …\\``) and `08_rerunnable.sql` (`\\i`) are psql-only as well, but only 08 is documented as such.",
+      "fix": "In item 8 write: 'Every test file starts with `begin;` and ends with `rollback;` (no `\\set` lines — test.sh passes `-v ON_ERROR_STOP=1`).' In item 10 keep the `\\i` note, and add to item 9/11 top-comment rule: 'Files that use psql meta-commands (`05` for the fixture, `08` for `\\i`) say so in their first comment line: psql-only, skip in the hosted SQL editor.' Add to open_issues that 05 and 08 are not hosted-verbatim (DESIGN §12)."
+    },
+    {
+      "step": "1.4a",
+      "severity": "minor",
+      "category": "deviation not recorded",
+      "quote": "grant select, insert, update, delete on all tables in schema public to authenticated; grant all on all tables in schema public to service_role;",
+      "problem": "DESIGN §4.4 section (8) contains no positive table grants (it relies on Supabase's default privileges for `authenticated`/`service_role`; section (1) only revokes the `anon` default). The explicit grants are correct for the shim and harmless on Supabase, but they are an addition to the documented block and the prompt's 'copy the DESIGN §4.4 block' wording hides that; the Finish list does not ask to record it.",
+      "fix": "After the grant sentence add: 'This is an addition to DESIGN §4.4 (which relies on Supabase default privileges) — record it under HANDOFF \"Deviations from plan\" and in docs/MIGRATIONS.md (step 1.5) as the rule that every new table in a `9998_*` migration needs its own grant line.'"
+    },
+    {
+      "step": "1.4a",
+      "severity": "minor",
+      "category": "doc-contradiction (policy catalogue)",
+      "quote": "insert member ∧ writable ∧ (`organization_settings.members_can_submit_events` ∨ `announcements.create`)",
+      "problem": "DESIGN §6 events insert is 'member ∧ `members_can_submit_events` ∧ `user_in_group(submit group)` ∧ `submitted_by = auth.uid()` ∧ writable' — no `announcements.create` bypass. The `∨ announcements.create` reading is sensible (1.4b tests that `creator` still inserts when the setting is off) but it changes a documented rule silently; same for `surveys` select ('any of create/edit/delete' vs DESIGN's `announcements.create`).",
+      "fix": "Mark both as explicit choices: '(DESIGN §6 lists only `members_can_submit_events`; the `∨ announcements.create` branch is this step's reading so managers are never blocked by the member toggle — record it under Deviations)' and '(DESIGN §6 says `announcements.create`; the three-key form follows the PLAN §4 survey mapping — record it)'."
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "misquoted rule (audience derivation)",
+      "quote": "`app.user_in_group(null)` is true for a member with a person; a member without a person is in no group.",
+      "problem": "DESIGN §4.3 defines `user_in_group(group_id)` = `group is null or person_in_group(my_person_id(org), group)`, and G2's 1.3a repeats it: a null group is 'everyone' and returns true even for a caller with no linked person. Read literally, 'a member without a person is in no group' would make the agent assert `user_in_group(null)` = false for that member and the test would fail (or the agent would 'fix' the helper).",
+      "fix": "Replace with: '`app.user_in_group(null)` is true for every authenticated caller (null group = everyone, DESIGN §4.3), with or without a linked person; for any non-null group a member without a linked person gets false.'"
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "name mismatch with 1.3b catalogue",
+      "quote": "with `allow_edit = false` a second submit → `survey_already_responded`",
+      "problem": "G2's 1.3b error catalogue has both `survey_already_responded` and `survey_edit_not_allowed` (P0001) and its `submit_survey_response` description is ambiguous about which one fires when a response exists and `allow_edit` is false. Pinning `survey_already_responded` here may contradict what 1.3b implemented.",
+      "fix": "Write: 'with `allow_edit = false` a second submit → `survey_already_responded` or `survey_edit_not_allowed` — assert the key 1.3b's catalogue assigns to this case and record it in HANDOFF for 1.6's errors.ts', and add `survey_edit_not_allowed` to the Inputs list of catalogue keys."
+    },
+    {
+      "step": "1.4b",
+      "severity": "minor",
+      "category": "unexecutable assertion",
+      "quote": "`b_member` sees only their own household and `a_member` sees nothing from B",
+      "problem": "`b_member` is defined as 'B, no perms' with no household or person linked, so after `directory_share_in_congregation = false` the household level cannot apply and `b_member` sees 0 rows, not 'their own household'.",
+      "fix": "Either link `b_member` to an adult of H4 in the user list ('`b_member` (B, no perms, linked to an adult of H4)') and keep the assertion, or change it to '`b_member` sees 0 rows from `directory_households`'."
+    },
+    {
+      "step": "1.5",
+      "severity": "major",
+      "category": "standing-order (9999 frozen after paste)",
+      "quote": "on Pro raise the dashboard global limit, change the constant to 2 GiB, re-paste section (10), and raise `NEXT_PUBLIC_MAX_UPLOAD_MB`",
+      "problem": "The founder-facing runbook instructs editing and re-pasting part of `9999_init.sql` after it is frozen in the ledger — the exact thing item (7) 'Never' of the same runbook and CLAUDE.md forbid. Same issue in HANDOFF Finish wording ('how to raise it on Pro').",
+      "fix": "Replace with: 'on Pro raise the dashboard global upload limit, have an agent add `supabase/migrations/9998_storage_limit.sql` (the `storage.buckets` upsert for `sermon-media` only, with `file_size_limit = 2147483648`), paste it, record it in the ledger, and raise `NEXT_PUBLIC_MAX_UPLOAD_MB` in Vercel'. Mirror the same wording in docs/MIGRATIONS.md's worked `9998_*` example (it is a perfect first example) and in the HANDOFF note."
+    },
+    {
+      "step": "1.5",
+      "severity": "major",
+      "category": "doc-contradiction (hosted test run)",
+      "quote": "SQL Editor: paste `tests/helpers.sql`, then each `tests/rls/*.sql` — they run inside `begin … rollback` and leave nothing; `08_rerunnable.sql` contains a psql `\\i` line to skip",
+      "problem": "As drafted in 1.4a every test file begins with `\\set ON_ERROR_STOP on` and `05_audiences.sql` loads the fixture with `\\set fixture \\`cat …\\``; both are psql meta-commands that the Supabase SQL editor rejects, so the runbook instruction fails on every file, not just on 08's `\\i`.",
+      "fix": "Once 1.4a drops the `\\set ON_ERROR_STOP` line (see 1.4a finding), write: 'paste `tests/helpers.sql`, then each `tests/rls/*.sql` except the psql-only parts: `05_audiences.sql` loads `packages/domain/fixtures/persons.json` through a psql `\\set` (paste the JSON inline instead or skip the file) and `08_rerunnable.sql` re-applies the migration with `\\i` (delete that line before pasting; the count/prosecdef assertions still run).'"
+    },
+    {
+      "step": "1.5",
+      "severity": "minor",
+      "category": "overbroad goal vs founder decisions",
+      "quote": "`HANDOFF.md`'s ledger is ready for the first production paste and no longer mentions a Pro plan.",
+      "problem": "HANDOFF legitimately mentions Vercel Pro (founder decision 10, orchestrator decision 1) and the founder-answers table row 10 ('Upgrade to Pro raises the cap'), which must not be rewritten. Orchestrator decision 4 only bans repeating a Supabase plan-upgrade *recommendation*. Item 7 already targets Environment-status item 1 correctly; the goal sentence and done_when ('no plan-upgrade recommendation wording left in HANDOFF') invite the agent to scrub Vercel Pro too.",
+      "fix": "Change the goal to '… and no longer recommends a Supabase plan upgrade (Vercel Pro and the founder-answers table stay as they are)'; in done_when say 'Environment status item 1 describes the Supabase Free plan and the pause/restore path; the founder-answers table and Vercel Pro wording are untouched'."
+    },
+    {
+      "step": "1.5",
+      "severity": "minor",
+      "category": "invented name not listed in open_issues",
+      "quote": "`scripts/db/seed.sh` refuses non-local URLs",
+      "problem": "`scripts/db/seed.sh` and the root script `db:seed` appear in neither PLAN §2/§10 nor DESIGN §2 (which names only `supabase/seed/dev_seed.sql` and the five `scripts/db/*.sh`). Orchestrator decision 10 requires chosen names to be flagged in `open_issues`; they are only mentioned in `notes`.",
+      "fix": "Add to open_issues: 'Names chosen in 1.5 because the docs leave them open: `scripts/db/seed.sh` (local-only guard, `--i-know-this-is-not-production`) and the root `db:seed` script; G10 (3.7) and any hosted-seed variant must reuse them.'"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+ "group": "G7",
+ "stage": "revise",
+ "tokens": 356043,
+ "agents": 1,
+ "result": [
+  {
+   "group": "G7",
+   "drafted": [],
+   "findings": 0,
+   "blockers": 0,
+   "applied": 34,
+   "rejected": [
+    {
+     "finding": "fidelity 3.1 my_context-shape (minor) — the part claiming `app.has_perm`/`app.perm_org_ids` have no super-admin bypass, so super-admin rows must 404",
+     "reason": "Contradicts docs/DESIGN.md §4.4 (`member_org_ids`/`perm_org_ids` return every org when `app.is_super_admin()`), G5's 2.1 guard rule (super admin passes with `membership_status = null`) and the executability blocker; the founder's primary objective is trialling the web app as super admin. The rest of the finding (full `my_context` shape incl. `profile`, disabled rows absent, null rows for super admins) was applied."
+    },
+    {
+     "finding": "completeness 3.1 rpc-wiring (major) — the part stating `my_context()` returns no `profile`/`last_org_id` and telling the agent 'do not assume it'",
+     "reason": "G2's 1.3b explicitly returns `profile: {display_name, email, last_org_id}` and G5's 2.1 `getAuthContext()` parses it, so 3.1 states the field exists (with 1.7a's `getMyProfile` as the query-side equivalent). The substantive part — `trial_ends_at`/`billing_mode`/`contact_email` are NOT in `my_context()` and must come from `organizations` via a by-slug query — was applied."
+    },
+    {
+     "finding": "fidelity 3.2 invented-name (minor) — option 'rename the union member to `newHousehold`'",
+     "reason": "G4's 1.6b already fixed `createUserDirectSchema` with snake_case `new_household {household_name, first_name, last_name}` and recorded the DESIGN §5 `newHousehold` wording in HANDOFF; 3.2b reuses that schema and notes the DESIGN wording (the finding's second option) instead of introducing a third spelling."
+    },
+    {
+     "finding": "executability 3.1 self-containment (minor) — 'reuse 2.2's `src/features/orgs/billing-queries.ts`'",
+     "reason": "No such file exists in G5's 2.2a/2.2b (they ship `src/features/orgs/BillingPanel.tsx`); the column list and ordering were applied, and the prompt points at `BillingPanel`'s rendering instead of a non-existent module."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Step 3.2 was split into 3.2a (grid, membership actions, detail page) and 3.2b (invitations, direct accounts, email) per orchestrator decision 13; every later step whose depends_on names 3.2 (3.7 in G10, 5.1 in G12) should point at 3.2b — assembler to update.",
+    "Query module names differ across groups: 1.7a (G4) ships packages/db/src/queries/organizations.ts and queries/memberships.ts, while G5's 2.2a/2.2b mention packages/db/src/queries/orgs.ts and a listMembershipsWithPermissions helper. 3.1/3.2a tell the agent to extend whichever exists and never add a third; the assembler may want to align G5 to 1.7a's names.",
+    "createUserDirect payload naming: 1.6b's createUserDirectSchema is snake_case (temp_password, display_name, person_id XOR new_household {household_name, first_name, last_name}), 2.2b's function takes camelCase {orgId, email, tempPassword, displayName, personId | null, permissions}, and DESIGN §5 writes newHousehold. 3.2b maps form → function in the Server Action and ignores household_name (not an srv_attach_user parameter). The assembler may prefer G4/G5 to agree on one shape.",
+    "Names chosen because the docs are silent: 3.1 getOrganizationBySlug, queryKeys.logoUrl, isWritable, src/features/org/*, src/features/settings/*, src/lib/storage/signed-url.ts; 3.2a listMembershipAudit, queryKeys.memberships.detail/audit, PermissionPicker, permission-grid.logic.ts, use-debounced-permissions.ts; 3.2b listLinkablePersons, queryKeys.memberships.linkablePersons, LinkReveal, PersonPicker, InvitationsTable, src/lib/users/{temp-password,invite-link}.ts.",
+    "3.1 adds a 'Viewing as super admin' strip and lists every church in the org switcher for super admins; 2.1 (G5) ships the pass-through rule (membershipStatus = null) but no banner — nothing in G5 needs to change, but G10's Playwright E2E (3.7) can rely on super admins reaching /o/<slug>/* directly without inviting themselves.",
+    "audit_log.row_id for the composite-PK table org_membership_permissions is not specified by DESIGN; 3.2a filters on new_data/old_data ->> 'membership_id' and tells the agent to read app.audit_row (1.3a) and adjust. 6.2 (G14) should reuse listMembershipAudit when it adds queries/audit.ts.",
+    "Logo replacement orphans: org-assets has no delete policy for authenticated (DESIGN §6), so old logos are removed only by the 3.6 cron orphan sweep (> 24 h). Immediate cleanup would need a service-client action inserting into storage_deletions — not built in 3.1.",
+    "DESIGN defines no check constraint on organization_settings.logo_path; 3.1 tells the agent to honour one if 1.2 (G2) added it and maps 23514 from prepareLogoUpload to 'Unsupported file name'. G2/G3 should confirm whether such a check exists so .jpg/.webp extensions are allowed.",
+    "Resending an invitation is implemented as revoke + new create_invitation (new token) because the raw token is only returned once; a dedicated resend_invitation RPC would need a migration and is not proposed.",
+    "pending memberships exist in the enum but Phase 1 creates none (invitations accept straight to active; join requests are 5.6). 3.2a still renders and approves them so 5.6 needs no grid change.",
+    "Prompt lengths after revision: 3.1 = 2990 words, 3.2a = 2549, 3.2b = 2474 (all inside the 1200–3000 band); file: /home/user/ChurchAppCLD/Session log/003_2026-09-04/todo-drafts/groups/G7.json — validator prints 0 errors, 0 warnings."
+   ]
+  }
+ ]
+}

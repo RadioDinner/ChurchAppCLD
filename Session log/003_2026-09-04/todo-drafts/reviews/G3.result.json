@@ -1,0 +1,58 @@
+{
+ "group": "G3",
+ "tokens": 1090543,
+ "agents": 5,
+ "result": [
+  {
+   "group": "G3",
+   "drafted": [
+    {
+     "id": "1.4a",
+     "title": "RLS policies, grants, storage buckets and the test harness (9999_init.sql sections 8–11)",
+     "actor": "agent",
+     "prompt_words": 3399
+    },
+    {
+     "id": "1.4b",
+     "title": "Behavioural RLS tests 02–07 (permissions, directory, share links, audiences, events/surveys, storage/billing/audit)",
+     "actor": "agent",
+     "prompt_words": 3392
+    },
+    {
+     "id": "1.5",
+     "title": "Seed, typegen, DB docs",
+     "actor": "agent",
+     "prompt_words": 3121
+    }
+   ],
+   "findings": 45,
+   "blockers": 1,
+   "applied": 46,
+   "rejected": [
+    {
+     "finding": "1.4a executability/sizing — option (a): split 1.4a into 1.4a (sections 8–11) + 1.4b (harness) with the behavioural tests becoming 1.4c",
+     "reason": "Took the critic's alternative (b) instead: ids stay fixed and 1.4a now mandates a checkpoint commit `feat(db): RLS policy catalogue, grants and storage buckets (9999 sections 8–11)` after check-rerunnable.sh passes and before helpers.sql starts. Splitting 1.4a as well would have produced a four-way 1.4a–1.4d renumbering on top of the 1.4b/1.4c split that the sizing findings for 1.4b did require."
+    },
+    {
+     "finding": "1.5 executability/verify-precision — the proposed `node -e` regex for the permission_key enum",
+     "reason": "Applied the intent but not the exact command: the critic's regex (`/permission_key:\\s*((?:\\s*\\|?\\s*\"[a-z_.]+\")+)/`) is brittle against the generator's `| \"a.b\"` union layout; the prompt now carries a simpler slice-and-match one-liner that stops at the first repeated key and exits 1 unless exactly 12 are found."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Step 1.4 is now split three ways: 1.4a (sections 8–11 + harness + tests 01/08/09, with a mandatory mid-step checkpoint commit), 1.4b (tests 02–04), 1.4c (fixture + tests 05–07 + server-RPC/notification coverage). 1.5 depends_on is 1.4c in this file; the orchestrator must propagate to any group that references '1.4b' for the fixture, `9 passed`, or 'RLS tests from 1.4' (G4 1.6/1.7, G10, G13, G14).",
+    "Prompt length: 1.4a (~4465 words) and 1.5 (~4141 words) exceed orchestrator decision 9's 1200–3000 range after the critics' additions (validator warns only; brief said never shorten). Assembler may trim boilerplate or accept.",
+    "Typegen no longer uses `supabase gen types --db-url` (the CLI runs postgres-meta in Docker); `scripts/db/gen-types.sh` runs `@supabase/postgres-meta` directly under Node via `/generators/typescript`, unconditionally incl. CI, and 1.5 adds it as the one exact-pinned root devDependency. The agent must confirm the package's server entry path from its package.json; G1's CI drift step and G4's 1.7 `pnpm db:types` are unaffected in interface.",
+    "Raising the `sermon-media` limit on Pro is everywhere documented as a NEW migration `supabase/migrations/9998_storage_limit.sql` (bucket upsert only), never an edit of 9999. The number 9998 collides with the skeleton's `9998_join_codes.sql` (5.6); whichever ships first keeps 9998 and the other is renumbered when written.",
+    "Hosted verbatim run (DESIGN §12) is now true for all test files except two documented psql-only lines: `05_audiences.sql` fixture `\\set` (single substitution point) and `08_rerunnable.sql` `\\i`. 1.5's runbook explains both edits and requires `drop schema app_test cascade` after a hosted run. If the orchestrator wants fully verbatim, 08 could drop the re-apply and 05 embed the JSON.",
+    "1.4a changes G2's `scripts/db/local-up.sh` to re-apply the idempotent shim every run (needed for the three shim tweaks: service_role BYPASSRLS, RLS on storage.objects, storage table grants); G2's 1.2 done_when bullet 'skipped when auth.uid() already exists' becomes stale after 1.4a.",
+    "Fixture identity rule defined in 1.4a (builders run logged out; if 1.3a's guards do not trust a null auth.uid(), builders switch to a per-run super admin via new `app_test.make_super()`); 1.4b/1.4c/1.5 rely on it. `make_member` gained a `status` parameter. G13/G14 test authors should reuse the API.",
+    "Names chosen in 1.5 and flagged: `scripts/db/seed.sh` + root `db:seed` (with `--i-know-this-is-not-production`), role-header labels Sermon manager / Announcement manager / Organization manager (G4 1.6 and G7 3.2 must reuse), the `-- acceptance:` tag convention (18 PLAN §12 DB sentences; 4 tagged in 1.4a, 10 in 1.4b, 4 in 1.4c).",
+    "Deviations from DESIGN made explicit for HANDOFF: explicit table-grant block in section (8) (every future `9998_*` table needs its own grant lines — docs/MIGRATIONS.md rule), events insert `∨ announcements.create`, surveys three-key select.",
+    "Behaviours 1.3b leaves open are asserted as implemented and recorded in HANDOFF (survey_already_responded vs survey_edit_not_allowed, outsider on submit_survey_response, cross-org set_membership_permissions key, invitation expiry key, delete_person on the only head, rate-limit probe counting, resolve payload keys, events_require_approval=false semantics, srv_attach_user repeat call); G4/G7/G8/G9/G12 must read that record.",
+    "Supabase Auth Site URL / redirect URLs cannot be completed at 2.4 (Vercel URL exists only after 2.5); 1.5's runbook and HANDOFF say localhost redirect now, `<VERCEL_URL>/auth/callback` after 2.5 — G6's 2.4/2.5 checklists should mirror that order.",
+    "1.5 leaves Vercel Pro wording and the founder-answers table row 10 untouched (only the Supabase plan-upgrade recommendation is removed); docs/PLAN.md §12 / DESIGN §11 'Pro' wording is still not edited by any G3 step — assembler may add a one-line note there."
+   ]
+  }
+ ]
+}

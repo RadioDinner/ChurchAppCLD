@@ -1,0 +1,118 @@
+{
+  "group": "G9",
+  "lens": "fidelity",
+  "findings": [
+    {
+      "step": "3.6",
+      "severity": "blocker",
+      "category": "version-pin / API",
+      "quote": "wraps `new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN, useFcmV1: true })`",
+      "problem": "`useFcmV1` is not an option of expo-server-sdk 7.2.0 (the pinned version, DESIGN §3). Its `ExpoClientOptions` type is exactly `{ httpAgent, maxConcurrentRequests, retryMinTimeout, accessToken }`; FCM v1 is the only transport. Passing `useFcmV1` fails `pnpm turbo typecheck` (excess property) and misdescribes the SDK.",
+      "fix": "Replace with `new Expo({ accessToken })` (accessToken from `serverEnv().expoAccessToken`, omitted when undefined) and delete every mention of `useFcmV1`. Name the chunk-size constant precisely: `Expo.pushNotificationChunkSizeLimit` (static on the class) instead of \"the SDK's constant\", in Build 1 and in the dispatch test."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "invented/stale column names",
+      "quote": "`push_devices (id, user_id, expo_push_token, platform, device_name, disabled_at | is_enabled …)`, … `notification_deliveries (id, notification_id, user_id, …device/token…, expo_ticket_id, receipt_status, error, …)`",
+      "problem": "Step 1.2 (G2) already fixed these columns: `push_devices (id, user_id fk auth.users cascade, expo_push_token text not null unique, platform push_platform not null, device_name text, enabled boolean default true, last_seen_at, created_at, …)` and `notification_deliveries (id, notification_id fk cascade, user_id fk auth.users cascade, device_id fk push_devices set null, expo_ticket_id text, receipt_status text, error text, created_at, updated_at)`. There is no token column on deliveries and the enable flag is `enabled`. The speculative list (and open_issues item 7) sends the agent looking for names that do not exist.",
+      "fix": "Replace the two column lists with the 1.2 ones verbatim (`enabled boolean`, `device_id`); in Build 2 'Send' write rows as `{ notification_id, user_id, device_id, expo_ticket_id, receipt_status, error }`; in 'Recipients' say `listEnabledDevicesForUsers` = `push_devices where user_id in (…) and enabled`; `disablePushDeviceById` sets `enabled = false`. Rewrite open_issues item 7 to state the fixed names and only leave the `receipt_status` value set open."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "cross-step contract",
+      "quote": "`receipt_status = ticket.status === 'ok' ? 'pending' : 'error'` … `listPendingReceipts(svc, { olderThanMinutes })` (deliveries with a ticket id and `receipt_status = 'pending'`)",
+      "problem": "Step 1.7a (G4) defines `listPendingReceipts(svc, { olderThanMinutes = 15 })` as 'deliveries with a ticket and no receipt', i.e. `receipt_status is null`. If 3.6 writes the literal `'pending'`, 1.7a's helper never returns those rows and receipts are never processed.",
+      "fix": "Insert deliveries with `receipt_status: null` when the ticket is `ok` (only error tickets get `'error'`), define the value set as `null (awaiting receipt) | 'ok' | 'error' | 'unknown'` in Build 2/3 and in the HANDOFF Decisions note, and state that `listPendingReceipts` filters `expo_ticket_id is not null and receipt_status is null and created_at < now() - olderThanMinutes`. Update the receipts test accordingly."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "invented helper duplicating 1.7a",
+      "quote": "through an additive `findReferencedPaths(svc, bucket, names)` in `queries/storage.ts`",
+      "problem": "Step 1.7a (G4) already ships `listReferencedPaths(svc, bucket)` 'returning every storage_path / photo_path / logo_path the tables hold for that bucket — the cron's orphan sweep (3.6) diffs the two'. Adding `findReferencedPaths` creates a second helper for the same job under an invented name.",
+      "fix": "In Build 6 phase 5 use `listReferencedPaths(svc, bucket)` (a Set diff against the listed object names); if the per-name filter is wanted for cost, extend `listReferencedPaths` additively with an optional `{ names }` option rather than adding a new function. Remove `findReferencedPaths` from Build 6, the Finish 'Deviations' list, done_when and open_issues item 5."
+    },
+    {
+      "step": "3.5b",
+      "severity": "major",
+      "category": "misspelled name from 1.6a",
+      "quote": "`extensionFor(mime)` if 1.6a shipped it (else add it additively next to `bulletinPath`, with a test)",
+      "problem": "Step 1.6a (G4) ships `extensionForMime(mime)` in `packages/domain/src/limits.ts`. Under the name `extensionFor` the agent will not find it and will add a duplicate.",
+      "fix": "Replace every `extensionFor(` with `extensionForMime(` (Inputs, Build 3 `prepareBulletinUpload`, Finish 'Deviations', open_issues item 5) and drop the 'else add it additively' clause."
+    },
+    {
+      "step": "3.5b",
+      "severity": "major",
+      "category": "RLS contradiction",
+      "quote": "`listNotificationStatus(db, orgId)` filtered to `kind = 'bulletin'` for uploaders",
+      "problem": "DESIGN §6 (and 1.4/G3) grant `notifications` select to `announcements.*` holders only; `bulletins.upload` is not one of them. A leader holding only `bulletins.upload` reads zero rows with the user client, so the Push column shows 'Not queued' for every bulletin, and done_when item 4 plus the Verify script ('Push \"Queued — delivered by the push dispatcher (step 3.6)\"' as a `bulletins.upload` holder) cannot pass.",
+      "fix": "Either (a) show the Push column only when `hasAnyPerm(ctx, ['announcements.create','announcements.edit','announcements.delete'])` and say so in Build 5/6, done_when 4 and Verify (test with an account that holds both `bulletins.upload` and an `announcements.*` permission), or (b) read bulletin notification status through a Server Action `getBulletinPushStatus(orgSlug)` that runs `requireOrgMember` → `requirePerm(ctx, 'bulletins.upload')` and then queries `notifications where org_id = ctx org and kind = 'bulletin'` with the service client — the same permission-gated pattern 3.6 Build 7 uses for delivery counts. Whichever is chosen, relax the Constraint 'No `service.ts` import anywhere in `src/features/bulletins/`' accordingly and record the choice in open_issues."
+    },
+    {
+      "step": "3.6",
+      "severity": "major",
+      "category": "RLS contradiction",
+      "quote": "verify the notification belongs to `ctx` org (read it with the user client — managers can select `notifications`)",
+      "problem": "For `kind = 'bulletin'` the Retry permission is `bulletins.upload`, but the `notifications` select policy admits only `announcements.*` holders (DESIGN §6). A `bulletins.upload`-only leader's user-client read returns nothing and Retry always fails for bulletins.",
+      "fix": "In `retryPush`: after `requirePerm`, read the notification with the service client (`getNotificationById(svc, id)`, additive) and refuse unless `notification.org_id === ctx.org.<orgId field>` and the kind matches the permission that was checked; never trust a client-supplied org. Add this to the push-actions permission-matrix test."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "trigger semantics",
+      "quote": "`survey` → read `surveys` (`status = 'open'` else `unpublished`; UI is 6.1)",
+      "problem": "Step 1.3a (G2) enqueues surveys when `status = 'open'` AND `push` (the `surveys` table has `push default true`, DESIGN §4.2). The dispatcher's re-read should apply the same predicate, as it does for announcements and events.",
+      "fix": "Change to `survey` → read `surveys`: `status = 'open'` and `push`, else `unpublished`."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "migration numbering",
+      "quote": "if a DB change is truly unavoidable, write `9998_*` re-runnable per `docs/MIGRATIONS.md`",
+      "problem": "The skeleton reserves `9998_join_codes.sql` (step 5.6) and `9997_surveys_head_of_house.sql` (step 6.1). Telling the agent to use `9998_*` invites a collision.",
+      "fix": "Replace with: 'write it as the next free descending number recorded in the HANDOFF ledger (9998 is reserved for join codes, 9997 for surveys), re-runnable per `docs/MIGRATIONS.md`'."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "helper signature",
+      "quote": "`enqueueStorageDeletion(svc, { org_id, bucket_id, object_name, is_prefix: false })`",
+      "problem": "Step 1.7a defines `enqueueStorageDeletion(svc, { bucket_id, object_name, is_prefix })` without `org_id`, while the 1.2 table has an `org_id` column the sweep can fill from the first path segment.",
+      "fix": "Say: 'extend `enqueueStorageDeletion` additively with an optional `org_id` (from the object's first path segment) and record it in HANDOFF' instead of assuming the field exists."
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "ambiguous helper",
+      "quote": "compute `canCreate/canEdit/canDelete` from `hasAnyPerm`",
+      "problem": "Two different `hasAnyPerm` exist: `@church/domain` `hasAnyPerm(perms: PermissionKey[], keys)` (1.6a) and the web guard `hasAnyPerm(ctx, perms)` / `hasPerm(ctx, perm)` in `src/lib/auth/require-perm.ts` (2.1a/3.1). The Inputs list names the domain one, Build 8 needs the ctx one.",
+      "fix": "In Build 8 write `hasPerm(ctx, 'announcements.create')` etc. from `src/lib/auth/require-perm.ts`, and in Inputs list `permissions.ts` only for `PERMISSION_LABELS`."
+    },
+    {
+      "step": "3.5a",
+      "severity": "minor",
+      "category": "1.7a module fidelity",
+      "quote": "plain members load the same query (RLS narrows it) and get no status column",
+      "problem": "Step 1.7a ships `listFeed(orgId, { limit })` in `queries/announcements.ts` precisely for the member view (`publish_at <= now()` and not expired). Using `listAnnouncements` with `includeScheduled: true` for members relies on RLS alone and ignores the helper G4 built for this.",
+      "fix": "For non-managers call `listFeed(db, orgId, { limit })` (or `listAnnouncements(db, orgId, { includeScheduled: false, includeExpired: false })`) and keep RLS as the second line of defence; mention `listFeed` in Inputs."
+    },
+    {
+      "step": "3.6",
+      "severity": "minor",
+      "category": "wording",
+      "quote": "and the two Server Actions named above (`afterContentPublish` body, `retryPush`, the optional delivery-count action)",
+      "problem": "Three items are listed and `afterContentPublish` is a library function, not a Server Action; the constraint should match the Verify grep (`git grep -n \"lib/supabase/service\" apps/web/src/features` → only `push-actions.ts`).",
+      "fix": "Rewrite: 'the service client is used ONLY in `src/lib/push/*`, `src/lib/cron/*`, `app/api/cron/tick/route.ts` and `src/features/announcements/push-actions.ts` (`retryPush` and the optional delivery-count action).'"
+    },
+    {
+      "step": "3.12",
+      "severity": "minor",
+      "category": "file path",
+      "quote": "Then pass `org` from `afterContentPublish()` in `apps/web/src/lib/push/dispatch.ts`",
+      "problem": "`afterContentPublish()` lives in `src/lib/push/after-publish.ts` (3.5a/3.6); `dispatchQueued()` lives in `dispatch.ts`.",
+      "fix": "Write: 'pass `orgId` from `afterContentPublish()` (`src/lib/push/after-publish.ts`) through `dispatchQueued()` (`src/lib/push/dispatch.ts`) to `srvClaimNotifications(svc, { max_rows, org })`'."
+    }
+  ]
+}

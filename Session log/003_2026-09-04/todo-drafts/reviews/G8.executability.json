@@ -1,0 +1,182 @@
+{
+  "group": "G8",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "3.3a",
+      "severity": "blocker",
+      "category": "cross-group conflict / CSP",
+      "quote": "Do not touch `supabase/` (no migrations, `9999_init.sql` may be frozen), `apps/web/vercel.json`, `proxy.ts`, or `next.config.ts` (3.4 changes headers).",
+      "problem": "G5's 2.1a ships the CSP in `apps/web/src/lib/security/csp.ts` with `media-src 'self' blob: https://<supabase host>`. 3.3a's `SermonPlayer`/`LinkPreview` `native_stream` branch (Dropbox `dl.dropboxusercontent.com`, any-https mp3/m4a/mp4/m3u8) renders `<audio src=...>`/`<video src=...>` from arbitrary https hosts, which that CSP blocks on every `(org)` page — yet the prompt forbids the agent from changing the headers. Built as written, linked Dropbox/https sermons cannot play on the admin page and the done_when item 'native audio/video for Dropbox/https streams' is unreachable. G8's own open_issues flags this but leaves it to the assembler instead of fixing the prompt.",
+      "fix": "In Constraints replace the quoted sentence with: 'Do not touch `supabase/`, `apps/web/vercel.json` or `proxy.ts`. The ONLY header change allowed: in 2.1a's `src/lib/security/csp.ts` widen `media-src` in BOTH variants from `'self' blob: https://<supabase host>` to `'self' blob: https:` (linked recordings stream from arbitrary https hosts — DESIGN §9 lists only the Supabase host), update `src/lib/security/csp.test.ts` accordingly, and record the widening under HANDOFF \"Deviations from plan\".' Add a matching sentence to Build 9 and a Verify line: `git grep -n \"media-src\" apps/web/src/lib/security/csp.ts` → shows `https:`. In 3.4 Build 8 change 'media-src 'self' https: (… note the widening vs DESIGN §9)' to 'keep the `media-src 'self' blob: https:` that 3.3a set'."
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "clarity",
+      "quote": "parse `sermonLinkSchema.extend`-free — parse `sermonDetailsSchema` and `sermonLinkSchema` separately;",
+      "problem": "Garbled instruction; an agent cannot tell whether it may merge the schemas or not.",
+      "fix": "Replace with: 'validate the input with `sermonDetailsSchema` and `sermonLinkSchema` as two separate `safeParse` calls (do not build a merged web-side schema);'."
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "prior-state precision",
+      "quote": "`getSignedUrl('sermon-media', storage_path, SIGNED_URL_TTL_SECONDS)` → `{ url, expiresAt }`",
+      "problem": "3.1's `getSignedUrl(bucket, path, expiresIn)` (G7) has no documented return shape and may return a bare URL string; the player and 3.4 need `{ url, expiresAt }`, which is exactly what 1.7a's `createSignedUrl(db, bucket, path, { ttl, download? })` returns. Two agents would produce incompatible `media` props.",
+      "fix": "In Build 7 (`mintSermonMediaUrl`) and Build 9 say: 'mint with `createSignedUrl(createServerSupabase(), 'sermon-media', storage_path, { ttl: SIGNED_URL_TTL_SECONDS })` from `@church/db/queries/storage.ts` (returns `{ url, expiresAt }`); use 3.1's `getSignedUrl` only if it already returns that shape.'"
+    },
+    {
+      "step": "3.3a",
+      "severity": "minor",
+      "category": "prior-state precision",
+      "quote": "add `maxUploadMb` there via `readMaxUploadMb(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB)` if 2.1a did not expose it",
+      "problem": "G5's 2.1a fixes `publicEnv()` to return `{ supabaseUrl, supabasePublishableKey, appUrl, maxUploadMb }`; the hedge invites a duplicate field.",
+      "fix": "Replace with: '2.1a's `publicEnv()` already returns `maxUploadMb` (read `src/lib/env.ts`); use it, do not add a second reader.' Apply the same edit to 3.3b Inputs bullet 1."
+    },
+    {
+      "step": "3.3b",
+      "severity": "major",
+      "category": "name mismatch with prior step",
+      "quote": "`mapStorageErrorMessage(message)` → a `DomainErrorKey` such as `file_too_large`, `unsupported_mime_type`, `object_already_exists` (read `packages/domain/src/errors.ts` for the exact keys)",
+      "problem": "G4's 1.6a fixes `mapStorageErrorMessage(message): StorageErrorKey` with `StorageErrorKey = 'upload_too_large_for_plan' | 'upload_mime_not_allowed' | 'upload_object_exists' | 'upload_failed'` (included in `DOMAIN_ERROR_KEYS`). 3.3b's Build 3/5/11 tests and done_when #2/#5 hard-code `file_too_large`, `unsupported_mime_type`, `object_already_exists`, and also use `network_error` and `cancelled`, which exist in no catalogue. An agent following the tests literally writes keys that `errorMessageFor` does not know.",
+      "fix": "Everywhere in 3.3b (Build 3, 5, 7, 11, done_when #2 and #5, notes) replace `file_too_large` → `upload_too_large_for_plan`, `unsupported_mime_type` → `upload_mime_not_allowed`, `object_already_exists` → `upload_object_exists`. In Build 5 define `export type UploadErrorKey = StorageErrorKey | 'auth_required' | 'permission_denied' | 'network_error' | 'cancelled'` in `upload-errors.ts` with web-local copy for the last two (not in `@church/domain`), and say `uploadErrorToKey(err): UploadErrorKey`; 413 → `upload_too_large_for_plan` (message computed with the MB number), 415 → `upload_mime_not_allowed`, 409 → `upload_object_exists`, other 4xx/5xx → `upload_failed`."
+    },
+    {
+      "step": "3.3b",
+      "severity": "major",
+      "category": "verification unreachable",
+      "quote": "temporarily set `NEXT_PUBLIC_MAX_UPLOAD_MB=60` locally and try a 55 MB file → the Storage 413 is mapped to the `file_too_large` message (bucket wins)",
+      "problem": "Build 2 defines the client-side cap as `min(env cap, BUCKETS['sermon-media'].fileSizeLimitBytes)` = 50 MiB regardless of the env value, so a 55 MB file is refused in the browser and never reaches Storage; the 413 path cannot be exercised this way. done_when #2 ('with the env cap raised above the bucket limit, the Storage 413 response is mapped …') is likewise not checkable end to end.",
+      "fix": "Replace the quoted Verify clause with: 'the Storage 413 mapping is proven by `upload-errors.test.ts` (fake `DetailedError` with status 413 and the Supabase \"exceeds the maximum allowed size\" body → `upload_too_large_for_plan`); it cannot be reached from the UI because the client cap already includes the bucket limit.' Rewrite done_when #2's second clause to: 'a Storage 413 response (unit-tested with a fake response) maps to the same `upload_too_large_for_plan` message'."
+    },
+    {
+      "step": "3.3b",
+      "severity": "major",
+      "category": "duplication / server-side reuse",
+      "quote": "`extensionAndMimeFor(file: File): { ext, mime } | null` — take the lowercase extension from the file name, map it to a canonical MIME (`mp3→audio/mpeg`, …",
+      "problem": "1.6a's `limits.ts` already exports `extensionForMime(mime)`, `isAllowedMime(bucket, mime)` and `BUCKETS['sermon-media'].allowedMimeTypes`; a second MIME table in `apps/web` violates 3.3a's 'do not duplicate' rule and can drift from the bucket row. In addition Build 3 says the Server Action validates `ext` 'against the table in item 2', but that function takes a browser `File` and cannot run in a Server Action.",
+      "fix": "Rewrite Build 2's third bullet as: '`resolveUploadType(fileName: string, reportedType: string): { ext, mime } | null` — pure, string arguments so `planSermonUpload` can call it too: `ext` = lowercase extension of `fileName`; `mime` = `reportedType` when non-empty and `isAllowedMime('sermon-media', reportedType)`, else the canonical MIME for `ext` via a small `MIME_BY_EXTENSION` map (mp3→audio/mpeg, m4a→audio/mp4, aac→audio/aac, wav→audio/wav, ogg→audio/ogg, mp4→video/mp4, m4v→video/mp4, mov→video/quicktime, webm→video/webm) that is checked against `BUCKETS['sermon-media'].allowedMimeTypes` at module load (test asserts every value is allowed); return null when neither is allowed. Reuse `extensionForMime` from `@church/domain` for the reverse direction.' In Build 3 say: 'recompute `{ ext, mime }` with `resolveUploadType(file_name, mime_type)` on the server and reject `null` with `upload_mime_not_allowed`'. Add `resolveUploadType` (not `extensionAndMimeFor`) to Build 7 and Build 11."
+    },
+    {
+      "step": "3.3b",
+      "severity": "minor",
+      "category": "duplicated constant",
+      "quote": "`chunkSize: 6 * 1024 * 1024` (Supabase requires 6 MiB chunks)",
+      "problem": "1.6a exports `TUS_CHUNK_SIZE_BYTES = 6 * 1024 * 1024` from `@church/domain/limits.ts`; the prompt hard-codes the literal and the Verify grep (`git grep -n \"6 \\* 1024 \\* 1024\" … upload-client.ts` → 1 hit) forces the duplicate.",
+      "fix": "Build 4: '`chunkSize: TUS_CHUNK_SIZE_BYTES` (import from `@church/domain`; Supabase requires exactly 6 MiB)'. Constraints: 'Keep `chunkSize` at `TUS_CHUNK_SIZE_BYTES`'. Verify: replace the grep with `git grep -n \"TUS_CHUNK_SIZE_BYTES\" apps/web/src/features/sermons/upload-client.ts` → 1 hit and `git grep -n \"6 \\* 1024 \\* 1024\" apps/web/src` → nothing. Update Build 11 (`upload-client.test.ts` asserts `chunkSize === TUS_CHUNK_SIZE_BYTES`)."
+    },
+    {
+      "step": "3.3b",
+      "severity": "minor",
+      "category": "reuse of prior schema",
+      "quote": "`finalizeSermonUpload(slug, { sermonId, mime_type, file_size_bytes, duration_seconds, publish: 'now' | 'schedule' | 'draft', publish_at? })`",
+      "problem": "1.6b defines `sermonUploadCompleteSchema` (`mime_type`, `file_size_bytes`, `duration_seconds` nullable) for exactly this payload; the prompt does not name it, so the agent writes a web-side `z.object` — which 3.3a's Verify grep (`z.object` in `features/sermons` → nothing) then fails on.",
+      "fix": "Append to the bullet: 'validate the media fields with `sermonUploadCompleteSchema` from `@church/domain/schemas/sermon.ts`; the `publish`/`publish_at` pair reuses the publish-state parsing 3.3a wrote for `SermonForm`. No web-side `z.object`.'"
+    },
+    {
+      "step": "3.3b",
+      "severity": "minor",
+      "category": "query placement",
+      "quote": "`checkSermonObject(slug, { sermonId })`: for the incomplete state — `db.storage.from('sermon-media').list(dirname(storage_path))` with the user client",
+      "problem": "Raw Supabase Storage calls in a Server Action bypass `@church/db` (1.7a's `listObjects` is service-only; 3.1 deliberately used `createSignedUrl` to confirm the logo object). Two agents would place this logic in different layers.",
+      "fix": "Replace with: 'add `statObject(db, bucket, path)` additively to `packages/db/src/queries/storage.ts` (user client; `db.storage.from(bucket).list(dirname(path), { search: basename(path), limit: 1 })` → `{ exists, size, mimetype } | { exists: false }`, wrapped with `unwrapStorage`, with its own test) and call it from `checkSermonObject`; record the addition in HANDOFF.'"
+    },
+    {
+      "step": "3.3b",
+      "severity": "minor",
+      "category": "prior-state precision",
+      "quote": "`insertSermonDraft(db, { id, org_id, media_kind: 'upload', storage_path, mime_type, …details })`",
+      "problem": "1.7a lists `insertSermonDraft(db, { id, org_id, title, …, media_kind, storage_path | external_url, external_id })` and puts `mime_type` in `updateSermonAfterUpload`; whether the insert accepts `mime_type` is unknown. 3.3a tells the agent to read the real signatures; 3.3b does not.",
+      "fix": "Add to Inputs bullet 4: 'Read the real signatures in `packages/db/src/queries/sermons.ts` first; if `insertSermonDraft` does not accept `mime_type`, extend it additively (optional field, own test) and record it in HANDOFF.'"
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "wrong prior-state claim / dependency",
+      "quote": "`jose` is already a transitive dependency of `@supabase/ssr`; add it as a direct dependency of `apps/web` at the version pnpm already resolved (`pnpm --filter web add jose@<that version>`).",
+      "problem": "`@supabase/ssr` 0.12.x depends only on `cookie` (verified with `npm view @supabase/ssr@0.12 dependencies`); nothing in the tree resolves `jose`, so there is no 'already resolved version' and the agent stalls or guesses. DESIGN §3 pins `jose` 6.2.x.",
+      "fix": "Replace with: 'Add `jose` 6.2.x to `apps/web` (`pnpm --filter web add jose@<latest 6.2.x from npm view jose version>`; DESIGN §3 pins 6.2.10 — never a major above 6; record the exact version in HANDOFF \"Version pins worth remembering\").' Update the Constraints bullet ('New dependency: `jose` 6.2.x only') and the notes sentence about the transitive version."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "framework capability",
+      "quote": "`rate_limited` → a page with HTTP 429 semantics (\"Too many attempts from this connection — try again in 15 minutes\"); `unavailable` → 503 text",
+      "problem": "A Next.js App Router `page.tsx` cannot set an arbitrary HTTP status; only `notFound()` (404) and `redirect()` are available. An agent will either waste the session hunting for a way to return 429/503 from a Server Component or produce a route handler for the page. done_when #2 ('a 429 text on `rate_limited`') and Goal ('rate-limited probes get a 429 text') read as a status requirement.",
+      "fix": "Rewrite the clause as: '`rate_limited` → render `src/features/share/RateLimited.tsx` (\"Too many attempts from this connection — try again in 15 minutes\"; status stays 200 — App Router pages cannot set 429); `unavailable` → render `src/features/share/Unavailable.tsx` (\"This link is temporarily unavailable\"; status 200). True 429/503 status codes are returned only by the unlock Route Handler (Build 7).' Update Goal and done_when #2 to say 'the rate-limit text' instead of 'a 429 text'."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "framework capability / self-contradiction",
+      "quote": "one text for every reason; for `needs_password_reset` add \"The church now requires a password on shared links; ask them for a new link.\"",
+      "problem": "`notFound()` carries no payload, so `not-found.tsx` cannot know the reason and cannot add a sentence; the instruction is unexecutable. It also contradicts the Constraints bullet 'All 404-class outcomes share one page and one text (no distinguishing revoked from unknown)'. done_when #2 repeats the extra sentence.",
+      "fix": "Delete the `needs_password_reset` sentence from Build 5 and from done_when #2; in Build 4 keep `needs_password_reset → { kind: 'not_found' }` and add: 'the reason is logged server-side (without the token) so the church can be told; the visitor sees the single 404 text'. In `ShareLinksPanel` (Build 10) add a status badge 'Needs password (church now requires one)' for links with `requires_password = false` while `sermon_share_requires_password` is on, so leaders learn about it there."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "cross-group conflict / guards",
+      "quote": "If 3.1's `requirePerm(ctx, perm)` accepts a single key, add `requireAnyPerm(ctx, perms: PermissionKey[])` next to it in `src/lib/auth/require-perm.ts`",
+      "problem": "Both G5 2.1a and G7 3.1 fix `requirePerm(ctx, perm | perms[])` where an array means any-of (delegating to `hasAnyPerm`). Build 11 and the notes then use `requireAnyPerm` unconditionally, so two agents end up with two guard APIs for the same check.",
+      "fix": "Replace Build 1 with: 'Guards: 2.1a/3.1's `requirePerm(ctx, perm | perms[])` treats an array as any-of — use `requirePerm(ctx, ['sermons.link', 'sermons.upload'])` for every share action; do NOT add a new guard. Add `canManageShareLinks(ctx) = hasAnyPerm(ctx, ['sermons.link','sermons.upload'])` to `src/features/sermons/perms.ts` with a test.' Replace `requireAnyPerm(ctx, ['sermons.link','sermons.upload'])` in Build 11 with `requirePerm(ctx, ['sermons.link','sermons.upload'])`, drop the `requireAnyPerm` sentence from Inputs bullet 2 ('single key — see Build 1'), and delete the corresponding open_issues entry."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "cross-group precision / headers",
+      "quote": "Put the header lists in one module `apps/web/security-headers.ts` (or extend 2.1a's) with a unit test",
+      "problem": "2.1a already owns the headers in `apps/web/src/lib/security/csp.ts` + `csp.test.ts`, emitted by two disjoint `headers()` sources (`/((?!s/|embed/).*)` strict and `/(s|embed)/:path*` frameable with `frame-ancestors *`, `X-Robots-Tag: noindex`, `Referrer-Policy: no-referrer`). 3.4 needs `/s/*` and `/embed/*` to differ (`no-referrer` vs `strict-origin-when-cross-origin`; `noindex, nofollow` vs `noindex`; `Cache-Control: private, no-store` on `/s/*`), which the single frameable source cannot express; a new root-level module would produce duplicate/conflicting header entries.",
+      "fix": "Rewrite Build 8's last sentence as: 'Do all of this in 2.1a's `src/lib/security/csp.ts`: split the frameable source into two `headers()` entries, `/s/:path*` and `/embed/:path*` (both keep `frame-ancestors *` and no `X-Frame-Options`), giving each the header set listed above; keep the strict source's negative lookahead `/((?!s/|embed/).*)` unchanged. Extend `src/lib/security/csp.test.ts` to assert: `/s/*` → `no-referrer`, `noindex, nofollow`, `private, no-store`, `frame-src https://www.youtube-nocookie.com https://drive.google.com`; `/embed/*` → `strict-origin-when-cross-origin`, `noindex`, no `X-Frame-Options`, no `frame-ancestors 'none'`.' Rename the `security-headers.test.ts` references in Build 12, Verify and done_when #6 to `csp.test.ts`."
+    },
+    {
+      "step": "3.4",
+      "severity": "major",
+      "category": "query placement / compatibility with 3.11",
+      "quote": "a visitor holding a valid cookie is served by re-reading the row with the service client — `sermon_share_links` join `sermons`, `organizations`, `organization_settings` — and re-validating in TypeScript",
+      "problem": "No `@church/db` query is named for this read, so the agent writes a raw PostgREST embed in `apps/web/src/features/share/resolve.ts`; 1.7a's rule is that every server read lives in `@church/db` (service-typed), and proposed 3.11 must later replace exactly this call. Two agents would put the join in different places with different column sets.",
+      "fix": "Insert into Build 4: 'Add `getShareLinkForCookieVisit(svc: ServiceDbClient, linkId)` additively to `packages/db/src/queries/sermons.ts` (select `sermon_share_links` columns + `sermons(id, org_id, title, speaker, preached_on, description, media_kind, storage_path, external_url, external_id, mime_type, publish_at)` + `organizations(name, slug, status)` + `organization_settings(sermons_shareable, sermon_share_allow_download, logo_path)` through the FKs that exist in `9999_init.sql`; own test; record in HANDOFF). `loadUnlockedShare` calls it and feeds the pure validator `unlockedRowToResult(row, now)`.'"
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "duplication of prior helper",
+      "quote": "`toRpcBytea(buf)` in whatever form the 1.7a wrapper expects (`\\x` + hex for PostgREST)",
+      "problem": "1.7a fixes `srvResolveShareLink(svc, { token_hash, password, ip_hash })` to accept a `Uint8Array` and exports `toPgBytea(bytes)`; a second converter in `apps/web` is a duplicate with a different name.",
+      "fix": "Replace with: 'pass `hashShareToken(token)` (a Node `Buffer`, which is a `Uint8Array`) straight into `srvResolveShareLink`'s `token_hash`; the wrapper's `toPgBytea` produces the PostgREST hex form — do not write a second converter.' Remove `toRpcBytea` from Build 2 and its test list."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "duplicated constant",
+      "quote": ".setExpirationTime('24h') … `maxAge: 86400`",
+      "problem": "1.6a exports `SHARE_LINK_COOKIE_TTL_SECONDS = 86400` for exactly this; hard-coding two literals lets JWT expiry and cookie `maxAge` drift.",
+      "fix": "Use `SHARE_LINK_COOKIE_TTL_SECONDS` from `@church/domain/limits.ts` for both: `.setExpirationTime(nowSeconds + SHARE_LINK_COOKIE_TTL_SECONDS)` and `maxAge: SHARE_LINK_COOKIE_TTL_SECONDS`; the done_when may keep saying '24-hour'."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "verify command completeness",
+      "quote": "Start the built app with the mock env plus `SHARE_LINK_COOKIE_SECRET=$(openssl rand -base64 32)` and check:",
+      "problem": "No start command is given, and 2.1a's `serverEnv()` throws when `SUPABASE_SECRET_KEY` is missing, which any server code path touching `serverEnv()` would hit; the agent must guess both.",
+      "fix": "Replace with: 'Start the built app: `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_placeholder NEXT_PUBLIC_APP_URL=http://localhost:3000 SUPABASE_SECRET_KEY=sb_secret_ci_placeholder SHARE_LINK_COOKIE_SECRET=$(openssl rand -base64 32) pnpm --filter web exec next start -p 3000 &` (stop it with `kill %1` afterwards) and check:'."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "framework pitfall",
+      "quote": "`dynamic = 'force-static'` is fine.",
+      "problem": "`force-static` on a dynamic `[id]` segment without `generateStaticParams` changes how `params`/`notFound()` behave at build time and invites confusing build output for no gain.",
+      "fix": "Delete the sentence; leave the embed page with default rendering (it reads only `params`)."
+    },
+    {
+      "step": "3.4",
+      "severity": "minor",
+      "category": "layout inheritance",
+      "quote": "a minimal `layout.tsx` beside it (no public chrome: `<html>`-level layout is 2.1a's; this nested layout renders only `{children}` on a black full-viewport background)",
+      "problem": "A nested layout cannot remove chrome rendered by `app/(public)/layout.tsx`; if 2.1a/2.1b gave the `(public)` group a header/footer, both `/embed/yt/[id]` and `/s/[token]` (which must show 'No navigation, no sign-in links') inherit it.",
+      "fix": "Add to Build 5 and Build 9: 'If `app/(public)/layout.tsx` renders any chrome, place these routes in a sibling group `app/(share)/s/[token]/…` and `app/(share)/embed/yt/[id]/…` whose `layout.tsx` renders only `{children}` (URLs are unchanged; `proxy.ts` exclusions and the header matchers are path-based). Record the group name in HANDOFF for step 4.2.'"
+    }
+  ]
+}

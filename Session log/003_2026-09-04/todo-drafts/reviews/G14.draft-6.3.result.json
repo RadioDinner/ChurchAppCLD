@@ -1,0 +1,52 @@
+{
+ "run": "wf_1d6ea4a7-187",
+ "task": "w7wnejqi7",
+ "args": {
+  "groups": [
+   "G14"
+  ],
+  "stage": "draft",
+  "steps": [
+   "6.3"
+  ]
+ },
+ "usage": {
+  "subagent_tokens": 161024,
+  "tool_uses": 13,
+  "duration_ms": 546762
+ },
+ "result": [
+  {
+   "group": "G14",
+   "stage": "draft",
+   "drafted": [
+    {
+     "id": "6.3a",
+     "title": "Account deletion (DB verification, web `/account/delete`, mobile Delete account), privacy and terms text, Play Data Safety worksheet",
+     "actor": "agent",
+     "prompt_words": 2982
+    },
+    {
+     "id": "6.3b",
+     "title": "Error monitoring behind env (web + mobile), monitoring runbook, security checklist run-through with results",
+     "actor": "agent",
+     "prompt_words": 2542
+    }
+   ],
+   "findings": 0,
+   "blockers": 0,
+   "applied": null,
+   "rejected": [],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split (orchestrator decision 13): skeleton 6.3 -> 6.3a (account deletion UI web + mobile with DB/cron proof, real /privacy + /terms text, docs/PLAY_DATA_SAFETY.md) and 6.3b (Sentry web + mobile behind env, docs/MONITORING.md, scripts/db/security-audit.sh + CHECKLIST_SECURITY.md run-through). Chain: 4.3 + 3.6b + 3.8 -> 6.3a -> 6.3b. 6.4 should depend on 6.3b; 6.5 on 6.3a + 4.5.",
+    "Names chosen for 6.3a (docs have no account routes): web route group apps/web/app/(account)/ with /account, /account/delete, plus (public) /account/deleted; /account added to proxy.ts protected prefixes; mobile root-level route apps/mobile/app/account/delete.tsx (outside the (app) membership guard); src/features/account/* in both apps with a duplicated deletion-copy.ts; packages/db/src/queries/account.ts + queryKeys.account.deletionRequest(); supabase/tests/rls/11_account_deletion.sql; apps/web/src/content/legal.ts + src/features/legal/LegalPage.tsx; docs/PLAY_DATA_SAFETY.md.",
+    "Product gap for the founder: account_deletion_requests has no cancel flag and srv_process_account_deletions() runs every cron tick, so deletion is effectively immediate (<= 5 min on Vercel Pro) and irreversible. A cancel_account_deletion() RPC with a 7-day grace is proposed as step 6.7 (9996_* migration + founder paste).",
+    "The privacy policy and terms are agent-written DRAFTS from the schema with placeholders (<LEGAL_ENTITY_NAME>, <FOUNDER_EMAIL>, <POSTAL_ADDRESS>, <STATE>, <PRICE>) and a draft banner; the founder should have them reviewed before public listing. The docs never name a legal entity \u2014 0.1 could record it in HANDOFF.",
+    "Names chosen for 6.3b: env vars SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN, SENTRY_ENVIRONMENT, EXPO_PUBLIC_SENTRY_DSN; files apps/web/src/lib/monitoring/{index,scrub}.ts, apps/mobile/src/lib/monitoring.ts, docs/MONITORING.md, supabase/tests/security/audit.sql, scripts/db/security-audit.sh, check ids SEC-01..SEC-12. Sentry SDK versions are not pinned: @sentry/nextjs must be checked against Next 16's peer range (fallback: DSN-less shim), @sentry/react-native only via npx expo install. If the founder does not want a third-party error service, 6.3b shrinks to the audit script + checklist run-through.",
+    "6.3b audit checks SEC-03/SEC-09 depend on the exact anon/column revoke lists 1.4b chose; G3 revisers may want those recorded in a machine-readable comment block so the audit can cite them.",
+    "The 6.2a note about a cross-org audit_log (created_at desc) index riding along with 6.3 is not taken up: 6.3a/6.3b ship no migration; it remains a candidate for a later 9996_* hardening migration together with 6.7."
+   ]
+  }
+ ]
+}

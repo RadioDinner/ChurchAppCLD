@@ -1,0 +1,98 @@
+{
+ "run_id": "wf_c2d38310-89e",
+ "runs": [
+  {
+   "task": "w3ti3ti32",
+   "args": {
+    "groups": [
+     "G10"
+    ]
+   },
+   "outcome": "stopped by usage limit (resets 11:30pm UTC); drafter failed before writing",
+   "subagent_tokens": 147910,
+   "tool_uses": 15,
+   "duration_ms": 207910
+  },
+  {
+   "task": "wv5jzw3qi",
+   "args": {
+    "groups": [
+     "G10"
+    ]
+   },
+   "resumeFromRunId": "wf_c2d38310-89e",
+   "outcome": "completed",
+   "subagent_tokens": 1065135,
+   "tool_uses": 126,
+   "duration_ms": 2659095
+  }
+ ],
+ "subagent_tokens_total": 1213045,
+ "logs": [
+  "G10: 49 findings (2 blockers)"
+ ],
+ "result": [
+  {
+   "group": "G10",
+   "drafted": [
+    {
+     "id": "3.7a",
+     "title": "Web QA — Playwright harness, smoke suite and CI",
+     "actor": "agent",
+     "prompt_words": 2104
+    },
+    {
+     "id": "3.7b",
+     "title": "Web QA — env-gated full E2E, accessibility and state audit",
+     "actor": "agent",
+     "prompt_words": 2646
+    },
+    {
+     "id": "3.8",
+     "title": "Docs & handoff for the web release",
+     "actor": "agent",
+     "prompt_words": 2611
+    },
+    {
+     "id": "3.9",
+     "title": "FOUNDER Stripe + Checkpoint B",
+     "actor": "founder",
+     "prompt_words": 0
+    },
+    {
+     "id": "3.10",
+     "title": "Fix/polish round from founder feedback (reusable template)",
+     "actor": "agent",
+     "prompt_words": 1947
+    }
+   ],
+   "findings": 49,
+   "blockers": 2,
+   "applied": 47,
+   "rejected": [
+    {
+     "finding": "3.8 / 3.9 minor (fidelity): rename the Billing buttons to \"Start checkout\" and \"Open customer portal\"",
+     "reason": "Only half applied. G6's 2.3 prompt (the step that wires the buttons) renders \"Start subscription\" (enabled only when billing_mode = 'stripe') and \"Open customer portal\"; \"Start checkout\" is 2.2b's disabled placeholder label that 2.3 replaces. Kept \"Start subscription\", replaced \"Manage billing\" with \"Open customer portal\", and added \"(labels as rendered by 2.3's src/features/orgs/BillingPanel.tsx)\" in 3.8 Part A, 3.9 items 8.1 / Done when and the done_when lists."
+    },
+    {
+     "finding": "3.9 minor (fidelity): 'vercel.com → team `Anacast`' is an unrecorded name; write 'your team (Pro, from 0.1)'",
+     "reason": "G1's finished 0.1 checklist item 3.2 explicitly creates the Vercel team with name `Anacast` on Pro, so the name is decided. Kept `Anacast` and added \"(created in step 0.1)\" for traceability."
+    }
+   ],
+   "validator_errors": 0,
+   "open_issues": [
+    "Split performed per the sizing finding: 3.7b is now 'Web QA — env-gated full E2E and security spec' (commit `test(web): env-gated acceptance E2E and security spec`) and NEW 3.7c 'Web QA — accessibility and empty/loading/error-state audit' (commit `fix(web): accessibility pass and empty/loading/error states, QA audit`, depends_on ['3.7b']); 3.8 now depends on ['3.7c']. The assembler must add 3.7c to the step list.",
+    "Word counts: 3.7b = 3109 and 3.8 = 3181 words, slightly above orchestrator decision 9's 3000 upper bound (validator warns only above 3400; the task said not to shorten prompts). 3.7a = 2852, 3.7c = 1648, 3.10 = 2077.",
+    "Cross-group contradiction the orchestrator must settle: G5 2.1a `requireOrgMember` 404s super admins without an active membership, while G7 3.1 describes pass-through with `membershipStatus = null` and a 'Viewing as super admin' strip (the fidelity critic assumed G7 keeps the 404 rule — it does not). G10's 3.7b/3.8 never depend on pass-through and record the contradiction; proposed 3.11 now has depends_on ['3.1'] and says 'run before 3.7b'.",
+    "3.7b's `cleanupRun` hard-deletes the run-tagged test church with the secret key — a documented test-runner-only exception to DESIGN §4 ('hard org deletion is forbidden'), deleting children in FK order with a `status = 'cancelled'` fallback and a local `psql` proof as `service_role` first. G2/G3 should confirm `app.guard_last_org_manager`'s trigger-depth skip and whether `org_memberships.user_id` cascades from `auth.users`.",
+    "New names chosen by G10 in this revision: env `E2E_MODE` (unset | `full`) selecting the Playwright webServer env (one webServer per config), helpers `expectEmbedHeaders` / `cspDirective`, `src/components/ui/empty-state.tsx` (3.7c, if no earlier step created it). `E2E_SUPABASE_KEY` remains defined as the secret key (runner + local full-mode server only).",
+    "Dependency beyond PLAN §3 / DESIGN §3: `@axe-core/playwright` (3.7c), pinned to the exact `npm view` version and recorded in HANDOFF pins/deviations.",
+    "Component name drift: DESIGN §11's `FirstAdminDialog` was renamed by G5 2.2b to `src/features/orgs/CreateAdminDialog.tsx` (plus `InviteAdminDialog`); the critic's fix still used the old name — G10 uses the 2.2b name; assembler may align DESIGN/G5 wording.",
+    "Playwright per-project `workers`: the executability critic said it is not a project option; it exists on `TestProject` since Playwright 1.52. 3.7b keeps `workers: 1` on the `full` project (drop it if the 1.62 typings reject it) AND passes `--workers=1` in the `test:e2e:full` script.",
+    "Last-manager STATUS half (PLAN §12) is tested in 3.7b through a `users.delete` holder (the member) because G7 3.2a hides Disable/Remove on the actor's own row — the completeness critic's own-row variant could not work.",
+    "Proposed 3.11 and 3.12 carry sketch prompts (~330 / ~270 words); if adopted they need full 1200–3000-word prompts (decision 9). 3.11 overlaps with G5's proposed 3.11 — merge at assembly.",
+    "3.8's acceptance script and 3.9 now expect the subscription badge `active` (2.3's Checkout passes no Stripe trial, so `trialing` never occurs) and state that disabling a member never blocks Supabase Auth sign-in (the church becomes a 404 for them) — G6/G7 should confirm those behaviours survive their own revisions."
+   ]
+  }
+ ]
+}

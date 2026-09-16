@@ -1,0 +1,246 @@
+{
+  "group": "G13",
+  "lens": "executability",
+  "findings": [
+    {
+      "step": "5.4a",
+      "severity": "major",
+      "category": "verify-vacuous",
+      "quote": "Playwright smoke `apps/web/e2e/documents.spec.ts` (3.7a's `smoke` project, mock env)",
+      "problem": "G10 3.7a defines the smoke project with `testMatch: /smoke\\.spec\\.ts/` and no later step widens it, so a file named `documents.spec.ts` is never collected: `pnpm --filter web test:e2e:smoke` passes without running it and the done_when item is satisfied vacuously. (G12 5.1a's `directory.spec.ts` has the same problem; the G13 prompts are the place to stop propagating it.)",
+      "fix": "In Inputs add: \"3.7a's `smoke` project selects files with `testMatch: /smoke\\.spec\\.ts/` (see `apps/web/playwright.config.ts`).\" In Build 12 either name the file `apps/web/e2e/documents.smoke.spec.ts` or widen `testMatch` to every `e2e/*.spec.ts` outside `e2e/full/` (record the change in HANDOFF). In Verify add: `pnpm --filter web exec playwright test --list --project=smoke | grep -c documents` → ≥ 1. Update the done_when file name accordingly."
+    },
+    {
+      "step": "5.4a",
+      "severity": "minor",
+      "category": "inputs-incomplete",
+      "quote": "createSignedUrl(db, 'documents', storage_path, { ttl: SIGNED_URL_TTL_SECONDS, download: …",
+      "problem": "`SIGNED_URL_TTL_SECONDS` is used in Build 4 but never introduced in Inputs / prior state (it lives in `@church/domain` `limits.ts`, 1.6a).",
+      "fix": "In the `@church/domain` bullet of Inputs append: \"`SIGNED_URL_TTL_SECONDS` (3600) and `SIGNED_URL_CACHE_MS` in `limits.ts`\"."
+    },
+    {
+      "step": "5.4a",
+      "severity": "minor",
+      "category": "sizing",
+      "quote": "MISSING",
+      "problem": "The prompt is ~3,100 words, above orchestrator decision 9's 3,000-word ceiling (the validator only warns at 3,400). The group notes already flag it; no decision is recorded.",
+      "fix": "Trim Build 7/12 (move the per-column table description and half the test list into done_when) to land under 3,000 words, or accept the overshoot explicitly in `notes` so the assembler does not re-open it."
+    },
+    {
+      "step": "5.4b",
+      "severity": "minor",
+      "category": "verify-unreal",
+      "quote": "`documents/index` and `documents/[id]` appear in the exported route manifest",
+      "problem": "`npx expo export --platform android` writes bundles plus `metadata.json`; there is no route manifest for native exports (expo-router discovers routes at runtime via `require.context`). The check cannot be performed as written; 4.1b/4.2a only assert that the export succeeds.",
+      "fix": "Replace with: \"`npx expo export --platform android --output-dir dist` succeeds (`rm -rf dist` afterwards); `test -f 'app/(app)/documents/index.tsx' && test -f 'app/(app)/documents/[id].tsx'`; and the Vitest that renders `DocumentList`/`DocumentDetail` passes.\" Apply the same wording to the done_when item."
+    },
+    {
+      "step": "5.5",
+      "severity": "major",
+      "category": "name-collision",
+      "quote": "`queryKeys` in `src/keys.ts` (check whether an `audienceGroups` key family exists; add one additively if not)",
+      "problem": "G4 1.7a already ships `queryKeys.groups.list(orgId)` and `queryKeys.groups.members(groupId)` (4.2a: \"Use these exact keys; do not add parallel ones\"). Build 2 and the done_when tell the agent to create a parallel `queryKeys.audienceGroups.*` family, so web and mobile would cache the same rows under two roots and invalidations would miss.",
+      "fix": "Replace every `queryKeys.audienceGroups.*` in Inputs, Build 2, done_when and Finish with `queryKeys.groups.*`: keep `list`/`members`, add `.detail(groupId)`, `.counts(orgId)`, `.usage(groupId)`, `.picker(orgId, query)` additively. Change the Inputs sentence to: \"`queryKeys.groups.list(orgId)` and `.groups.members(groupId)` exist (1.7a); extend that family, never add an `audienceGroups` root.\""
+    },
+    {
+      "step": "5.5",
+      "severity": "major",
+      "category": "verify-vacuous",
+      "quote": "3.7a's Playwright layout (`apps/web/e2e/smoke/*.spec.ts`, `pnpm --filter web test:e2e:smoke`, `e2e/helpers/headers.ts` `expectStrictHeaders`",
+      "problem": "3.7a has no `e2e/smoke/` directory — it ships a single `apps/web/e2e/smoke.spec.ts` and the smoke project's `testMatch: /smoke\\.spec\\.ts/`. A new `e2e/smoke/groups.spec.ts` would not be collected, so `groups.spec.ts` never runs and the Verify/done_when items pass vacuously.",
+      "fix": "Correct Inputs to \"`apps/web/e2e/smoke.spec.ts`, `apps/web/e2e/helpers/headers.ts`, smoke project `testMatch: /smoke\\.spec\\.ts/`\". In Build 10 write the tests either into `apps/web/e2e/groups.smoke.spec.ts` (matches the regex) or widen `testMatch` to all `e2e/*.spec.ts` outside `e2e/full/` and record it. Add to Verify: `pnpm --filter web exec playwright test --list --project=smoke | grep -c groups` → ≥ 1. Fix the done_when path."
+    },
+    {
+      "step": "5.5",
+      "severity": "minor",
+      "category": "name-drift",
+      "quote": "reuse 5.1a's batched `createSignedUrls` helper for `directory-photos`",
+      "problem": "5.1a's helper is `getSignedUrls(bucket, paths, expiresIn)` in `apps/web/src/lib/storage/signed-url.ts` (built on `createSignedUrls`); naming only the underlying SDK call invites a second helper.",
+      "fix": "Replace with \"reuse 5.1a's `getSignedUrls(bucket, paths, expiresIn)` from `src/lib/storage/signed-url.ts` (one call per page)\"."
+    },
+    {
+      "step": "5.5",
+      "severity": "minor",
+      "category": "behaviour-gap",
+      "quote": "`countGroupUsage(db, groupId)` → `{ announcements, documents, calendars, surveys }` using `head: true, count: 'exact'` selects",
+      "problem": "The counts run under the caller's RLS: an `announcements.create` holder without `documents.upload` cannot see draft/scheduled documents and a manager without `org.settings` may not see every calendar, so the delete dialog can under-report what the deletion affects.",
+      "fix": "Add to Build 7's `deleteConsequences` copy: \"Counts include only items you can see; other leaders' drafts may also be affected.\" and note in `docs/RLS.md` (Build 9) that the counts are viewer-scoped."
+    },
+    {
+      "step": "5.6a",
+      "severity": "major",
+      "category": "sql-correctness",
+      "quote": "`public.redeem_join_code(code text, message text default null) returns jsonb` — … find `join_codes` by `code = normalized::extensions.citext`",
+      "problem": "plpgsql's default `variable_conflict = error` makes `where code = …` fail at runtime with \"column reference \\\"code\\\" is ambiguous\" because the parameter `code` shadows `join_codes.code`. The same trap exists in `approve_join_request(request_id, person_id, note)` (`set person_id = coalesce(person_id, …)`), `create_join_code(… label, auto_approve, expires_at, max_uses)` and `reject_join_request(…, note)`. The parameter names must stay (1.7a's `rpc.ts` passes keys equal to the SQL parameter names), so the bodies need qualification.",
+      "fix": "Add to Build 1 (5) a rule: \"Alias every table (`from public.join_codes jc`, `public.join_requests r`) and qualify every column (`jc.code`, `r.person_id`); refer to a shadowed parameter by function name (`redeem_join_code.code`, `approve_join_request.person_id`). Never rely on `#variable_conflict use_column`.\" Add an assertion to Build 3: each RPC is called once with every parameter supplied so an ambiguity error would surface in `11_join_codes.sql`."
+    },
+    {
+      "step": "5.6a",
+      "severity": "major",
+      "category": "harness-breakage",
+      "quote": "If `check-rerunnable.sh` or `08_rerunnable.sql` assumes a single migration file, generalise it minimally and record the change.",
+      "problem": "G3 1.4a's `08_rerunnable.sql` snapshots object/policy counts, re-applies `9999_init.sql` with `\\i`, and asserts identical counts. `9999` section (4) drops every `ca_%` policy, so once 9998 defines `ca_profiles_select_join_requesters` the re-apply removes it and 08 fails — a certainty, not a possibility, and the fix direction is not stated.",
+      "fix": "Replace the sentence with: \"`08_rerunnable.sql` re-applies only `9999_init.sql`; add a second `\\i supabase/migrations/9998_join_codes.sql` line directly after it (with a comment that every later migration is appended here in descending order) so the policy/function counts match after the re-apply. Keep the psql-only comment 1.4a wrote.\" Add to Verify: `bash scripts/db/test.sh --only 08_rerunnable` → PASS."
+    },
+    {
+      "step": "5.6a",
+      "severity": "minor",
+      "category": "convention-drift",
+      "quote": "`join_code_invalid P0002`, `join_code_expired 22023`, … and whatever key 1.6b maps `P0002` to",
+      "problem": "1.3b's catalogue uses `P0001` for every domain 'not found'/'invalid' key (`invitation_invalid P0001`, `person_not_found P0001`) and never uses `P0002`; 1.6b's `toDomainError` has no `P0002` fallback, so \"whatever key 1.6b maps `P0002` to\" refers to nothing. The message-key-first mapping still works, but the new keys break the catalogue's SQLSTATE convention.",
+      "fix": "Use `P0001` for `join_code_invalid` and `join_code_generation_failed` (as `invitation_invalid P0001`), keep `22023`/`42501`/`23505` for the others, and delete the phrase \"and whatever key 1.6b maps `P0002` to\". Update the notes/open_issues line that lists the SQLSTATEs."
+    },
+    {
+      "step": "5.6a",
+      "severity": "minor",
+      "category": "test-detail",
+      "quote": "`srv_audience_user_ids(<everyone group of A>, A)` now contains `newcomer`",
+      "problem": "`srv_*` functions are executable by `service_role` only (09_grants); the test text does not say to switch role, so an agent calling it as `a_admin` gets 42501.",
+      "fix": "Append \"(call it after `app_test.login_service()`, then `app_test.logout()`)\" to assertion (4) in Build 3."
+    },
+    {
+      "step": "5.6a",
+      "severity": "minor",
+      "category": "sizing",
+      "quote": "MISSING",
+      "problem": "The prompt is ~3,350 words, above decision 9's 3,000-word ceiling; the RLS-assertion list in Build 3 duplicates the done_when item almost verbatim.",
+      "fix": "Shorten Build 3 to the fixture and the ten assertion headings, leaving the detailed expectations in done_when; target ≤ 3,000 words."
+    },
+    {
+      "step": "5.6b",
+      "severity": "blocker",
+      "category": "behaviour-conflict",
+      "quote": "In 3.2a's `/users` grid make sure a `pending` membership row renders the badge \"Awaiting approval\" linking to `/join-requests` … do not restructure the grid.",
+      "problem": "G7 3.2a already gives pending rows an \"Approve\" action that calls `set_membership_status(membership_id, 'active')`. After 5.6a, a pending membership is always paired with a pending `join_requests` row; approving from `/users` activates the membership without `approve_join_request`, so no directory person is linked/created, the request stays `pending` forever, the nav badge never clears and the requester's Cancel would delete an active membership. The prompt leaves that second approval path in place.",
+      "fix": "Add to Build 7: \"Replace 3.2a's `Approve` action on `pending` rows with a link `Review in Join requests` (→ `/o/<slug>/join-requests`); keep `Re-enable` for `disabled` rows. Approval of a pending membership happens only through `approveJoinRequestAction`.\" Add a Vitest that the users grid renders no `Approve` button for a `pending` row, and a done_when item for it."
+    },
+    {
+      "step": "5.6b",
+      "severity": "major",
+      "category": "verify-vacuous",
+      "quote": "Playwright smoke `apps/web/e2e/smoke/join.spec.ts` (mock env)",
+      "problem": "3.7a has no `e2e/smoke/` directory and its smoke project uses `testMatch: /smoke\\.spec\\.ts/`; `join.spec.ts` under a `smoke/` folder is not collected, so the Verify and done_when items pass without the test running.",
+      "fix": "Correct the Inputs bullet to `apps/web/e2e/smoke.spec.ts` + `e2e/helpers/headers.ts` + `testMatch: /smoke\\.spec\\.ts/`; name the new file `apps/web/e2e/join.smoke.spec.ts` (or widen `testMatch` and record it); add `pnpm --filter web exec playwright test --list --project=smoke | grep -c join` → ≥ 1 to Verify; fix the done_when path."
+    },
+    {
+      "step": "5.6b",
+      "severity": "minor",
+      "category": "type-mismatch",
+      "quote": "`NAV_ITEMS` gets `{ href: 'join-codes', label: 'Join codes', requires: 'users.create' }`",
+      "problem": "3.1 types `requires?: PermissionKey[]` (any-of); 5.4a passes `undefined` and 5.5 passes an array. A string here is a type error the agent must guess how to resolve.",
+      "fix": "Write `requires: ['users.create']` for both entries."
+    },
+    {
+      "step": "5.6b",
+      "severity": "minor",
+      "category": "name-drift",
+      "quote": "signed URL from `org-assets` through the existing `createSignedUrl` helper",
+      "problem": "The web helper is `getSignedUrl(bucket, path, expiresIn)` in `apps/web/src/lib/storage/signed-url.ts` (3.1/5.1a); `createSignedUrl` is the `@church/db` function. Naming the wrong layer invites a duplicate helper.",
+      "fix": "Replace with \"through `getSignedUrl('org-assets', logo_path, SIGNED_URL_TTL_SECONDS)` from `src/lib/storage/signed-url.ts`\"."
+    },
+    {
+      "step": "5.6c",
+      "severity": "blocker",
+      "category": "routing-conflict",
+      "quote": "Works both signed-in-without-church and signed-in-as-member (the screen lives under `(auth)` but does not require the user to be church-less; its route is reachable from More).",
+      "problem": "G11 4.1b guards every `(auth)` screen with `status !== 'signed_in' || activeOrgs(ctx).length === 0` EXCEPT `invite/[token]`. A member with an active church who taps More → \"Join another church\" therefore never reaches `join`: the guard redirects to `app/index.tsx`, which sends them back to the feed. The prompt never tells the agent to exempt `join`, and no device test exists to catch it.",
+      "fix": "Add to Build 4: \"In `app/(auth)/_layout.tsx` add `join` to the guard exemption list next to `invite/[token]` (a signed-in member may open it); keep `pending` under the normal guard.\" Add a unit/table test of the layout's guard predicate for `join` and a done_when item: \"`join` is reachable for a signed-in user with an active membership (guard exemption tested)\"."
+    },
+    {
+      "step": "5.6c",
+      "severity": "major",
+      "category": "duplicate-logic",
+      "quote": "keep the rule in one pure function `shouldCreateUserFor({ hasInviteToken, hasJoinCode })`, tested",
+      "problem": "4.1b already isolates the rule in `src/features/auth/otpOptions.ts` → `otpOptions({ hasPendingInvite })` with its own test. Creating a second function leaves two sources of truth for `shouldCreateUser`, contrary to the reuse constraints elsewhere in the prompt.",
+      "fix": "Replace with: \"Extend 4.1b's `otpOptions({ hasPendingInvite })` in `src/features/auth/otpOptions.ts` to `otpOptions({ hasPendingInvite, hasJoinCode })` (true when either is set), update `otpOptions.test.ts`, and call it from `SignInForm`.\" Update the done_when item that names `shouldCreateUserFor`."
+    },
+    {
+      "step": "5.6c",
+      "severity": "minor",
+      "category": "verify-unreal",
+      "quote": "`(auth)/join` and `(auth)/pending` appear in the exported route manifest",
+      "problem": "`npx expo export --platform android` produces no route manifest for native platforms; the check cannot be run as written.",
+      "fix": "Replace with: export succeeds; `test -f 'app/(auth)/join.tsx' && test -f 'app/(auth)/pending.tsx'`; `JoinScreen.test.tsx` and `PendingScreen.test.tsx` pass. Mirror in done_when."
+    },
+    {
+      "step": "5.7a",
+      "severity": "major",
+      "category": "wrong-prior-state",
+      "quote": "4.1b already parses the **https** `/invite/<token>` form of an incoming URL (read `apps/mobile/app/index.tsx` and `src/features/auth/entry-route.ts` — 4.1b's note says …",
+      "problem": "`src/features/auth/entry-route.ts` is created by 5.6c and routes on membership status, not URLs. 4.1b's parser is `src/lib/links.ts` → `parseAppLink(url)` (`anacast://invite/<token>` and `https://<any host>/invite/<token>`), wired through a `Linking.useURL()` effect in `app/_layout.tsx`, with `src/lib/links.test.ts`. Build 3 also demands \"a foreign host is ignored\", which reverses 4.1b's any-host behaviour without saying so — two agents would diverge.",
+      "fix": "Rewrite the Inputs bullet: \"4.1b's `src/lib/links.ts` exports `parseAppLink(url)` (custom scheme and `https://<any host>/invite/<token>`), consumed by the `Linking.useURL()` effect in `app/_layout.tsx`; tests in `src/lib/links.test.ts`.\" In Build 3: \"Extend `parseAppLink` to accept only `https` URLs whose host equals `new URL(EXPO_PUBLIC_WEB_URL).host` (pass the host in or read `publicEnv().webUrl`), keep the scheme form, add the foreign-host case to `links.test.ts`, and record the behaviour change in HANDOFF Deviations.\" Replace \"entry-route tests\" in done_when with \"`src/lib/links.test.ts`\"."
+    },
+    {
+      "step": "5.7a",
+      "severity": "minor",
+      "category": "wrong-path",
+      "quote": "Playwright `smoke` project with `apps/web/e2e/smoke.spec.ts` and `e2e/helpers.ts` (`expectStrictHeaders`)",
+      "problem": "3.7a puts the helper in `apps/web/e2e/helpers/headers.ts` (with `routes.ts` beside it); `e2e/helpers.ts` does not exist. Build 10's alternative file `e2e/app-links.spec.ts` would also not match the smoke project's `testMatch: /smoke\\.spec\\.ts/`.",
+      "fix": "Correct to `apps/web/e2e/helpers/headers.ts`. In Build 10 either append to `smoke.spec.ts` or name the new file `app-links.smoke.spec.ts`; state the `testMatch` regex in Inputs."
+    },
+    {
+      "step": "5.7a",
+      "severity": "minor",
+      "category": "config-location",
+      "quote": "add one syntactically valid dummy fingerprint of repeated `AA:` pairs to the smoke env in `playwright.config.ts`",
+      "problem": "3.7a keeps the mock environment in one place, `apps/web/e2e/mock-env.ts`, and CI's web-build step must use exactly those values so the smoke `webServer` reuses the build. Putting the variable only in `playwright.config.ts` splits the env and can trigger a rebuild in CI.",
+      "fix": "Replace with: \"add `ANDROID_CERT_SHA256_FINGERPRINTS` (32 `AA` pairs) to `apps/web/e2e/mock-env.ts` and to the CI web-build step's env in `.github/workflows/ci.yml`, keeping them identical.\""
+    },
+    {
+      "step": "5.7b",
+      "severity": "major",
+      "category": "verify-vacuous",
+      "quote": "Playwright smoke (`apps/web/e2e/directory.spec.ts`): unauth redirect for `/o/any/directory/import` with `expectStrictHeaders`.",
+      "problem": "5.1a's `directory.spec.ts` is not matched by the smoke project's `testMatch: /smoke\\.spec\\.ts/` (nothing widened it), so the new assertion never runs and Verify passes vacuously.",
+      "fix": "Add to Inputs the `testMatch` fact; in Build 6 say \"if `directory.spec.ts` is not listed by `pnpm --filter web exec playwright test --list --project=smoke`, widen `testMatch` to all `e2e/*.spec.ts` outside `e2e/full/` (record it) before adding the assertion\"; add the `--list | grep -c directory` → ≥ 1 check to Verify."
+    },
+    {
+      "step": "5.7b",
+      "severity": "minor",
+      "category": "layering",
+      "quote": "one query on `directory_persons` filtered `org_id = orgId` selecting `id, first_name, last_name, birthdate, household_id`",
+      "problem": "Web code is expected to read through `@church/db` query modules (5.1a: no ad-hoc `.from(...)` in web code); the prompt describes a raw view query inside the Server Action, so agents would split on where it lives.",
+      "fix": "Write: \"add `listPersonsForDuplicateCheck(db, orgId)` additively to `packages/db/src/queries/directory.ts` (view only, explicit columns, test), and call it from the action\"; list it in the Finish HANDOFF additive-exports line."
+    },
+    {
+      "step": "5.7c",
+      "severity": "major",
+      "category": "sql-correctness",
+      "quote": "parameterised by psql variables with defaults (`\\set` guarded by `\\if`): `:persons_a` 5000, `:persons_b` 2000, `:budget_ms` 250 … using a `do $$` block … Assertions: every `ms <= :budget_ms`",
+      "problem": "psql does not interpolate `:var` inside quoted literals, including dollar-quoted `do $$ … $$` bodies, so `:budget_ms`, `:persons_a`, `:orgA` are passed to the server verbatim and the block fails to parse (or the assertion never sees the budget). The runner's `-v budget_ms=` therefore cannot reach the assertion as written.",
+      "fix": "Add to Build 1: \"psql variables are invisible inside `do $$` bodies: right after the `\\set` defaults run `select set_config('perf.budget_ms', :'budget_ms', true), set_config('perf.persons_a', :'persons_a', true), set_config('perf.persons_b', :'persons_b', true);` and read them inside plpgsql with `current_setting('perf.budget_ms')::numeric`; capture generated org ids the same way (`select set_config('perf.org_a', id::text, true)`) or with `\\gset` outside the block.\" Keep `PERF_BUDGET_MS=1` in Verify as the proof the assertion is live."
+    },
+    {
+      "step": "5.7c",
+      "severity": "major",
+      "category": "verify-vacuous",
+      "quote": "`apps/web/e2e/phase2.spec.ts` in the `smoke` project",
+      "problem": "Not collected by the smoke project's `testMatch: /smoke\\.spec\\.ts/`; the 13-route sweep would never run and Verify passes vacuously. The prompt also names `e2e/helpers.ts`, which does not exist (`e2e/helpers/headers.ts`).",
+      "fix": "Name the file `apps/web/e2e/phase2.smoke.spec.ts` or widen `testMatch` (this is the natural step to do it for all Phase 2 specs: set `testMatch: /e2e\\/(?!full\\/).*\\.spec\\.ts$/` or equivalent, and record it); correct the helper path to `e2e/helpers/headers.ts`; add `--list --project=smoke | grep -c phase2` → ≥ 1 to Verify."
+    },
+    {
+      "step": "5.7c",
+      "severity": "minor",
+      "category": "count-mismatch",
+      "quote": "green including `phase2.spec.ts` (13 routes + assetlinks)",
+      "problem": "Build 6 lists 12 org routes plus `/.well-known/assetlinks.json`; done_when says \"12 Phase 2 org routes plus assetlinks\". Verify says 13 + assetlinks.",
+      "fix": "Change Verify to \"(12 org routes + assetlinks)\"."
+    },
+    {
+      "step": "5.7c",
+      "severity": "minor",
+      "category": "harness-detail",
+      "quote": "`scripts/db/perf.sh` (mirrors `test.sh`: reads `DATABASE_URL` from `local-up.sh`'s export/file",
+      "problem": "1.2 centralises that in `scripts/db/_env.sh` (sourced by every db script); naming it avoids a second lookup implementation.",
+      "fix": "Write \"sources `scripts/db/_env.sh` like `test.sh`\"."
+    },
+    {
+      "step": "5.9",
+      "severity": "minor",
+      "category": "founder-checklist-missing",
+      "quote": "\"founder_checklist\": \"\"",
+      "problem": "The proposed founder step (Checkpoint D) has no click-path; if the assembler adopts it, the founder has nothing to follow. The steps are all known from 4.5, 5.7a's docs and the acceptance documents.",
+      "fix": "Provide the numbered checklist: (1) `npx eas-cli credentials -p android` → preview profile → Keystore → copy SHA256 Fingerprint (repeat for production if it exists); (2) Vercel → Project → Settings → Environment Variables → `ANDROID_CERT_SHA256_FINGERPRINTS` = comma-separated fingerprints (Production + Preview) → Redeploy; (3) `curl -s https://<DOMAIN>/.well-known/assetlinks.json` shows them; (4) `npx eas-cli build -p android --profile preview` → install APK; (5) `adb shell pm get-app-links com.anacast.app` → verified; tap an invite link from an email app → Anacast opens; (6) run `docs/ACCEPTANCE_WEB.md` 'Phase 2 trial (Checkpoint D)' as super admin then as church admin; (7) run the consolidated Phase 2 device checklist in `docs/MOBILE_BUILD.md`; (8) record build id, date and observations in HANDOFF.md; tick 5.9. Add a helper prompt: \"paste the observations; triage and fix as in 3.10\"."
+    }
+  ]
+}

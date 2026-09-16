@@ -1,0 +1,43 @@
+--- 2026-09-07 09:11 ---
+Ok, G13 is running and G14 is open. I want to start G14 but I'm afraid of burning through my 5 hour session limits. Can you run G14 in segments? And pause between them for me to evaluate? I want to run them in little bites
+--- 2026-09-07 09:22 ---
+Well pause this if it is creating merges. Take G14 in bites, I have another session working on G13. Then I'l have this audit run after all the G steps are done
+--- 2026-09-07 09:22 ---
+Pause if it is creating conflicts I meant
+--- 2026-09-07 09:24 ---
+Oh, you were working G14?
+--- 2026-09-07 09:25 ---
+Ok, I thought you went back to G6. I mis-read that. You can keep going on G14 bites
+--- 2026-09-07 10:04 ---
+I'm not sure how to answer the decisions you left to me. Go ahead on bite 3
+--- 2026-09-07 11:19 ---
+I want to use an archival system rather than delete. Users will be able to delete their accounts by request, but canceling/deleting on the user UI will just archive their account so I can un-archive them later. 
+
+Add a to-do item to create a privacy policy. Now run bite 4
+--- 2026-09-07 11:23 ---
+can you run bite 5 simultaneiously? Also, how many bites do we have left
+--- 2026-09-07 11:37 ---
+next bite
+--- 2026-09-07 11:38 ---
+this is my color palette
+
+~Prussian Blue #00072d
+Inky, profound blue filled with gravitas and mystery, conjures historical intrigue and academic tradition.
+~Deep Navy #001c55
+A profound, shadowy indigo capturing a sense of mystery, elegance, and oceanic depth, perfect for refined atmospheres.
+~Imperial Blue #0a2472
+Powerful, classic blue suggestive of nobility and sophistication, creating a dramatic and commanding presence anywhere.
+~Bright Marine #0e6ba8
+Bold and crisp, this aquatic blue pops with energy, channeling open seas, confidence, and modern design.
+~Icy Blue #a6e1fa
+Frosty pale blue as fresh as morning ice, serene and pure, encourages clarity and peaceful contemplation.
+--- 2026-09-07 11:39 ---
+com.anacast.app is fine
+--- 2026-09-07 11:39 ---
+Make a place holder privacy policy, I'll have my lawyers write the policy anbd exchange it before go-live
+--- 2026-09-07 11:54 ---
+critics together
+--- 2026-09-07 13:05 ---
+lets continue
+--- 2026-09-07 13:16 ---
+is bite 8 the last bite for G14

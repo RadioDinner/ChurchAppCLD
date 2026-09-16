@@ -1,0 +1,62 @@
+{
+  "group": "G11",
+  "lens": "completeness",
+  "findings": [
+    {
+      "step": "4.3",
+      "severity": "major",
+      "category": "missing edge case (push reliability)",
+      "quote": "`refreshPushDevice()`: on every app foreground with a stored token and a session, re-upsert (sets `last_seen_at`, re-enables a device that receipts disabled after the user reinstalled) — throttle to once per 24 h",
+      "problem": "Three cases that decide whether Checkpoint C items 17/22 ('the row comes back', 'reinstall re-enables') actually pass are not specified: (1) Expo push tokens rotate — re-upserting the *stored* kv token never notices a new token, so pushes silently stop; (2) 're-enables' only holds if `upsertPushDevice` writes `enabled: true` on conflict — 1.7a's helper is described as an upsert on the token key, not as re-enabling; (3) after sign-out (kv `push_token` deleted) or for a second account on the same phone, `push_explainer_seen` is already set, so the only path back to registration is the vague 'If permission is already granted (reinstall), register silently'. The plan's 'Never cut: … push registration' needs these to be explicit.",
+      "fix": "Rewrite Build 3's `refreshPushDevice()` as: 'on every signed-in app start/foreground (throttled 24 h via kv `push_last_seen_sync`), if permission is `granted`: call `getExpoPushTokenAsync({ projectId })` again; if the token differs from kv `push_token`, `deletePushDevice(supabase, oldToken)` then upsert the new one; always upsert with `enabled: true` and `last_seen_at = now()` (if `upsertPushDevice` does not set `enabled: true` on conflict, extend it additively in `packages/db/src/queries/notifications.ts` with a test and record it in HANDOFF).' In Build 4 replace the '(reinstall)' sentence with: 'Whenever a session exists, permission is `granted` and kv `push_token` is empty (fresh install, after sign-out, second account on a shared phone), call `registerForPush` silently — no modal.' Add a test case for the rotated-token path in Build 10."
+    },
+    {
+      "step": "4.2b",
+      "severity": "minor",
+      "category": "internal contradiction (file names from DESIGN §11)",
+      "quote": "renders one of `players/AudioPlayer.tsx`, `players/VideoPlayer.tsx`, `players/YouTubeWebView.tsx`, `players/ExternalPlayer.tsx` (file names from DESIGN §11 step 10: `players/{Audio,Video,YouTubeWebView,External}.tsx` — use those exact basenames)",
+      "problem": "The sentence names `AudioPlayer.tsx`/`VideoPlayer.tsx`/`ExternalPlayer.tsx` and in the same breath demands the DESIGN basenames `Audio.tsx`/`Video.tsx`/`External.tsx`; Build 5/6/8 headers then use `players/Audio.tsx`, `players/Video.tsx`, `players/External.tsx`. An agent may create either set; 4.5's helper prompt refers to `players/Audio.tsx`.",
+      "fix": "Replace with: 'renders one of `src/features/sermons/players/Audio.tsx`, `players/Video.tsx`, `players/YouTubeWebView.tsx`, `players/External.tsx` (exact basenames from DESIGN §11 step 10)'."
+    },
+    {
+      "step": "4.2b",
+      "severity": "minor",
+      "category": "leftover drafting text",
+      "quote": "No background audio for YouTube (ToS) — say so in a one-line caption when the app is backgrounded? No: just do not request it.",
+      "problem": "Self-dialogue left in the prompt; the agent cannot tell what to build.",
+      "fix": "Replace with: 'No background audio for YouTube (YouTube ToS, DESIGN §7): the WebView player requests no background mode and no lock-screen controls; add no caption.'"
+    },
+    {
+      "step": "4.2a",
+      "severity": "minor",
+      "category": "leftover drafting text",
+      "quote": "7. **Analytics of nothing**: no tracking.",
+      "problem": "Meaningless heading in the Build list.",
+      "fix": "Replace the item with: '7. **No analytics or tracking** in the app (privacy, Play Data Safety — 6.3). **Accessibility**: …' keeping the accessibility sentence."
+    },
+    {
+      "step": "4.3",
+      "severity": "minor",
+      "category": "file layout vs DESIGN §11",
+      "quote": "`src/lib/push.ts` … `src/lib/push/capability.ts` … `src/features/push/index.ts`",
+      "problem": "DESIGN §11 step 10 lists `src/lib/push.ts`. The prompt creates both a file `src/lib/push.ts` and a directory `src/lib/push/` (plus a second `push` folder under `src/features`), so `@/lib/push` resolves ambiguously for readers and later steps (5.3/6.1 must 'lift' the events/surveys guards and need one obvious place).",
+      "fix": "Keep `src/lib/push.ts` (handler, channel, `registerForPush`, `refreshPushDevice`) as DESIGN lists it and move the pure capability check to `src/lib/push-capability.ts`; state that UI hooks live in `src/features/push/*`. Update the test names in Verify (`capability` → `push-capability`)."
+    },
+    {
+      "step": "4.1b",
+      "severity": "minor",
+      "category": "missing edge case (Checkpoint C path)",
+      "quote": "\"You are signed in as <email>. Your account is not linked to a church yet. Ask your church to invite you or to create your account.\"",
+      "problem": "The founder is a super admin with no membership until he adds himself (4.5 item 2). Landing on `no-church` with 'Ask your church' gives him no clue; `my_context()` exposes `is_super_admin`, which the prompt never uses.",
+      "fix": "Add to Build 6: 'If `ctx.is_super_admin` is true, append: \"You are a super admin. To use the app, add yourself as a member of a church on the web (`/o/<slug>/users` → Create account or Invite) and tap Check again.\"'"
+    },
+    {
+      "step": "4.3",
+      "severity": "minor",
+      "category": "missing More-tab row for a Phase 1 account path",
+      "quote": "rows Bulletins → `/bulletins`, Notification settings → `/settings/notifications`, Switch church …, Sign out …, links Privacy Policy … Terms",
+      "problem": "DESIGN §5 'Getting accounts' path 2 creates accounts with a temporary password shown once to the admin; such members sign in on mobile with that password (4.1b) and have no way to change it — password management lives on the web `/auth/reset` (DESIGN §5), which 4.1b only links from the sign-in screen.",
+      "fix": "Add a row 'Change password' → `WebBrowser.openBrowserAsync(`${webUrl}/auth/reset`)` with helper text 'Password changes happen on the web' to Build 9 and to the `(tabs)/more` done_when bullet."
+    }
+  ]
+}
