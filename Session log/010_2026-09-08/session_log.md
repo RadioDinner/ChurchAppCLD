@@ -22,15 +22,16 @@ Branch: `claude/project-status-todo-plan-leghlm`. Nothing merged to `main` (foun
   ~338k words), HANDOFF State: TODO.md done.
 
 ## Directional decisions
+- Founder (2026-09-16): "merge it" — branch merged into `main` (decision 32c satisfied).
 - Founder (2026-09-15): "work through all the next bites until you run out of usage" — back-to-back bites this session; the one-bite-then-
   pause rule from session 009 is suspended for this instruction only.
 - Orchestrator: the 5 NEW findings were applied by hand in `assemble.py` rather than by a fixer; `docs/TODO.md` preview stays committed
   and is regenerated after the fixer bites.
 - Redundant work discarded: this session's clone started at `ec5f2c6`; a G7 group draft made before fetching was thrown away unpushed.
 
-## How to resume (TODO.md is done)
-1. Ask the founder whether to merge `claude/project-status-todo-plan-leghlm` into `main` (decision 32c: only when told). Until then every
-   build session starts with "Work on branch `claude/project-status-todo-plan-leghlm`" (TODO.md "How to use" item 0).
+## How to resume (TODO.md is done and on `main`)
+1. **Merged 2026-09-16** (founder: "merge it") — merge commit `a806f97` on `main`; TODO.md "How to use" item 0 updated accordingly. Build sessions
+   work on `main`.
 2. Optional quality pass: second global review round — `workflow-global.js` `{"stage":"review","lenses":["coverage","consistency"],"round":2}`
    then `["dependencies","founder"]`, then `stage: fix` per group with `"round": 2`. Round 1 left no known blockers; this is polish.
 3. Then the build begins at step 0.1 (founder) and 1.1 (agent) of `docs/TODO.md`.
